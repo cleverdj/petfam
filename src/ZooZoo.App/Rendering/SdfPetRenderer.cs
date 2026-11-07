@@ -17,7 +17,7 @@ namespace ZooZoo.Desktop.Rendering;
 /// </summary>
 public static class SdfPetRenderer
 {
-    public const int MaxPrims = 48;
+    public const int MaxPrims = 96;
 
     private static volatile bool _enabled = Environment.GetEnvironmentVariable("ZOOZOO_RENDERER") != "vector";
     private static SKRuntimeEffect? _effect;
@@ -25,6 +25,8 @@ public static class SdfPetRenderer
     private static readonly object Gate = new();
 
     public static bool Enabled => _enabled;
+
+    private static bool _warnedTooMany;
 
     /// <summary>Uniform data for one pet, built on the UI thread and consumed on the render thread.</summary>
     public sealed class Frame
@@ -38,6 +40,8 @@ public static class SdfPetRenderer
         public float Shadow = 1f;
         public float Fur;
         public float Clip;
+        public float Toon;
+        public float[] Line = { 0.5f, 0.28f, 0.12f };
         public float YawCos = 1f, YawSin;
         public float WhiskerWidth;
         public float[] Whiskers = Array.Empty<float>();
@@ -52,10 +56,17 @@ public static class SdfPetRenderer
             FootX = footX, FootY = footY, Width = width, Height = height,
             Shadow = pet.Hold == HoldState.Carried || pet.Animation == "swim" ? 0f : 1f,
             Clip = pet.Animation == "swim" ? 1f : 0f,
+            Toon = PetRenderer.Toon ? 1f : 0f,
+            Line = new[] { PetRenderer.LineColor(pet.Species).R, PetRenderer.LineColor(pet.Species).G, PetRenderer.LineColor(pet.Species).B },
             Fur = build.Fur, WhiskerWidth = build.WhiskerWidth, Whiskers = build.Whiskers.ToArray(),
             YawCos = MathF.Cos(pet.Heading * MathF.PI / 180f), YawSin = MathF.Sin(pet.Heading * MathF.PI / 180f),
         };
         var n = Math.Min(prims.Count, MaxPrims);
+        if (prims.Count > MaxPrims && !_warnedTooMany)
+        {
+            _warnedTooMany = true;
+            AppLog.Write($"3D renderer: {pet.Species} has {prims.Count} parts, only {MaxPrims} fit; hard parts (eyes, nose) may be dropped");
+        }
         for (var i = 0; i < n; i++)
         {
             var p = prims[i];
@@ -167,6 +178,8 @@ public static class SdfPetRenderer
             ["uShadow"] = f.Shadow,
             ["uFur"] = f.Fur,
             ["uClip"] = f.Clip,
+            ["uToon"] = f.Toon,
+            ["uLine"] = f.Line,
             ["uYaw"] = new[] { f.YawCos, f.YawSin },
             ["uFoot"] = new[] { f.FootX, f.FootY },
             ["uCam"] = new[] { PetRenderer.CameraSin, PetRenderer.CameraCos },
@@ -271,13 +284,15 @@ uniform float uPix;
 uniform float uShadow;
 uniform float uFur;
 uniform float uClip;
+uniform float uToon;
+uniform float3 uLine;
 uniform float2 uFoot;
 uniform float2 uCam;
 uniform float2 uYaw;
-uniform float4 uP[48];
-uniform float4 uQ[48];
-uniform float4 uM[48];
-uniform float4 uX[48];
+uniform float4 uP[96];
+uniform float4 uQ[96];
+uniform float4 uM[96];
+uniform float4 uX[96];
 
 float sdRoundCone(float3 p, float3 a, float3 b, float r1, float r2) {
     float3 ba = b - a;
@@ -335,6 +350,21 @@ float noise(float3 x) {
 }
 
 // World (screen-aligned) -> body space, so fur and stripes stick to the animal when it turns.
+// Cartoon eye: almost all dark brown, a lighter brown crescent at the bottom, two white catchlights.
+float3 toonEye(float3 p, float3 hc, float3 ef, float3 iris) {
+    float3 en = normalize(p - hc);
+    float c = dot(en, ef);
+    float3 col = float3(0.13, 0.06, 0.04);
+    float3 lighter = iris * 1.25 + float3(0.10, 0.05, 0.02);
+    float crescent = sstep(-0.05, 0.25, -dot(en, float3(0.0, 1.0, 0.0)) ) * sstep(0.25, 0.4, c) * (1.0 - sstep(0.78, 0.86, c));
+    col = mix(col, lighter, crescent * 0.9);
+    float h1 = dot(en, normalize(ef + float3(-0.42, 0.5, 0.2)));
+    float h2 = dot(en, normalize(ef + float3(0.38, -0.32, 0.2)));
+    col = mix(col, float3(1.0), sstep(0.905, 0.915, h1));
+    col = mix(col, float3(1.0), sstep(0.968, 0.975, h2));
+    return col;
+}
+
 float3 toModel(float3 p) {
     return float3(p.x * uYaw.x + p.z * uYaw.y, p.y, -p.x * uYaw.y + p.z * uYaw.x);
 }
@@ -349,7 +379,7 @@ float furDisp(float3 q) {
 float map(float3 p) {
     float ds = 100000.0;
     float dh = 100000.0;
-    for (int i = 0; i < 48; i++) {
+    for (int i = 0; i < 96; i++) {
         if (float(i) >= uCount) { break; }
         float di = primDist(p, uP[i], uQ[i], uX[i]);
         float k = uM[i].w;
@@ -373,7 +403,7 @@ float4 material(float3 p) {
     float3 hcol = float3(0.0);
     float4 hx = float4(0.0);
     float3 hc = float3(0.0);
-    for (int i = 0; i < 48; i++) {
+    for (int i = 0; i < 96; i++) {
         if (float(i) >= uCount) { break; }
         float di = primDist(p, uP[i], uQ[i], uX[i]);
         float k = uM[i].w;
@@ -394,6 +424,9 @@ float4 material(float3 p) {
     float3 q = toModel(p);
     float fd = furDisp(q);
     if (dh < ds - fd) {
+        if (hx.x < -0.5 && uToon > 0.5) {
+            return float4(toonEye(p, hc, normalize(hx.yzw), hcol), 3.0);
+        }
         if (hx.x < -0.5) {
             // Eye: sclera, iris with a dark limbal ring and radial fibres, big round pupil.
             float3 en = normalize(p - hc);
@@ -416,14 +449,19 @@ float4 material(float3 p) {
     // Soft tabby stripes in body space.
     if (st > 0.01) {
         float band = sin((q.x * 0.9 + q.y * 0.55) * 0.3 + 2.4 * noise(q * 0.1));
-        float m = sstep(0.4, 0.95, band) * (0.55 + 0.45 * noise(q * 0.45));
-        col = mix(col, col * float3(0.82, 0.72, 0.64), m * st);
+        if (uToon > 0.5) {
+            float m = sstep(0.5, 0.58, band);
+            col = mix(col, col * float3(0.88, 0.66, 0.46), m * st);
+        } else {
+            float m = sstep(0.4, 0.95, band) * (0.55 + 0.45 * noise(q * 0.45));
+            col = mix(col, col * float3(0.82, 0.72, 0.64), m * st);
+        }
     }
 
     // Fine strands: darker roots, lighter tips.
     float strand = 0.6 * noise(q * float3(2.4, 0.7, 2.4)) + 0.4 * noise(q * 4.0);
     float tip = clamp(fd / max(uFur, 0.01) + 0.3, 0.0, 1.0);
-    col *= (0.9 + 0.16 * strand) * (0.9 + 0.14 * tip);
+    if (uToon < 0.5) { col *= (0.9 + 0.16 * strand) * (0.9 + 0.14 * tip); }
     return float4(col, gl);
 }
 
@@ -468,10 +506,19 @@ half4 main(float2 coord) {
         alpha = clamp(1.0 - minD / halo, 0.0, 1.0) * clamp(0.45 + 0.8 * fz, 0.0, 1.0);
     }
 
+    // Cartoon: a solid outline a couple of pixels wide around the silhouette instead of the fur halo.
+    bool outlineOnly = false;
+    if (uToon > 0.5 && !hit) {
+        alpha = 1.0 - sstep(uPix * 1.8, uPix * 2.8, minD);
+        outlineOnly = true;
+    }
+
     float3 L = normalize(float3(-0.4, 0.8, 0.55));
     half4 outc = half4(0.0);
 
-    if (alpha > 0.0) {
+    if (alpha > 0.0 && outlineOnly) {
+        outc = half4(half3(uLine * alpha), half(alpha));
+    } else if (alpha > 0.0) {
         float3 p = o + v * (hit ? t : tMin);
         float3 n = calcNormal(p);
         float4 m = material(p);
@@ -508,6 +555,21 @@ half4 main(float2 coord) {
                 + spe * 0.8;
         }
 
+        if (uToon > 0.5) {
+            if (m.w > 2.5) {
+                col = m.rgb;                                   // cartoon eyes are flat-coloured
+            } else {
+                // Cel shading: lit, mid and dark bands with a warm shadow tint.
+                float band = ndl > 0.12 ? 1.0 : (ndl > -0.4 ? 0.86 : 0.74);
+                float3 tint = band > 0.99 ? float3(1.0) : float3(0.98, 0.86, 0.80);
+                col = m.rgb * band * tint * (0.9 + 0.1 * ao);
+                col += sstep(0.95, 0.965, dot(n, hv)) * max(m.w, 0.0) * 0.5;      // shine on nose and tag
+                col += sstep(0.62, 0.7, rim) * sstep(0.1, 0.4, n.y) * 0.07;       // soft rim light on top edges
+            }
+            // Inner contour where the surface turns away from the viewer.
+            float edge = 1.0 - sstep(0.16, 0.28, -dot(n, v));
+            col = mix(col, uLine, edge);
+        }
         col = pow(clamp(col, 0.0, 1.0), float3(0.95));
         outc = half4(half3(col * alpha), half(alpha));
     }

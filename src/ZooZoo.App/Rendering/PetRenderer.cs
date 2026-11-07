@@ -28,6 +28,17 @@ public static class PetRenderer
     /// <summary>Fur displacement amplitude (model units) used by the 3D shader.</summary>
     public static float FurAmount(PetSpecies s) => s == PetSpecies.Cat ? 1.1f : 1.5f;
 
+    /// <summary>
+    /// Cartoon look (default): cel shading in flat bands, brown outlines, big glossy cartoon eyes, no fur noise.
+    /// ZOOZOO_STYLE=fur switches back to the soft fur look.
+    /// </summary>
+    public static bool Toon { get; } = Environment.GetEnvironmentVariable("ZOOZOO_STYLE") != "fur";
+
+    /// <summary>Outline colour of the cartoon style.</summary>
+    public static (float R, float G, float B) LineColor(PetSpecies s) => s == PetSpecies.Cat
+        ? (0x86 / 255f, 0x48 / 255f, 0x1E / 255f)
+        : (0x6A / 255f, 0x38 / 255f, 0x14 / 255f);
+
     private sealed record Style(Color Fur, Color Belly, Color Dark, Color Nose, Color EarInner, Color Paw,
         Color Saddle, Color Chest, Color Leg, Color Iris);
 
@@ -432,7 +443,7 @@ public static class PetRenderer
             whiskers.AddRange(new[] { (float)pa.X, (float)pa.Y, (float)pb.X, (float)pb.Y, alpha });
         }
 
-        return new SdfBuild(list, whiskers, FurAmount(pet.Species), pet.Species == PetSpecies.Cat ? 0.55f : 0.45f);
+        return new SdfBuild(list, whiskers, Toon ? 0f : FurAmount(pet.Species), pet.Species == PetSpecies.Cat ? 0.55f : 0.45f);
     }
 
     public static float CameraSin => (float)SinP;
@@ -1169,7 +1180,11 @@ public static class PetRenderer
             return;
         }
 
-        if (look is not { } l || anim is not ("idle" or "walk" or "sit" or "lie" or "petted" or "run")) return;
+        if (look is not { } l || anim is not ("idle" or "walk" or "sit" or "lie" or "petted" or "run"))
+        {
+            if (Toon) FaceViewer(pose, cam, anim);
+            return;
+        }
 
         var headScreen = cam.Project(pose.Head);
         var dx = l.X - headScreen.X;
@@ -1179,6 +1194,22 @@ public static class PetRenderer
         pose.HeadYaw = Math.Clamp(yaw, -85, 85) * 0.8;
         var horiz = Math.Max(30, Math.Sqrt(dx * dx + dy * dy));
         pose.HeadPitch = Math.Clamp(dy / horiz * 45, -30, 40) * 0.7;
+    }
+
+    /// <summary>
+    /// Drawn-cartoon cheat: a profile shows the face three-quarter on, the way an animator would draw it,
+    /// instead of a flat side view with one eye on the silhouette edge. Seen from behind nothing changes.
+    /// </summary>
+    private static void FaceViewer(Pose pose, Camera cam, string anim)
+    {
+        if (anim is not ("idle" or "walk" or "sit" or "lie" or "petted" or "run" or "stretch")) return;
+        var dir = cam.ScreenDirToModel(0, 1);
+        var camYaw = Math.Atan2(dir.Z, dir.X) * 180 / Math.PI;   // 0 = the viewer is straight ahead of the nose
+        var away = Math.Abs(camYaw);
+        if (away >= 125) return;
+        var w = away <= 95 ? 0.7 : 0.7 * (125 - away) / 30;
+        var want = Math.Clamp(camYaw, -55, 55);
+        pose.HeadYaw += (want - pose.HeadYaw) * w;
     }
 
     // ------------------------------------------------------------------ scene assembly
@@ -1236,9 +1267,10 @@ public static class PetRenderer
         s.Stripe = cat ? 1 : 0;
         var trunkA = new V3(p.Hip.X + 2, p.Hip.Y + d.BodyR * 0.2, 0);
         var trunkB = new V3(p.Shoulder.X - 2, p.Shoulder.Y + d.BodyR * 0.2, 0);
-        s.Capsule(trunkA, trunkB, d.BodyR, fur);
-        s.Sphere(trunkA, d.BodyR * 1.02, fur);
-        s.Sphere(trunkB, d.BodyR * 1.06, fur);
+        var kitten = cat && Toon;
+        s.Capsule(trunkA, trunkB, d.BodyR * (kitten ? 0.94 : 1), fur);
+        s.Sphere(kitten ? trunkA + new V3(-1, -d.BodyR * 0.08, 0) : trunkA, d.BodyR * (kitten ? 1.14 : 1.02), fur);
+        s.Sphere(trunkB, d.BodyR * (kitten ? 1.1 : 1.06), fur);
         // Belly highlight (lighter, slightly lower), mud belly patch when dirty.
         var bellyColor = mud >= 0.3f ? Mix(style.Belly, MudColor(pet), 0.7) : style.Belly;
         s.Stripe = 0;
@@ -1262,9 +1294,41 @@ public static class PetRenderer
         // Neck.
         s.Stripe = cat ? 0.5 : 0;
         s.K = 4;
-        s.Capsule(trunkB + new V3(0, d.BodyR * 0.1, 0), p.Head + new V3(-d.HeadR * 0.3, -d.HeadR * 0.2, 0), d.BodyR * 0.58, fur);
+        var neckFrom = trunkB + new V3(0, d.BodyR * 0.1, 0);
+        var neckTo = p.Head + new V3(-d.HeadR * 0.3, -d.HeadR * 0.2, 0);
+        s.Capsule(neckFrom, neckTo, d.BodyR * 0.58, fur);
+        if (cat && Toon) BuildCollar(s, d, V3.Lerp(neckFrom, neckTo, 0.42), (neckTo - neckFrom).Normalized);
 
         BuildHead(s, pet, d, style, p, t);
+    }
+
+    /// <summary>A brown collar ring around the neck with a little heart tag hanging at the front.</summary>
+    private static void BuildCollar(Scene s, Dims d, V3 center, V3 axis)
+    {
+        var collar = Color.FromRgb(0xB8, 0x6E, 0x3C);
+        var tagColor = Color.FromRgb(0x96, 0x78, 0x66);
+        var u = Cross(axis, new V3(0, 0, 1)).Normalized;
+        if (u.Length < 0.5) u = new V3(1, 0, 0);
+        var w = Cross(axis, u).Normalized;
+        var ring = d.BodyR * 0.66;
+        const int n = 8;
+        for (var i = 0; i < n; i++)
+        {
+            double a0 = i * Math.PI * 2 / n, a1 = (i + 1) * Math.PI * 2 / n;
+            var p0 = center + (u * Math.Cos(a0) + w * Math.Sin(a0)) * ring;
+            var p1 = center + (u * Math.Cos(a1) + w * Math.Sin(a1)) * ring;
+            s.AddSdf(p0, p1, d.BodyR * 0.13, d.BodyR * 0.13, collar, k: 0, gloss: 0.2);
+        }
+
+        // Front of the neck: the direction in the collar plane closest to forward-and-down.
+        var want = new V3(1, -0.6, 0);
+        var front = (want - axis * (want.X * axis.X + want.Y * axis.Y + want.Z * axis.Z)).Normalized;
+        var side = Cross(axis, front).Normalized;
+        var tag = center + front * (ring + d.BodyR * 0.2) - axis * (d.BodyR * 0.25);
+        var lobe = d.BodyR * 0.15;
+        s.AddSdf(tag + side * (lobe * 0.8) + axis * (lobe * 0.4), tag + side * (lobe * 0.8) + axis * (lobe * 0.4), lobe, lobe, tagColor, k: 0, gloss: 0.7);
+        s.AddSdf(tag - side * (lobe * 0.8) + axis * (lobe * 0.4), tag - side * (lobe * 0.8) + axis * (lobe * 0.4), lobe, lobe, tagColor, k: 0, gloss: 0.7);
+        s.AddSdf(tag, tag - axis * (lobe * 1.6), lobe * 1.15, lobe * 0.15, tagColor, k: 0, gloss: 0.7);
     }
 
     private static V3 SolveKnee(V3 joint, V3 foot, double l1, double l2)
@@ -1341,8 +1405,12 @@ public static class PetRenderer
             pts.Add(root + new V3(-seg * 1.25, seg * 1.15 + lift, seg * 0.9 * sway));
             pts.Add(root + new V3(-seg * 1.1, seg * 1.8 + lift, seg * 1.3 * sway));
         }
+        var thick = Toon ? 0.44 : 0.36;
+        var taper = Toon ? 0.04 : 0.05;
         for (var i = 0; i < pts.Count - 1; i++)
-            s.Capsule(pts[i], pts[i + 1], d.BodyR * (0.36 - 0.05 * i), i % 2 == 0 ? style.Fur : style.Saddle);
+            s.Capsule(pts[i], pts[i + 1], d.BodyR * (thick - taper * i), i % 2 == 0 ? style.Fur : style.Saddle);
+        if (Toon)
+            s.Sphere(pts[^1], d.BodyR * (thick - taper * (pts.Count - 1)) * 1.05, style.Saddle);
     }
 
     private static void BuildHead(Scene s, Pet pet, Dims d, Style style, Pose p, float t)
@@ -1361,7 +1429,7 @@ public static class PetRenderer
 
         s.HeadCenter = h;
         var persian = pet.Species == PetSpecies.Cat;
-        s.Stripe = persian ? 0.8 : 0;
+        s.Stripe = persian && !Toon ? 0.8 : 0;
         s.Sphere(h, r, style.Fur, k: 3);
         s.Stripe = 0;
 
@@ -1377,6 +1445,41 @@ public static class PetRenderer
             s.Sphere(At(0.74, -0.3, -0.22), r * 0.3, style.Belly, edge: false, k: 1.5);
             s.Sphere(At(0.6, -0.52, 0), r * 0.24, style.Belly, edge: false, k: 1.5);
             s.Sphere(At(0.97, -0.08, 0), r * 0.1, style.Nose, edge: false, k: 0, gloss: 0.9);
+
+            if (Toon)
+            {
+                // Pointy fur tufts on the cheeks and the crown, like a drawn kitten.
+                foreach (var sign in new[] { -1, 1 })
+                {
+                    s.AddSdf(At(0.15, -0.25, sign * 0.8), At(-0.05, -0.52, sign * 1.17), r * 0.2, r * 0.03, style.Fur, k: 1.2);
+                    s.AddSdf(At(0.3, -0.45, sign * 0.66), At(0.2, -0.72, sign * 1.02), r * 0.18, r * 0.02, style.Fur, k: 1.2);
+                    s.AddSdf(At(-0.05, 0.0, sign * 0.88), At(-0.3, -0.16, sign * 1.15), r * 0.15, r * 0.03, style.Fur, k: 1.2);
+                }
+                s.AddSdf(At(-0.15, 0.85, 0.0), At(0.05, 1.15, 0.06), r * 0.14, r * 0.02, style.Fur, k: 1.2);
+
+                // Tabby marks on the forehead: a middle stripe and one on each side.
+                // They carry on over the crown to the back of the head so every view shows clean tabby lines.
+                s.AddSdf(At(0.5, 0.86, 0), At(0.8, 0.6, 0), r * 0.07, r * 0.05, style.Saddle, k: 0, gloss: 0);
+                s.AddSdf(At(0.0, 1.0, 0), At(0.5, 0.86, 0), r * 0.08, r * 0.07, style.Saddle, k: 0, gloss: 0);
+                s.AddSdf(At(-0.56, 0.83, 0), At(0.0, 1.0, 0), r * 0.07, r * 0.08, style.Saddle, k: 0, gloss: 0);
+                foreach (var sign in new[] { -1, 1 })
+                {
+                    s.AddSdf(At(0.42, 0.84, sign * 0.33), At(0.7, 0.62, sign * 0.35), r * 0.06, r * 0.04, style.Saddle, k: 0, gloss: 0);
+                    s.AddSdf(At(-0.05, 0.93, sign * 0.36), At(0.42, 0.84, sign * 0.33), r * 0.065, r * 0.06, style.Saddle, k: 0, gloss: 0);
+                    s.AddSdf(At(-0.62, 0.62, sign * 0.42), At(-0.05, 0.93, sign * 0.36), r * 0.05, r * 0.065, style.Saddle, k: 0, gloss: 0);
+                }
+
+                // Little "w" mouth under the nose and whisker dots on the muzzle.
+                var line = Color.FromRgb(0x7A, 0x40, 0x22);
+                foreach (var sign in new[] { -1, 1 })
+                {
+                    var corner = At(1.0, -0.4, sign * 0.12);
+                    s.AddSdf(At(0.96, -0.3, 0), corner, r * 0.028, r * 0.028, line, k: 0, gloss: 0);
+                    s.AddSdf(corner, At(1.02, -0.34, sign * 0.22), r * 0.028, r * 0.028, line, k: 0, gloss: 0);
+                    s.Sphere(At(1.02, -0.22, sign * 0.3), r * 0.035, line, edge: false, k: 0, gloss: 0);
+                    s.Sphere(At(1.0, -0.3, sign * 0.34), r * 0.035, line, edge: false, k: 0, gloss: 0);
+                }
+            }
         }
         else
         {
@@ -1400,7 +1503,7 @@ public static class PetRenderer
                 var b1 = At(0.12, 0.55, sign * 0.82);
                 var b2 = At(-0.42, 0.6, sign * 0.32);
                 var tip = At(-0.15 - tilt, 1.42 - tilt * 0.4, sign * 0.8);
-                s.Tri(b1, tip, b2, style.Fur, style.EarInner, fwd * (r * 0.2), tipRound: 0.3);
+                s.Tri(b1, tip, b2, style.Fur, style.EarInner, fwd * (r * 0.2), tipRound: Toon ? 0.12 : 0.3);
             }
             else
             {
@@ -1414,6 +1517,7 @@ public static class PetRenderer
 
         // Eyes: two, each sorted by its own depth so the far one hides behind the head.
         var pupilDir = fwd;
+        var faceAway = s.Cam.World(h + fwd).zr - s.Cam.World(h).zr;   // < 0: the face points away from the viewer
         foreach (var sign in new[] { -1, 1 })
         {
             var c = At(0.68, 0.3, sign * 0.42);
@@ -1422,8 +1526,11 @@ public static class PetRenderer
             s.EyeAt(c, r * 0.21, p.Eyes, pupilDir, lidA, lidB);
 
             // 3D eye: a glossy white ball set into the head, a dark pupil ball in front of it.
-            var ec = persian ? At(0.66, 0.12, sign * 0.38) : At(0.68, 0.16, sign * 0.38);
+            var ec = persian ? (Toon ? At(0.6, 0.02, sign * 0.42) : At(0.66, 0.12, sign * 0.38)) : At(0.68, 0.16, sign * 0.38);
             var outward = (ec - h).Normalized;
+            // The cartoon eye pokes out past the head outline, so an eye on the far side of a face turned
+            // away from the viewer would show as a dark notch on the back of the head. Leave it out.
+            if (Toon && (faceAway < -0.2 || s.Cam.World(h + outward).zr - s.Cam.World(h).zr < -0.3)) continue;
             var lid = Cross(up, outward).Normalized;
             var lash = Color.FromRgb(0x1A, 0x14, 0x14);
             switch (p.Eyes)
@@ -1441,15 +1548,17 @@ public static class PetRenderer
                 default:
                 {
                     var wide = p.Eyes == Eye.Wide;
-                    var er = r * (persian ? (wide ? 0.42 : 0.38) : (wide ? 0.34 : 0.31));
+                    var er = r * (persian ? (Toon ? (wide ? 0.48 : 0.44) : (wide ? 0.42 : 0.38)) : (wide ? 0.34 : 0.31));
                     var gaze = (fwd * 0.9 + outward * 0.3 + up * 0.05).Normalized;
-                    s.AddSdf(ec, h, er, r * 1.03, style.Iris, k: 0, eyeDir: gaze);
+                    // Clip to just outside the head (the cartoon face is puffed up by cheeks and tufts).
+                    s.AddSdf(ec, h, er, r * (Toon && persian ? 1.12 : 1.03), style.Iris, k: 0, eyeDir: gaze);
                     break;
                 }
             }
         }
 
-        // Whiskers fanning out from the muzzle (drawn as lines on top of the 3D body).
+        // Whiskers fanning out from the muzzle (drawn as lines on top of the 3D body). The cartoon kitten has dots instead.
+        if (Toon && (persian || faceAway < -0.1)) return;
         var root = persian ? At(0.82, -0.3, 0) : At(1.0, -0.2, 0);
         var len = persian ? r * 1.5 : r * 0.8;
         foreach (var sign in new[] { -1, 1 })
@@ -1582,12 +1691,12 @@ public static class PetRenderer
         var w = pet.Appearance.Wet;
         Color Wet(byte r, byte g, byte b) => Darken(Color.FromRgb(r, g, b), 0.35 * w);
         return pet.Species == PetSpecies.Cat
-            // Persian kitten, cream tabby: peach-cream coat with soft stripes, white muzzle and chest, amber eyes.
+            // Kitten, orange tabby: warm orange coat with darker stripes, cream muzzle, chest and paws, big brown eyes.
             ? new Style(
-                Fur: Wet(0xE8, 0xC6, 0xA8), Belly: Wet(0xFB, 0xF6, 0xF0), Dark: Color.FromRgb(0x5A, 0x44, 0x38),
-                Nose: Color.FromRgb(0xE2, 0x86, 0x84), EarInner: Color.FromRgb(0xF0, 0x98, 0x98), Paw: Wet(0xF8, 0xEE, 0xE4),
-                Saddle: Wet(0xDC, 0xB2, 0x90), Chest: Wet(0xFB, 0xF4, 0xEC), Leg: Wet(0xEE, 0xD6, 0xC0),
-                Iris: Color.FromRgb(0xE2, 0x8A, 0x38))
+                Fur: Wet(0xF7, 0xB4, 0x62), Belly: Wet(0xFD, 0xE8, 0xC2), Dark: Color.FromRgb(0x86, 0x48, 0x1E),
+                Nose: Color.FromRgb(0x9C, 0x5A, 0x48), EarInner: Color.FromRgb(0xF4, 0xA6, 0x8A), Paw: Wet(0xFD, 0xE8, 0xC2),
+                Saddle: Wet(0xE6, 0x8A, 0x34), Chest: Wet(0xFD, 0xE6, 0xBC), Leg: Wet(0xF7, 0xB4, 0x62),
+                Iris: Color.FromRgb(0x6E, 0x38, 0x1C))
             // Pomeranian, orange sable: orange coat with darker tipping on the back, cream ruff, chest and legs.
             : new Style(
                 Fur: Wet(0xEA, 0x95, 0x3C), Belly: Wet(0xFB, 0xE6, 0xC0), Dark: Color.FromRgb(0x5A, 0x34, 0x14),

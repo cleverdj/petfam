@@ -22,7 +22,7 @@ public static class PoseSheet
         (PetSpecies.Dog, 0f, "dog 0° (side)"),
         (PetSpecies.Cat, 60f, "cat 60° (3/4 front)"),
         (PetSpecies.Dog, 90f, "dog 90° (front)"),
-        (PetSpecies.Cat, 150f, "cat 150°"),
+        (PetSpecies.Cat, 100f, "cat 100° (front)"),
         (PetSpecies.Dog, 270f, "dog 270° (back)"),
     };
 
@@ -51,6 +51,26 @@ public static class PoseSheet
             }
         }
         SdfPetRenderer.QueueSheet(cells, CellW * Poses.Length, CellH * Rows.Length, path);
+    }
+
+    /// <summary>Turntable sheet: rows = poses, columns = headings. For judging how a pet looks from every side.</summary>
+    public static void QueueTurnSheet(string path, PetSpecies species)
+    {
+        string[] poses = { "idle", "walk", "sit", "lie", "sleep" };
+        float[] headings = { 0f, 30f, 60f, 90f, 120f, 150f, 180f, 225f, 270f, 315f };
+        var now = DateTime.UtcNow;
+        var rng = new Random(1);
+        var cells = new List<(float X, float Y, SdfPetRenderer.Frame Frame)>();
+        for (var row = 0; row < poses.Length; row++)
+        for (var col = 0; col < headings.Length; col++)
+        {
+            var pet = new Pet(species, "turn", now, rng) { Position = Vec2.Zero, Heading = headings[col], TargetHeading = headings[col] };
+            pet.SetAnimation(poses[row]);
+            pet.AnimationTime = 0.37f;
+            var frame = SdfPetRenderer.Build(pet, 1.6f, CellW / 2f * 1.6f, (CellH - 30) * 1.6f, CellW * 1.6f, CellH * 1.6f);
+            cells.Add((col * CellW * 1.6f, row * CellH * 1.6f, frame));
+        }
+        SdfPetRenderer.QueueSheet(cells, (int)(CellW * 1.6f * headings.Length), (int)(CellH * 1.6f * poses.Length), path);
     }
 
     public static void Save(string path)

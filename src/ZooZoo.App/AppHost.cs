@@ -125,6 +125,10 @@ public sealed class AppHost
         _timer = new DispatcherTimer(TimeSpan.FromSeconds(_calmFrameSeconds), DispatcherPriority.Render, OnFrame);
         _timer.Start();
 
+        if (Environment.GetEnvironmentVariable("ZOOZOO_TURN_SHEET") is { Length: > 0 } turn)
+            PoseSheet.QueueTurnSheet(Path.Combine(AppLog.DataDirectory, "turn-sheet.png"),
+                turn.StartsWith("d", StringComparison.OrdinalIgnoreCase) ? PetSpecies.Dog : PetSpecies.Cat);
+
         if (Environment.GetEnvironmentVariable("ZOOZOO_POSE_SHEET") == "1")
         {
             try
