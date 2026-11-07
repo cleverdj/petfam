@@ -1,0 +1,54 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ZooZoo.Desktop.App">
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <TrayIcon Icon="/Assets/tray.png" ToolTipText="ZooZoo">
+        <TrayIcon.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="밥그릇 놓기" Click="OnFeed" />
+            <NativeMenuItem Header="쓰다듬기" Click="OnStroke" />
+            <NativeMenuItem Header="수건으로 닦아주기" Click="OnTowel" />
+            <NativeMenuItemSeparator />
+            <NativeMenuItem Header="(테스트) 물에 빠뜨리기" Click="OnDebugWet" />
+            <NativeMenuItem Header="(테스트) 진흙 묻히기" Click="OnDebugMud" />
+            <NativeMenuItem Header="(테스트) 유대감">
+              <NativeMenuItem.Menu>
+                <NativeMenu>
+                  <NativeMenuItem Header="+20 올리기" Click="OnBondUp" />
+                  <NativeMenuItem Header="-20 내리기" Click="OnBondDown" />
+                  <NativeMenuItemSeparator />
+                  <NativeMenuItem Header="경계 (15)" Click="OnBondWary" />
+                  <NativeMenuItem Header="호기심 (30)" Click="OnBondCurious" />
+                  <NativeMenuItem Header="친숙 (50)" Click="OnBondFamiliar" />
+                  <NativeMenuItem Header="신뢰 (70)" Click="OnBondTrusting" />
+                  <NativeMenuItem Header="가족 (100, 전부 열림)" Click="OnBondFamily" />
+                  <NativeMenuItem Header="초기화 (0)" Click="OnBondReset" />
+                </NativeMenu>
+              </NativeMenuItem.Menu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="펫 추가하기">
+              <NativeMenuItem.Menu>
+                <NativeMenu>
+                  <NativeMenuItem Header="고양이 데려오기" Click="OnAdoptCat" />
+                  <NativeMenuItem Header="강아지 데려오기" Click="OnAdoptDog" />
+                </NativeMenu>
+              </NativeMenuItem.Menu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="(테스트) 펫끼리 놀게 하기" Click="OnDebugPlay" />
+            <NativeMenuItem Header="(테스트) 서식지 인식 결과 보기" Click="OnToggleHabitat" />
+            <NativeMenuItem Header="(테스트) 서식지 다시 인식" Click="OnReanalyze" />
+            <NativeMenuItem Header="디버그 정보 표시/숨기기" Click="OnToggleHud" />
+            <NativeMenuItem Header="(테스트) 뒷마당 스냅샷 저장" Click="OnSnapshot" />
+            <NativeMenuItemSeparator />
+            <NativeMenuItem Header="종료" Click="OnExit" />
+          </NativeMenu>
+        </TrayIcon.Menu>
+      </TrayIcon>
+    </TrayIcons>
+  </TrayIcon.Icons>
+</Application>

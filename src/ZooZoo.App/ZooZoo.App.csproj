@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>ZooZoo</AssemblyName>
+    <RootNamespace>ZooZoo.Desktop</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ZooZoo.Core\ZooZoo.Core.csproj" />
+    <ProjectReference Include="..\ZooZoo.Platform.Windows\ZooZoo.Platform.Windows.csproj" />
+    <ProjectReference Include="..\ZooZoo.Platform.MacOS\ZooZoo.Platform.MacOS.csproj" />
+  </ItemGroup>
+</Project>

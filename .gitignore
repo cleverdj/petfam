@@ -1,0 +1,10 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+*.swp
+TestResults/
+*.binlog
+.DS_Store
