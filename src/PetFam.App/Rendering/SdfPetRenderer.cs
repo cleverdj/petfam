@@ -39,9 +39,15 @@ public static class SdfPetRenderer
         public readonly float[] M = new float[MaxPrims * 4];
         public readonly float[] X = new float[MaxPrims * 4];
         public int Count;
+
+        /// <summary>Drawn this many times bigger on a sheet (close-ups).</summary>
+        public float Zoom = 1f;
         public float FootX, FootY, Width, Height;
         public float Shadow = 1f;
         public float Fur;
+
+        /// <summary>Curly coat bump height (Poodle, Bichon); 0 for smooth coats.</summary>
+        public float Curl;
         public float Clip;
         public float Toon;
         public float[] Line = { 0.5f, 0.28f, 0.12f };
@@ -66,7 +72,7 @@ public static class SdfPetRenderer
             Line = new[] { PetRenderer.LineColor(pet).R, PetRenderer.LineColor(pet).G, PetRenderer.LineColor(pet).B },
             Shade = new[] { PetRenderer.ShadeTint(pet).R, PetRenderer.ShadeTint(pet).G, PetRenderer.ShadeTint(pet).B },
             Stripe = new[] { PetRenderer.StripeTint(pet).R, PetRenderer.StripeTint(pet).G, PetRenderer.StripeTint(pet).B },
-            Sq = build.Squash, Fur = build.Fur, WhiskerWidth = build.WhiskerWidth, Whiskers = build.Whiskers.ToArray(),
+            Sq = build.Squash, Fur = build.Fur, Curl = build.Curl, WhiskerWidth = build.WhiskerWidth, Whiskers = build.Whiskers.ToArray(),
             YawCos = MathF.Cos(pet.Heading * MathF.PI / 180f), YawSin = MathF.Sin(pet.Heading * MathF.PI / 180f),
         };
         var n = Math.Min(prims.Count, MaxPrims);
@@ -207,6 +213,7 @@ public static class SdfPetRenderer
             ["uPix"] = 1.2f / scale,
             ["uShadow"] = f.Shadow,
             ["uFur"] = f.Fur,
+            ["uCurl"] = f.Curl,
             ["uClip"] = f.Clip,
             ["uToon"] = f.Toon,
             ["uLine"] = f.Line,
@@ -278,6 +285,7 @@ public static class SdfPetRenderer
                 var (x, y, frame) = cells[_sheetIndex];
                 c.Save();
                 c.Translate(x, y);
+                if (frame.Zoom != 1f) c.Scale(frame.Zoom);
                 DrawFrame(c, effect, frame);
                 c.Restore();
             }
@@ -316,6 +324,7 @@ uniform float uCount;
 uniform float uPix;
 uniform float uShadow;
 uniform float uFur;
+uniform float uCurl;
 uniform float uClip;
 uniform float uToon;
 uniform float3 uLine;
@@ -388,18 +397,42 @@ float noise(float3 x) {
 // World (screen-aligned) -> body space, so fur and stripes stick to the animal when it turns.
 // Cartoon eye: a coloured iris that brightens toward the bottom, a big round dark pupil, a dark lid line
 // along the top and two white catchlights.
-float3 toonEye(float3 p, float3 hc, float3 ef, float3 iris) {
+float3 toonEye(float3 p, float3 hc, float er, float4 head, float3 ef, float3 iris) {
     float3 en = normalize(p - hc);
-    float c = dot(en, ef);
-    float vy = dot(en, float3(0.0, 1.0, 0.0));
-    float3 dark = float3(0.08, 0.07, 0.08);
-    float3 col = mix(iris * 0.7, iris * 1.45 + float3(0.08), sstep(0.15, -0.45, vy));
-    col = mix(col, dark, sstep(0.885, 0.91, c));
-    col = mix(col, dark, sstep(0.35, 0.6, vy) * sstep(0.9, 0.8, c));
-    float h1 = dot(en, normalize(ef + float3(-0.42, 0.5, 0.2)));
-    float h2 = dot(en, normalize(ef + float3(0.38, -0.32, 0.2)));
-    col = mix(col, float3(1.0), sstep(0.905, 0.915, h1));
-    col = mix(col, float3(1.0), sstep(0.968, 0.975, h2));
+    // The eye is a ball sunk into the head; only a cap of it shows. Lay the eye out on that cap, so the outline is
+    // even all round however deep the ball sits: e = 0 at the rim of the visible cap, 1 at its middle.
+    float3 hd = hc - head.xyz;
+    float dist = max(length(hd), 0.001);
+    float3 ca = hd / dist;
+    float cb = clamp((head.w * head.w - dist * dist - er * er) / (2.0 * dist * er), -0.9, 0.95);
+    float e = clamp((dot(en, ca) - cb) / (1.0 - cb), 0.0, 1.0);
+    // Eye-space axes on the cap: across (x) and up (y).
+    float3 rt = normalize(cross(float3(0.0, 1.0, 0.0), ca));
+    float3 upv = cross(ca, rt);
+    float span = sqrt(max(1.0 - cb * cb, 0.01));
+    float y = dot(en, upv) / span;
+    float3 dark = float3(0.07, 0.05, 0.07);
+    // Iris: deep at the top, clear and glowing toward the bottom.
+    float3 col = mix(iris * 0.5, min(iris * 1.35 + float3(0.12), float3(1.0)), sstep(0.45, -0.55, y));
+    col = mix(col, min(iris * 1.8 + float3(0.28), float3(1.0)), sstep(-0.2, -0.6, y) * sstep(0.25, 0.55, e) * 0.5);
+    // Darker ring round the edge of the iris.
+    col = mix(col, iris * 0.32, sstep(0.32, 0.18, e) * 0.85);
+    // Pupil: a tall rounded oval in the middle, nudged toward where the pet looks.
+    float3 pc = normalize(ca * 0.9 + ef * 0.1);
+    float3 prt = normalize(cross(float3(0.0, 1.0, 0.0), pc));
+    float3 pup = cross(pc, prt);
+    float px = dot(en, prt) / span;
+    float py = dot(en, pup) / span;
+    float pr = (px * px) / (0.34 * 0.34) + (py * py) / (0.5 * 0.5);
+    col = mix(col, dark, sstep(1.1, 0.9, pr));
+    // Outline: thin all round, a thicker lash line along the top.
+    float lid = 0.09 + 0.16 * sstep(0.1, 0.75, y);
+    col = mix(col, dark, sstep(lid + 0.04, lid, e));
+    // Catchlights: a big one up on one side, a small one low on the other.
+    float h1 = dot(en, normalize(ca + upv * 0.42 - rt * 0.36));
+    float h2 = dot(en, normalize(ca - upv * 0.3 + rt * 0.3));
+    col = mix(col, float3(1.0), sstep(0.955, 0.962, h1));
+    col = mix(col, float3(1.0), sstep(0.985, 0.989, h2));
     return col;
 }
 
@@ -413,11 +446,24 @@ float3 unsquash(float3 p) {
     return float3(m.x * uYaw.x - m.z * uYaw.y, m.y, m.x * uYaw.y + m.z * uYaw.x);
 }
 
+// Curly coat (Poodle, Bichon): round bumps packed over the body, wobbled by noise so they don't line up in rows.
+float curlDisp(float3 q) {
+    if (uCurl <= 0.0) { return 0.0; }
+    float3 w = q * 0.68 + float3(noise(q * 0.31) * 2.2, noise(q * 0.31 + float3(5.0, 1.0, 3.0)) * 2.2, noise(q * 0.31 + float3(2.0, 7.0, 4.0)) * 2.2);
+    float b = sin(w.x) * sin(w.y) * sin(w.z);
+    return uCurl * (0.5 + 0.5 * b);
+}
+
 // Fine soft coat: small, dense tufts.
 float furDisp(float3 q) {
     float n1 = noise(q * 0.55);
     float n2 = noise(q * 1.45 + float3(7.0, 3.0, 1.0));
     return uFur * (0.55 * n1 + 0.45 * n2 - 0.3);
+}
+
+// Coat displacement: curls fade out within a few units of the hard parts (eyes, nose) so they never cover the face.
+float coatDisp(float3 q, float dh) {
+    return furDisp(q) + curlDisp(q) * clamp((dh - 1.0) / 5.0, 0.0, 1.0);
 }
 
 float map(float3 p0) {
@@ -436,7 +482,7 @@ float map(float3 p0) {
             dh = min(dh, di);
         }
     }
-    return min(ds - furDisp(toModel(p)), dh) * sq;
+    return min(ds - coatDisp(toModel(p), dh), dh) * sq;
 }
 
 // Returns colour and a gloss value; gloss 2.0 marks an eye.
@@ -450,6 +496,8 @@ float4 material(float3 p0) {
     float3 hcol = float3(0.0);
     float4 hx = float4(0.0);
     float3 hc = float3(0.0);
+    float hr = 0.0;
+    float4 hq = float4(0.0);
     for (int i = 0; i < 96; i++) {
         if (float(i) >= uCount) { break; }
         float di = primDist(p, uP[i], uQ[i], uX[i]);
@@ -465,14 +513,16 @@ float4 material(float3 p0) {
             hcol = uM[i].rgb;
             hx = uX[i];
             hc = uP[i].xyz;
+            hr = uP[i].w;
+            hq = uQ[i];
         }
     }
 
     float3 q = toModel(p);
-    float fd = furDisp(q);
+    float fd = coatDisp(q, dh);
     if (dh < ds - fd) {
         if (hx.x < -0.5 && uToon > 0.5) {
-            return float4(toonEye(p, hc, normalize(hx.yzw), hcol), 3.0);
+            return float4(toonEye(p, hc, hr, hq, normalize(hx.yzw), hcol), 3.0);
         }
         if (hx.x < -0.5) {
             // Eye: sclera, iris with a dark limbal ring and radial fibres, big round pupil.
@@ -504,6 +554,9 @@ float4 material(float3 p0) {
             col = mix(col, col * mix(float3(1.0), uStripe, 0.6), m * st);
         }
     }
+
+    // Curls: shadowed hollows between the bumps, light on top of each curl.
+    if (uCurl > 0.0) { col *= 0.8 + 0.28 * clamp(curlDisp(q) / uCurl, 0.0, 1.0); }
 
     // Fine strands: darker roots, lighter tips.
     float strand = 0.6 * noise(q * float3(2.4, 0.7, 2.4)) + 0.4 * noise(q * 4.0);

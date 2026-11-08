@@ -97,6 +97,37 @@ public static class PoseSheet
         SdfPetRenderer.QueueSheet(cells, (int)(CellW * 1.6f * days.Length), (int)(CellH * 1.6f * species.Length), path);
     }
 
+    /// <summary>
+    /// Close-ups, big enough to judge faces and coats: the breeds in PETFAM_CLOSEUP_BREEDS (ids, comma separated;
+    /// default: poodle, bichon and a few cats), three-quarter view and facing you.
+    /// </summary>
+    public static void QueueCloseUpSheet(string path)
+    {
+        var ids = Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_BREEDS") is { Length: > 0 } list
+            ? list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : new[] { "poodle", "bichon", "korean-shorthair", "british-shorthair", "ragdoll", "siamese" };
+        var now = DateTime.UtcNow;
+        const float S = 4f;
+        var cells = new List<(float X, float Y, SdfPetRenderer.Frame Frame)>();
+        var col = 0;
+        foreach (var id in ids)
+        {
+            if (Breed.All.FirstOrDefault(b => b.Id == id) is not { } breed) continue;
+            foreach (var heading in new[] { 40f, 90f })
+            {
+                var pet = new Pet(breed.Species, breed.Name, now, new Random(1), breed) { Position = Vec2.Zero, Heading = heading, TargetHeading = heading };
+                pet.Growth = new Growth(now, Growth.AdultAt);
+                pet.SetAnimation("idle");
+                pet.AnimationTime = 0.37f;
+                var frame = SdfPetRenderer.Build(pet, 1f, CellW / 2f, CellH - 50, CellW, CellH - 40);
+                frame.Zoom = S;
+                cells.Add((col * CellW * S, 0, frame));
+                col++;
+            }
+        }
+        SdfPetRenderer.QueueSheet(cells, (int)(CellW * S * col), (int)((CellH - 40) * S), path);
+    }
+
     /// <summary>Every breed as an adult (rows: dogs, then cats), three-quarter view and facing you.</summary>
     public static void QueueBreedSheet(string path)
     {

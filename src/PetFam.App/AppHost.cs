@@ -157,6 +157,9 @@ public sealed class AppHost
         if (Environment.GetEnvironmentVariable("PETFAM_BREED_SHEET") == "1")
             PoseSheet.QueueBreedSheet(Path.Combine(AppLog.DataDirectory, "breed-sheet.png"));
 
+        if (Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_SHEET") == "1")
+            PoseSheet.QueueCloseUpSheet(Path.Combine(AppLog.DataDirectory, "closeup-sheet.png"));
+
         if (Environment.GetEnvironmentVariable("PETFAM_GROWTH_SHEET") == "1")
             PoseSheet.QueueGrowthSheet(Path.Combine(AppLog.DataDirectory, "growth-sheet.png"));
 

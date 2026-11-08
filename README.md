@@ -139,6 +139,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_BREED_SHEET=1` | Saves `breed-sheet.png` with every breed drawn as an adult, two directions each |
 | `PETFAM_ONBOARDING=1` / `cat` | Opens the adoption window at startup (`cat`: Cat tab) |
 | `PETFAM_TIME=HH:mm` | Pretends it is that time of day (also in the tray: Weather → (Test) Try a time of day) |
+| `PETFAM_CLOSEUP_SHEET=1` | Saves `closeup-sheet.png`: big close-ups of the breeds in `PETFAM_CLOSEUP_BREEDS` (ids, comma separated) for judging faces and coats |
 | `PETFAM_TURN_POSES=pant,yawn,…` | Poses for `PETFAM_TURN_SHEET` instead of the default set |
 | `PETFAM_LANG=en` / `ko` | Starts in that language (overrides the saved choice) |
 | `PETFAM_WEATHER=<weather>` | Instead of real weather: `clear`, `cloudy`, `fog`, `drizzle`, `rain`, `heavyrain`, `thunder`, `snow`, `heavysnow` (with snow already piled up) |

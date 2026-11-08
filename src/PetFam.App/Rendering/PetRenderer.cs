@@ -467,7 +467,11 @@ public static class PetRenderer
     /// Smooth primitives come first, hard ones (eyes, nose) last, as the shader expects.
     /// </summary>
     /// <summary>SDF primitives plus projected whisker lines (x1,y1,x2,y2,alpha relative to the feet).</summary>
-    public sealed record SdfBuild(List<SdfPrim> Prims, List<float> Whiskers, float Fur, float WhiskerWidth, float[] Squash);
+    public sealed record SdfBuild(List<SdfPrim> Prims, List<float> Whiskers, float Fur, float WhiskerWidth, float[] Squash)
+    {
+        /// <summary>Curly coat bump height in model units (0: smooth).</summary>
+        public float Curl { get; init; }
+    }
 
     public static SdfBuild BuildSdf(Pet pet, float depth)
     {
@@ -500,7 +504,10 @@ public static class PetRenderer
         }
 
         return new SdfBuild(list, whiskers, Toon ? 0f : FurAmount(pet.Species), pet.Species == PetSpecies.Cat ? 0.55f : 0.45f,
-            new[] { (float)pose.SqF, (float)pose.SqY, (float)pose.SqZ });
+            new[] { (float)pose.SqF, (float)pose.SqY, (float)pose.SqZ })
+        {
+            Curl = BreedLook.Of(pet).Coat == CoatKind.Curly ? 1.4f * d.BodyR / 14f : 0f,
+        };
     }
 
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Pet, StrongBox<Point>> HeadSpots = new();
@@ -2493,9 +2500,11 @@ public static class PetRenderer
         // Fluffy cheeks in the chest colour; a Shiba's or Jindo's pale "urajiro" cheeks.
         var cheek = persian || look.Face == FaceKind.Fox ? style.Chest : Mix(style.Fur, style.Chest, 0.35);
         // Chubby breeds (British Shorthair) get big round jowls.
+        // A cat's cheeks sit lower and further out, under the big eyes rather than over their corners.
         var jowl = look.Cheeks;
-        s.Sphere(At(0.3, -0.3 - 0.08 * (jowl - 1), 0.55 + 0.12 * (jowl - 1)), r * 0.5 * jowl, cheek, edge: false, k: 2.5);
-        s.Sphere(At(0.3, -0.3 - 0.08 * (jowl - 1), -0.55 - 0.12 * (jowl - 1)), r * 0.5 * jowl, cheek, edge: false, k: 2.5);
+        var (cf, cu, cs) = persian ? (0.18, -0.4 - 0.14 * (jowl - 1), 0.6 + 0.22 * (jowl - 1)) : (0.3, -0.3 - 0.08 * (jowl - 1), 0.55 + 0.12 * (jowl - 1));
+        s.Sphere(At(cf, cu, cs), r * 0.5 * jowl, cheek, edge: false, k: 2.5);
+        s.Sphere(At(cf, cu, -cs), r * 0.5 * jowl, cheek, edge: false, k: 2.5);
 
         // A Corgi's white blaze up the forehead.
         if (look.Blaze)
