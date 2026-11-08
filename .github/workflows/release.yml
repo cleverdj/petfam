@@ -1,0 +1,51 @@
+name: Build installer
+
+# Push a tag like v1.0.0 to build PetFam-Setup and the portable zip and attach them to a GitHub release
+# (a draft, so you can check it before publishing). Run it by hand from the Actions tab for a test build.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test tests/PetFam.Core.Tests -c Release
+
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $v = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME.TrimStart("v") } else { "" }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Build installer and portable zip
+        shell: pwsh
+        run: ./build/build-installer.ps1 -Version "${{ steps.version.outputs.version }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PetFam-windows
+          path: |
+            artifacts/PetFam-Setup-*.exe
+            artifacts/PetFam-*-portable.zip
+
+      - name: Draft release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            artifacts/PetFam-Setup-*.exe
+            artifacts/PetFam-*-portable.zip

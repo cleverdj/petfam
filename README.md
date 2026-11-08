@@ -72,16 +72,52 @@ Each desktop has its own habitat from its own wallpaper. Pets walk off one edge 
 ### Languages
 English by default, Korean optional (tray → Language / 언어). Everything switches, including breed personas and what the pets say.
 
-## Getting started
+## Install PetFam (Windows)
 
-Requirements: Windows 10 21H2 or later (Windows 11 recommended) and the [.NET 8 SDK](https://dotnet.microsoft.com/download).
+You need a Windows 10 or Windows 11 PC. Nothing else: no extra programs, no administrator password.
 
-```
-dotnet build
-dotnet run --project src/PetFam.App
-```
+### 1. Get the installer
+Get **`PetFam-Setup-1.0.0.exe`** from whoever shared PetFam with you (by message, mail or a shared drive) and save it,
+for example to your **Downloads** folder.
 
-PetFam has no main window: it lives in the system tray. On the first run it opens the adoption window: choose dogs or cats, pick a breed, name your baby and adopt it.
+> Your browser may say the file "isn't commonly downloaded". Choose **⋯ → Keep** (Edge) or **Keep** (Chrome).
+
+### 2. Run it
+Double-click **`PetFam-Setup-1.0.0.exe`**.
+
+> **"Windows protected your PC"?** This blue box appears for new apps that don't have a paid publisher
+> certificate yet. Click **More info**, then **Run anyway**.
+
+### 3. Click through the setup
+1. Pick a language and click **OK**.
+2. Leave **"Start PetFam when I sign in to Windows"** ticked, so your pets are there every time you turn on the PC.
+   Tick **"Create a desktop shortcut"** if you want an icon on the desktop.
+3. Click **Install**, then **Finish**. PetFam starts right away.
+
+It takes under a minute and asks for no administrator rights.
+
+### 4. Adopt your first pet
+A window opens: choose **dogs or cats**, pick a **breed**, give your baby a **name** and click **Adopt**.
+Your pet appears on the desktop, under your windows.
+
+### Where is PetFam?
+PetFam has no big window of its own. It lives in the **tray**, at the bottom right of the screen next to the clock.
+If you don't see the PetFam icon (a puppy and a kitten), click the small **^** arrow there.
+Click the icon for the menu: your pets, food, houses, weather, language and **Quit**.
+
+To start it again after quitting: **Start menu → PetFam**.
+
+### Update
+Run the new `PetFam-Setup-x.y.z.exe` the same way. PetFam closes itself, updates, and your pets are all still there.
+
+### Uninstall
+**Settings → Apps → Installed apps → PetFam → ⋯ → Uninstall.**
+Your pets are kept (in `%LOCALAPPDATA%\PetFam`) in case you install PetFam again. To remove them as well, delete that
+folder: press **Win + R**, type `%LOCALAPPDATA%\PetFam`, press Enter, and delete the folder.
+
+### No installer? Use the portable version
+`PetFam-1.0.0-portable.zip` holds the same app without an installer. Right-click the zip → **Extract All**, open the
+folder and double-click **PetFam.exe**. It doesn't start with Windows by itself and doesn't add a Start menu entry.
 
 ### Using PetFam
 - **Tray menu:** My pets (where they are, call them over, travel mode), Weather, put out a food bowl, build a house, add a pet, language, quit.
@@ -95,10 +131,36 @@ PetFam has no main window: it lives in the system tray. On the first run it open
 
 ## For developers
 
+Requirements: Windows 10 21H2 or later and the [.NET 8 SDK](https://dotnet.microsoft.com/download).
+
 ```
 dotnet build PetFam.sln
 dotnet test
+dotnet run --project src/PetFam.App
 ```
+
+### Building the installer
+
+```
+powershell -ExecutionPolicy Bypass -File build\build-installer.ps1
+```
+
+This publishes PetFam as one self-contained `PetFam.exe` (users need no .NET), compiles `installer\PetFam.iss` with
+Inno Setup and zips the portable version. Results are in `artifacts\`: `PetFam-Setup-<version>.exe` and
+`PetFam-<version>-portable.zip`. The version comes from `Directory.Build.props` (or `-Version 1.2.0`).
+The Inno Setup compiler is taken from `INNO_ISCC`, an installed Inno Setup 6, or downloaded once into `.tools\` from
+the `Tools.InnoSetup` NuGet package.
+
+The installer installs per user into `%LOCALAPPDATA%\Programs\PetFam` (no administrator prompt), adds a Start menu entry,
+optionally a desktop shortcut and start-at-sign-in, and never touches the pets in `%LOCALAPPDATA%\PetFam`.
+PetFam runs only once at a time: a second copy exits (`PETFAM_MULTI=1` allows more, for developer sheets).
+
+**Automatic builds:** pushing a tag such as `v1.0.0` runs `.github/workflows/release.yml` on GitHub Actions: tests,
+installer and portable zip, attached to a draft release. It can also be started by hand from the Actions tab; the files
+are then under the run's artifacts.
+
+The app is not code-signed yet, so Windows SmartScreen warns on first run (see the install steps above). Signing the
+exe and the installer with a code-signing certificate removes that warning.
 
 ```
 src/PetFam.Core              Platform-independent: pets, breeds, needs, bond, growth, habitat, behaviour, weather, saving

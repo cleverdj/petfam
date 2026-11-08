@@ -5,7 +5,7 @@
     <RootNamespace>PetFam.Desktop</RootNamespace>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <ApplicationIcon />
+    <ApplicationIcon>Assets\petfam.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

@@ -274,7 +274,9 @@ public static class SdfPetRenderer
             if (_sheetSurface is null)
             {
                 _sheetSurface = SKSurface.Create(gr, false, new SKImageInfo(target.W, target.H, SKColorType.Rgba8888, SKAlphaType.Premul));
-                _sheetSurface.Canvas.Clear(new SKColor(0x3C, 0x78, 0x3C));
+                // PETFAM_SHEET_TRANSPARENT=1: no backdrop (for making the app icon).
+                _sheetSurface.Canvas.Clear(Environment.GetEnvironmentVariable("PETFAM_SHEET_TRANSPARENT") == "1"
+                    ? SKColors.Transparent : new SKColor(0x3C, 0x78, 0x3C));
                 _sheetIndex = 0;
             }
 

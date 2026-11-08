@@ -6,5 +6,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
     <Deterministic>true</Deterministic>
+    <Version>1.0.0</Version>
+    <Product>PetFam</Product>
+    <Company>PetFam</Company>
   </PropertyGroup>
 </Project>

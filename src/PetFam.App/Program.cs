@@ -8,6 +8,15 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // One PetFam at a time: a second copy (the desktop shortcut clicked while it already runs at sign-in) would
+        // show every pet twice and fight over the save file. PETFAM_MULTI=1 allows more (developer sheets).
+        using var single = new Mutex(true, @"Local\PetFam.SingleInstance", out var first);
+        if (!first && Environment.GetEnvironmentVariable("PETFAM_MULTI") != "1")
+        {
+            AppLog.Write("Already running; this copy exits.");
+            return;
+        }
+
         try
         {
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args, ShutdownMode.OnExplicitShutdown);

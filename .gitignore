@@ -6,5 +6,7 @@ obj/
 .idea/
 *.swp
 TestResults/
+artifacts/
+.tools/
 *.binlog
 .DS_Store
