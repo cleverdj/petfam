@@ -994,6 +994,16 @@ public sealed class AppHost
 
     private void StartWeather()
     {
+        // Sunrise and sunset are worked out for the weather place (on this computer, no network needed).
+        _sim.Clock.SetPlace(_weather.Location.Latitude, _weather.Location.Longitude);
+        if (Environment.GetEnvironmentVariable("PETFAM_TIME") is { Length: > 0 } fake && TimeSpan.TryParse(fake, out var tod))
+        {
+            _sim.Clock.Pretend = tod;
+            AppLog.Write($"Time of day (PETFAM_TIME): {tod:hh\\:mm}");
+        }
+        if (_sim.Clock.SunToday(DateTime.UtcNow) is { } sun)
+            AppLog.Write($"Sun at {_weather.Location.Name}: rises {sun.Rise:HH:mm}, sets {sun.Set:HH:mm} (computer time)");
+
         _weather.Updated += w =>
         {
             AppLog.Write($"Weather: {w.Describe()} ({(w.IsDay ? "day" : "night")})");
@@ -1044,11 +1054,34 @@ public sealed class AppHost
 
     public string WeatherPlaceId => _weather.Location.Id;
 
+    /// <summary>"Sunrise 07:01 · Sunset 17:31" (computer time) for the tray.</summary>
+    public string SunLine
+    {
+        get
+        {
+            if (_sim.Clock.SunToday(DateTime.UtcNow) is not { } sun) return L.S("No sunrise today (polar night)", "오늘은 해가 뜨지 않아요 (극야)");
+            var line = L.S($"Sunrise {sun.Rise:HH:mm} · Sunset {sun.Set:HH:mm}", $"해 뜸 {sun.Rise:HH:mm} · 해 짐 {sun.Set:HH:mm}");
+            return _sim.Clock.Pretend is { } t ? line + L.S($" (test time {t:hh\\:mm})", $" (테스트 시간 {t:hh\\:mm})") : line;
+        }
+    }
+
+    /// <summary>Tray test: pretend a time of day (null: the real clock).</summary>
+    public void PretendTime(TimeSpan? timeOfDay)
+    {
+        _sim.Clock.Pretend = timeOfDay;
+        AppLog.Write(timeOfDay is { } t ? $"Time of day: pretend {t:hh\\:mm}" : "Time of day: back to the real clock");
+        PetsMenuChanged?.Invoke();
+    }
+
+    /// <summary>Today's sunset as a time of day (for the tray's test menu).</summary>
+    public TimeSpan? SunsetToday => _sim.Clock.SunToday(DateTime.UtcNow)?.Set.TimeOfDay;
+
     public bool WeatherEnabled => _weather.Enabled;
 
     public void SetWeatherPlace(WeatherService.Place place)
     {
         _weather.Location = place;
+        _sim.Clock.SetPlace(place.Latitude, place.Longitude);
         _weather.Refresh();
         AppLog.Write($"Weather: place set to {place.Name}");
         Save();

@@ -61,6 +61,9 @@ Build up to three houses with a choice of shapes, colours and decorations. Give 
 ### Weather
 Optional real weather from [Open-Meteo](https://open-meteo.com) for a city you choose: rain with splashes, thunder and lightning, snow that settles and melts, cloud and fog. Pets react in character.
 
+### Day and night
+Day and night follow your computer's clock and the real sunrise and sunset where you are (worked out on your computer for the weather city, no network needed). Dusk and dawn glow warm, nights turn the desktop deep blue with stars on clear nights, the house windows light up, and pets get sleepy after dark.
+
 ### Virtual desktops
 Each desktop has its own habitat from its own wallpaper. Pets walk off one edge and arrive at the other, follow you when you switch desktops (Follow me), wander on their own (Roam freely) or Stay home, and can be called over from the tray.
 
@@ -133,6 +136,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_DEMO=travel` | 3 seconds after launch the first pet walks out to the neighbouring desktop, and is called back 14 seconds later |
 | `PETFAM_BREED_SHEET=1` | Saves `breed-sheet.png` with every breed drawn as an adult, two directions each |
 | `PETFAM_ONBOARDING=1` / `cat` | Opens the adoption window at startup (`cat`: Cat tab) |
+| `PETFAM_TIME=HH:mm` | Pretends it is that time of day (also in the tray: Weather → (Test) Try a time of day) |
 | `PETFAM_LANG=en` / `ko` | Starts in that language (overrides the saved choice) |
 | `PETFAM_WEATHER=<weather>` | Instead of real weather: `clear`, `cloudy`, `fog`, `drizzle`, `rain`, `heavyrain`, `thunder`, `snow`, `heavysnow` (with snow already piled up) |
 | `PETFAM_DOOR_SHEET=1` | Saves `door-sheet.png` showing the stages of entering a house through the door, sleeping inside, and window-edge peeking (cat and dog, four directions) |

@@ -466,6 +466,9 @@ public sealed class HouseSprite : Control
 
     /// <summary>0..1 snow on the roof.</summary>
     public double Snow { get; set; }
+
+    /// <summary>After dark the windows are lit.</summary>
+    public bool Night { get; set; }
     private float _depth = 1f;
     private static readonly System.Diagnostics.Stopwatch Clock = System.Diagnostics.Stopwatch.StartNew();
 
@@ -489,7 +492,7 @@ public sealed class HouseSprite : Control
     {
         base.Render(context);
         using var _ = context.PushTransform(Matrix.CreateScale(_depth / Scale, _depth / Scale));
-        HouseArt.Draw(context, House, new Point(HouseArt.BoxWidth / 2.0, HouseArt.BaseY), 1, Clock.Elapsed.TotalSeconds, Occupied, Occupants, Snow);
+        HouseArt.Draw(context, House, new Point(HouseArt.BoxWidth / 2.0, HouseArt.BaseY), 1, Clock.Elapsed.TotalSeconds, Occupied || Night, Occupants, Snow);
     }
 }
 

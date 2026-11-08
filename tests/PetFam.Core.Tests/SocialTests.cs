@@ -250,4 +250,46 @@ public class SocialTests
         Assert.Equal(70f, rel.Friendship);
         Assert.Equal(0.4f, Math.Abs(rel.Dominance), precision: 3);
     }
+
+    [Fact]
+    public void Cats_only_start_stalking_a_cat_that_is_near()
+    {
+        var (sim, cell, _) = MakeSim(seed: 5);
+        var a = Add(sim, cell, PetSpecies.Cat, "Momo", new Vec2(250, 950), playfulness: 1f);
+        var b = Add(sim, cell, PetSpecies.Cat, "Nabi", new Vec2(1700, 950), playfulness: 1f);
+        foreach (var p in new[] { a, b }) { p.Growth = new Growth(T0, Growth.AdultAt); p.Needs.Fun = 0f; }
+
+        // Whenever an encounter starts, the two were close at that moment (they may wander together first).
+        var starts = 0;
+        var wasInSession = false;
+        for (var i = 0; i < 3000; i++)
+        {
+            sim.Tick(0.1f, T0);
+            var inSession = a.Session is not null;
+            if (inSession && !wasInSession)
+            {
+                starts++;
+                var depth = (cell.Map.DepthScale(a.Position.Y) + cell.Map.DepthScale(b.Position.Y)) / 2f;
+                Assert.True(Vec2.Distance(a.Position, b.Position) <= 420f * depth,
+                    $"started {Vec2.Distance(a.Position, b.Position):F0} px apart");
+            }
+            wasInSession = inSession;
+        }
+    }
+
+    [Fact]
+    public void Cats_side_by_side_do_start_playing()
+    {
+        var (sim, cell, _) = MakeSim(seed: 5);
+        var a = Add(sim, cell, PetSpecies.Cat, "Momo", new Vec2(800, 950), playfulness: 1f);
+        var b = Add(sim, cell, PetSpecies.Cat, "Nabi", new Vec2(950, 950), playfulness: 1f);
+        foreach (var p in new[] { a, b }) { p.Growth = new Growth(T0, Growth.AdultAt); p.Needs.Fun = 0f; }
+        var started = false;
+        for (var i = 0; i < 1200 && !started; i++)
+        {
+            sim.Tick(0.1f, T0);
+            started = a.Session is not null;
+        }
+        Assert.True(started);
+    }
 }

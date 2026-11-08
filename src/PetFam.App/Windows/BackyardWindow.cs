@@ -134,6 +134,7 @@ public sealed class BackyardWindow : Window
                                             (p.InsideHouse == house.Id || p.InsideHouse is null && Vec2.Distance(p.Position, house.Position) < 40f)).ToList();
             hs.Occupied = home.Count > 0;
             hs.Snow = _sim.SnowCover;
+            hs.Night = _sim.Daylight < 0.4f;   // lights on in every house after dark
             hs.Occupants = home.Count == 0 ? null : home.Select(p =>
             {
                 var c = PetRenderer.CoatOf(p);
@@ -186,7 +187,7 @@ public sealed class BackyardWindow : Window
         if (_weather.IsVisible != show) _weather.IsVisible = show;
         if (show)
         {
-            var key = $"{_sim.Weather.Kind}{_sim.Weather.Intensity}{_sim.SnowCover:F2}{_cell.Id}";
+            var key = $"{_sim.Weather.Kind}{_sim.Weather.Intensity}{_sim.SnowCover:F2}{_sim.Daylight:F2}{_cell.Id}";
             _sinceWeatherDraw += 1;
             // Rain and snow redraw at 15 fps (every other frame): they cover the whole screen, so each redraw
             // repaints everything under them; falling streaks still look smooth at that rate.

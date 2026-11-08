@@ -42,7 +42,7 @@ public sealed class WeatherLayer : Control
     /// <summary>Anything to draw at all.</summary>
     public bool HasContent => _sim is { } s && (Ground
         ? s.SnowCover > 0.01f
-        : s.Weather.Kind != WeatherKind.Clear || s.SinceLightning < 0.6f);
+        : s.Weather.Kind != WeatherKind.Clear || s.SinceLightning < 0.6f || s.Daylight < 0.995f);
 
     /// <summary>Needs redrawing every frame (moving particles or a flash), not just now and then.</summary>
     public bool Animating => !Ground && _sim is { } s && (s.Weather.Raining || s.Weather.Snowing || s.SinceLightning < 0.6f);
@@ -100,6 +100,7 @@ public sealed class WeatherLayer : Control
             _ => 0.0,
         };
         if (shade > 0) ctx.FillRectangle(new SolidColorBrush(Color.FromArgb((byte)(255 * shade), 0x28, 0x32, 0x46)), screen);
+        DrawNight(ctx, screen, w);
         if (w.Kind == WeatherKind.Fog)
         {
             var fog = new LinearGradientBrush
@@ -141,6 +142,53 @@ public sealed class WeatherLayer : Control
                 var depth = _cell.Map.DepthScale(p.Y);
                 var rx = (34 + 46 * Hash(i + 500)) * depth * (0.6 + 0.4 * _sim.SnowCover);
                 ctx.DrawEllipse(snow, null, new Point(p.X, p.Y), rx, rx * 0.22);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Night falls on the desktop with the real clock: a deep blue dusk over everything, a warm glow low in the sky
+    /// around sunrise and sunset, and stars in the sky above the floor on clear nights.
+    /// </summary>
+    private void DrawNight(DrawingContext ctx, Rect screen, WeatherNow w)
+    {
+        var daylight = _sim!.Daylight;
+        if (daylight >= 0.995f) return;
+        var night = 1f - daylight;
+        ctx.FillRectangle(new SolidColorBrush(Color.FromArgb((byte)(255 * 0.34 * night), 0x0E, 0x16, 0x3A)), screen);
+
+        // Twilight: strongest halfway between day and night.
+        var glow = 4f * daylight * (1f - daylight);
+        if (glow > 0.02f)
+        {
+            var warm = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Color.FromArgb((byte)(70 * glow), 0xFF, 0x9A, 0x50), 0),
+                    new GradientStop(Color.FromArgb((byte)(40 * glow), 0xFF, 0x7A, 0x6A), 0.5),
+                    new GradientStop(Color.FromArgb(0, 0xFF, 0x7A, 0x6A), 1),
+                },
+            };
+            ctx.FillRectangle(warm, screen);
+        }
+
+        // Stars on clear (or lightly cloudy) nights, in the sky above the floor.
+        if (night > 0.5f && (w.Kind == WeatherKind.Clear || w.Kind == WeatherKind.Cloudy && w.Intensity < 0.5f))
+        {
+            var skyBottom = Math.Max(screen.Y + 60, Math.Min(_cell!.Map.RoamArea.Top - 20, screen.Y + screen.Height * 0.55));
+            var count = w.Kind == WeatherKind.Clear ? 110 : 45;
+            var t = Clock.Elapsed.TotalSeconds;
+            for (var i = 0; i < count; i++)
+            {
+                var x = screen.X + Hash(i * 11 + 5) * screen.Width;
+                var y = screen.Y + Hash(i * 11 + 6) * (skyBottom - screen.Y);
+                var twinkle = 0.55 + 0.45 * Math.Sin(t * (0.6 + Hash(i * 11 + 7)) + i);
+                var size = 0.9 + 1.6 * Hash(i * 11 + 8);
+                var a = (byte)(230 * (night - 0.5f) * 2 * twinkle);
+                ctx.DrawEllipse(new SolidColorBrush(Color.FromArgb(a, 0xFF, 0xFA, 0xE6)), null, new Point(x, y), size, size);
             }
         }
     }

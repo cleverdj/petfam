@@ -12,6 +12,19 @@ public sealed class SocialDirector
 {
     public const float CheckInterval = 4f;
 
+    /// <summary>
+    /// Pets only start playing (stalking, play bows, grooming) with a pet that is near: within this many pixels at
+    /// depth 1, scaled by how far back they stand. A cat across the screen is not prey.
+    /// </summary>
+    public const float StartDistance = 380f;
+
+    /// <summary>Close enough to start an encounter?</summary>
+    public static bool Near(Pet a, Pet b, Cell? cell)
+    {
+        var depth = cell is null ? 1f : (cell.Map.DepthScale(a.Position.Y) + cell.Map.DepthScale(b.Position.Y)) / 2f;
+        return Geometry.Vec2.Distance(a.Position, b.Position) <= StartDistance * depth;
+    }
+
     private readonly List<SocialSession> _active = new();
     private float _sinceCheck;
 
@@ -52,9 +65,12 @@ public sealed class SocialDirector
         {
             if (!Available(a) || a.Needs.Energy < 30f) continue;
             var funDeficit = (100f - a.Needs.Fun) / 100f;
-            foreach (var b in pets.OrderBy(_ => rng.Next()))
+            // The nearest pets first; ones too far away are not considered at all.
+            var cell = cellOf(a);
+            foreach (var b in pets.OrderBy(b => Geometry.Vec2.Distance(a.Position, b.Position)))
             {
                 if (ReferenceEquals(a, b) || !Available(b) || a.CellId != b.CellId) continue;
+                if (!Near(a, b, cell)) break;
                 var chance = 0.06f + funDeficit * 0.25f + a.Personality.Playfulness * 0.1f + social.Friendship(a, b) * 0.001f;
                 if (rng.NextDouble() >= chance) continue;
                 Start(Choose(a, b, social, rng));

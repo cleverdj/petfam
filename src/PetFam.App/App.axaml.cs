@@ -177,6 +177,7 @@ public partial class App : Application
 
     private NativeMenuItem? _weatherItem;
     private NativeMenuItem? _weatherNow;
+    private NativeMenuItem? _sunNow;
     private NativeMenuItem? _weatherToggle;
     private readonly List<(WeatherService.Place Place, NativeMenuItem Item)> _placeItems = new();
 
@@ -186,6 +187,8 @@ public partial class App : Application
         _weatherItem = new NativeMenuItem(L.S("Weather", "날씨")) { Menu = sub };
         _weatherNow = new NativeMenuItem("") { IsEnabled = false };
         sub.Items.Add(_weatherNow);
+        _sunNow = new NativeMenuItem("") { IsEnabled = false };
+        sub.Items.Add(_sunNow);
         _weatherToggle = new NativeMenuItem(L.S("Use the real weather", "실제 날씨 반영하기")) { ToggleType = NativeMenuItemToggleType.CheckBox };
         _weatherToggle.Click += (_, _) => _host?.ToggleRealWeather();
         sub.Items.Add(_weatherToggle);
@@ -210,6 +213,14 @@ public partial class App : Application
             test.Items.Add(Item(label, () => _host?.PretendWeather(kind)));
         sub.Items.Add(new NativeMenuItemSeparator());
         sub.Items.Add(new NativeMenuItem(L.S("(Test) Try a weather", "(테스트) 날씨 바꿔 보기")) { Menu = test });
+
+        var times = new NativeMenu();
+        times.Items.Add(Item(L.S("Back to the real time", "실제 시간으로 돌아가기"), () => _host?.PretendTime(null)));
+        times.Items.Add(Item(L.S("Morning (08:00)", "아침 (08:00)"), () => _host?.PretendTime(TimeSpan.FromHours(8))));
+        times.Items.Add(Item(L.S("Noon (12:00)", "한낮 (12:00)"), () => _host?.PretendTime(TimeSpan.FromHours(12))));
+        times.Items.Add(Item(L.S("Sunset", "해 질 녘"), () => _host?.PretendTime(_host?.SunsetToday)));
+        times.Items.Add(Item(L.S("Night (23:00)", "밤 (23:00)"), () => _host?.PretendTime(TimeSpan.FromHours(23))));
+        sub.Items.Add(new NativeMenuItem(L.S("(Test) Try a time of day", "(테스트) 시간대 바꿔 보기")) { Menu = times });
         RefreshWeatherMenu();
         return _weatherItem;
     }
@@ -219,6 +230,8 @@ public partial class App : Application
         if (_host is null || _weatherNow is null || _weatherToggle is null) return;
         var line = _host.WeatherLine;
         if (_weatherNow.Header != line) _weatherNow.Header = line;
+        var sunLine = _host.SunLine;
+        if (_sunNow is not null && _sunNow.Header != sunLine) _sunNow.Header = sunLine;
         var head = L.S($"Weather: {line}", $"날씨: {line}");
         if (_weatherItem is not null && _weatherItem.Header != head) _weatherItem.Header = head;
         if (_weatherToggle.IsChecked != _host.WeatherEnabled) _weatherToggle.IsChecked = _host.WeatherEnabled;

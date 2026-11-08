@@ -100,6 +100,16 @@ public sealed class Simulation
     public static bool Exposed(Pet pet, Cell cell) =>
         !pet.Hidden && pet.Layer != PetLayer.WindowEdge && cell.Map.ZoneAt(pet.Position, ZoneType.Hide) is null;
 
+    // ---------------------------------------------------------------- day and night
+
+    /// <summary>Sunrise and sunset at the user's place, and the computer's clock.</summary>
+    public DayClock Clock { get; } = new();
+
+    /// <summary>0 at night … 1 in full day (twilight in between). Updated every tick.</summary>
+    public float Daylight { get; private set; } = 1f;
+
+    public DayPhase Phase { get; private set; } = DayPhase.Day;
+
     /// <summary>Moves pets between virtual desktops (plan §6.4).</summary>
     public TravelPlanner Travel { get; } = new();
 
@@ -210,8 +220,10 @@ public sealed class Simulation
             PollUser();
         }
 
-        var local = nowUtc.ToLocalTime();
-        var isDaytime = local.Hour is >= 7 and < 19;
+        // Day and night follow the computer's clock and the real sunrise and sunset where the user is.
+        Daylight = Clock.Daylight(nowUtc);
+        Phase = Clock.Phase(nowUtc);
+        var isDaytime = Daylight >= 0.5f;
 
         Director.Tick(Pets, p => World.Find(p.CellId) ?? World.AnyCell(), Social, _rng, nowUtc, dt);
 
