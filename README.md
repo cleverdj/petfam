@@ -1,5 +1,3 @@
-한국어: [README.ko.md](README.ko.md)
-
 # PetFam
 
 **Your pet family, living on your desktop.**
@@ -43,7 +41,7 @@ PetFam is not a screensaver and does not get in your way. Your pets live on the 
 Each breed has its own coat and build, temperament (playfulness, shyness, energy, homebody), habits (appetite, sleep, jumping, love of water and snow, dislike of rain), how quickly it warms up to you, and its own voice for greetings, hunger, sleepiness, petting, weather and more.
 
 ### Care and bond
-- Sims-style pie menu on every pet: pet, scratch chin, hug, play ball, treat, feed, towel dry, sit, rest. Actions queue up and the pet does them in order.
+- Sims-style pie menu on every pet: Pet, Chin scratch, Hug, Play ball, Give a treat, Feed, Towel dry, Sit!, Rest. Actions queue up and the pet does them in order.
 - Needs (hunger, energy, fun, affection, cleanliness), mood and a bond that unlocks more as you get closer.
 - Throw the ball yourself: grab it with the mouse and flick it; dogs fetch it back.
 - Pets get wet and muddy, shake off and dry in the sun.
@@ -58,7 +56,7 @@ Build up to three houses with a choice of shapes, colours and decorations. Give 
 Optional real weather from [Open-Meteo](https://open-meteo.com) for a city you choose: rain with splashes, thunder and lightning, snow that settles and melts, cloud and fog. Pets react in character.
 
 ### Virtual desktops
-Each desktop has its own habitat from its own wallpaper. Pets walk off one edge and arrive at the other, follow you when you switch desktops (or roam, or stay home), and can be called over from the tray.
+Each desktop has its own habitat from its own wallpaper. Pets walk off one edge and arrive at the other, follow you when you switch desktops (Follow me), wander on their own (Roam freely) or Stay home, and can be called over from the tray.
 
 ### Languages
 English by default, Korean optional (tray → Language / 언어). Everything switches, including breed personas and what the pets say.
@@ -144,4 +142,4 @@ docs/PLANNING.md             Product and technical plan
 - Official habitat wallpapers and more breeds
 
 ## Documentation
-- [Product and technical plan](docs/PLANNING.md) ([한국어](docs/PLANNING.ko.md))
+- [Product and technical plan](docs/PLANNING.md)

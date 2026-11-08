@@ -1,5 +1,3 @@
-한국어: [PLANNING.ko.md](PLANNING.ko.md)
-
 # PetFam — Desktop Pet Plan
 
 > Status: draft v0.1 (2026-11-07)
@@ -35,15 +33,15 @@
 - Secondary: wallpaper and customisation enthusiasts (the Wallpaper Engine user base)
 - Tertiary: streamers/VTubers (an on-screen companion)
 
-### 2.2 A day in the life (Persian cat "Momo", Pomeranian "Kongi")
+### 2.2 A day in the life (Persian cat "Momo", Pomeranian "Peanut")
 - 09:00 Turn on the PC → Momo, who was sleeping in front of the house on the desktop, stretches. The food bowl is empty, so you feed her (bond +)
 - 10:30 Working with a big browser window open → Momo is behind the window, so she's not visible. Now and then just her ears peek out from the window's bottom-right corner
 - 11:00 Typing a long document → Momo sits next to the cursor, then lies down on top of the word you just typed (10 seconds). Nudge her gently with the mouse and she moves aside
 - 13:00 Away for lunch → Momo plays on the playground slide. When you return you pet her (bond +)
-- 14:00 Switch to work virtual desktop 2 → 3 seconds later the dog "Kongi" runs in from the left edge of the screen wagging his tail. Momo is napping in her house on desktop 1 (the tray shows "Momo: sleeping on desktop 1")
-- 15:30 Back to desktop 1 → Kongi seems to have been rolling in the yard's mud puddle; his belly is covered in mud. There are muddy paw prints at the house entrance. You drag the towel to clean him (bond +3)
-- 18:00 Change desktop 1's wallpaper to "night sea" → Momo sits on the beach, Kongi dives into the waves, comes out with his fur slicked down and shakes himself off, and Momo, disgusted by the flying droplets, moves away
-- No food for 3 days → Momo goes into the house and won't come out. No more peeking either. Kongi waits at the window with the empty bowl in his mouth. After you feed them, it takes a day for both to return to normal
+- 14:00 Switch to work virtual desktop 2 → 3 seconds later the dog "Peanut" runs in from the left edge of the screen wagging his tail. Momo is napping in her house on desktop 1 (the tray shows "Momo: sleeping on desktop 1")
+- 15:30 Back to desktop 1 → Peanut seems to have been rolling in the yard's mud puddle; his belly is covered in mud. There are muddy paw prints at the house entrance. You drag the towel to clean him (bond +3)
+- 18:00 Change desktop 1's wallpaper to "night sea" → Momo sits on the beach, Peanut dives into the waves, comes out with his fur slicked down and shakes himself off, and Momo, disgusted by the flying droplets, moves away
+- No food for 3 days → Momo goes into the house and won't come out. No more peeking either. Peanut waits at the window with the empty bowl in his mouth. After you feed them, it takes a day for both to return to normal
 
 ---
 
@@ -79,7 +77,7 @@ Principle: **by default the pet respects your "right not to see it".** Being vis
 MVP line-up: **two species, cat + dog**. Their contrasting personalities (independent vs. follower) show that "each pet lives differently". Water (the water zone) is validated in the MVP too, with the dog jumping in and the cat avoiding it. Aquatic pets (goldfish) are added in v0.5 along with the fish-tank widget and underwater-only movement.
 
 ### 4.1.1 MVP character sheet
-| | Persian cat "Momo" (silver tabby) | Pomeranian "Kongi" (orange sable) |
+| | Persian cat "Momo" (silver tabby) | Pomeranian "Peanut" (orange sable) |
 |---|---|---|
 | Personality in one line | Independent. Pretends not to care but sees everything | Follower. Follows its owner wherever they go |
 | Default layer share | Backyard 80 / Window 15 / Front yard 5 | Backyard 60 / Window 30 / Front yard 10 |
@@ -175,13 +173,13 @@ An adopted pet arrives as a **2-month-old baby** and grows by the number of **da
 | Stage | Days together | Displayed age (cat / dog) |
 |---|---|---|
 | 🍼 Baby | 0–14 days | 2→6 months old |
-| 🌱 Juvenile | 15–45 days | 6→12 months / 6→18 months |
+| 🌱 Junior | 15–45 days | 6→12 months / 6→18 months |
 | 🐾 Adult | 46–365 days | 1 (1.5)→7 years |
 | 🍂 Senior | 366 days+ | 7 years+ (one year every two months) |
 
 **Energy and behaviour by age** (adult = 1.0, based on real animals' life patterns)
 
-| | Baby | Juvenile | Adult | Senior |
+| | Baby | Junior | Adult | Senior |
 |---|---|---|---|---|
 | Tiring rate | ×1.6 | ×1.0 | ×1.0 | ×1.3 |
 | Recovery while sleeping | ×1.5 | ×1.1 | ×1.0 | ×0.7 |
@@ -193,7 +191,7 @@ An adopted pet arrives as a **2-month-old baby** and grows by the number of **da
 
 Cats sleep about 20% more than dogs at every stage.
 
-**Appearance**: changes gradually over the days between stages. Babies have a 60% body, a relatively large head, short legs and big eyes. Juveniles are leggy. Seniors' fur fades, their muzzle and chest turn white, and they hold their head a little lower. Babies speak clumsily ("meow" → "mew", "woof" → "arf").
+**Appearance**: changes gradually over the days between stages. Babies have a 60% body, a relatively large head, short legs and big eyes. Juniors are leggy. Seniors' fur fades, their muzzle and chest turn white, and they hold their head a little lower. Babies speak clumsily ("Meow" → "Mew", "Woof" → "Yip").
 
 **Events**: on a stage-up, a celebration speech bubble, confetti and a happy hop. On 30 days, 100 days, 1 year… together, it wears a party hat for that day. The info panel shows stage, age, days together, days left until the next stage, and adoption date.
 
@@ -337,8 +335,8 @@ Pet pos  = (d, m, x, y)
 #### 6.4.3 Travel modes (setting, per pet)
 | Mode | Behaviour | Default |
 |---|---|---|
-| Free | Roams according to needs and curiosity. If the owner stays on one desktop for N+ minutes, comes out of curiosity (the higher the bond, the smaller N) | Cat |
-| Follow | Runs in from the edge within 1–3 seconds of a desktop switch | Dog |
+| Roam freely | Roams according to needs and curiosity. If the owner stays on one desktop for N+ minutes, comes out of curiosity (the higher the bond, the smaller N) | Cat |
+| Follow me | Runs in from the edge within 1–3 seconds of a desktop switch | Dog |
 | Stay home | Lives only on a specific desktop that has its habitat | — |
 
 #### 6.4.4 Finding your pet
@@ -372,7 +370,7 @@ Pet pos  = (d, m, x, y)
 - **Tray icon**: pet status dot (hunger/mood), quick menu (Quiet for 1 hour, Food, Settings)
 - **Pet card**: click the pet → small popover. Name, bond stage, need bars, a one-line diary entry for today
 - **Habitat editor**: draw zone polygons over the wallpaper. In the preview the pet walks around right away
-- **Settings**: disruption level, do-not-disturb apps and times, visibility frequency per layer, per-pet travel mode (Free/Follow/Stay home), "No pets" per desktop, reduce motion, launch at startup
+- **Settings**: disruption level, do-not-disturb apps and times, visibility frequency per layer, per-pet travel mode (Roam freely / Follow me / Stay home), "No pets" per desktop, reduce motion, launch at startup
 
 ### 7.3 Notification philosophy
 - Almost no OS notifications. The pet tells you **with its body** (when hungry it appears at the window dragging the empty bowl).
@@ -686,11 +684,11 @@ MVP validation questions: is it still running after 2 weeks? (D14 retention). Is
 ### Decided
 - Platforms: Windows + macOS launched together (from the MVP)
 - 2 MVP pets: cat and dog. Goldfish in v0.5
-- Pets move freely across virtual desktops and multiple monitors. Travel mode (Free/Follow/Stay home) is a per-pet setting
+- Pets move freely across virtual desktops and multiple monitors. Travel mode (Roam freely / Follow me / Stay home) is a per-pet setting
 
 ### To be decided
 1. Art style: pixel (easy to produce, retro) vs. vector/skeletal (smooth, better for 4K). Given 4K habitats, 2 species × 30+ animations, and appearance-state layers, skeletal is recommended
-2. Final pet names (Momo and Kongi proposed)
+2. Final pet names (Momo and Peanut proposed)
 3. Whether to include disruption level 3 (stepping on letters) in the MVP: validating fun vs. risk
 4. How far to allow private OS APIs: whether to use private APIs for virtual desktop order and switch detection (accurate), or only public API fallbacks (safe, but on macOS can't tell apart Spaces with the same wallpaper)
 5. Automatic habitat detection: on-device model vs. cloud VLM (cost, privacy)
