@@ -1,5 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>ZooZoo platform-independent core: pets, needs, bond, appearance, habitat, behavior engine.</Description>
-  </PropertyGroup>
-</Project>

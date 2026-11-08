@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>PetFam macOS platform layer: NSWindow levels, Spaces, Accessibility. Spike stub; see plan §8.3.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PetFam.Core\PetFam.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>PetFam Windows platform layer: WorkerW desktop layer, click-through overlay, foreground/caret, virtual desktops.</Description>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PetFam.Core\PetFam.Core.csproj" />
+  </ItemGroup>
+</Project>

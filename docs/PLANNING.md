@@ -1,242 +1,275 @@
-# ZooZoo (주주) — 데스크톱 반려동물 기획서
+한국어: [PLANNING.ko.md](PLANNING.ko.md)
 
-> 상태: 초안 v0.1 (2026-11-07)
-> 한 줄 정의: **바탕화면이 서식지가 되고, 창 뒤에서 살며, 주인과 유대를 쌓는 OS 반려동물.**
+# PetFam — Desktop Pet Plan
+
+> Status: draft v0.1 (2026-11-07)
+> One-line definition: **An OS pet that turns your desktop into its habitat, lives behind your windows, and builds a bond with you.**
 
 ---
 
-## 1. 왜 만드는가
+## 1. Why we are building it
 
-### 1.1 문제
-- 데스크톱 펫은 20년 넘게 있어 왔지만(Shimeji, Desktop Goose, Bongo Cat 류) 대부분 "화면 맨 위에 떠서 돌아다니는 스프라이트"에 머문다. 며칠 지나면 끄게 된다.
-- 끄게 되는 이유 세 가지: ① 업무를 가린다 ② 관계가 없다(나를 모른다) ③ 공간이 없다(어디에 사는지 모른다)
+### 1.1 The problem
+- Desktop pets have been around for over 20 years (Shimeji, Desktop Goose, Bongo Cat and the like), but most of them remain "a sprite floating on top of the screen and wandering around". After a few days you turn them off.
+- Three reasons people turn them off: ① they cover your work ② there is no relationship (they don't know you) ③ there is no space (you don't know where they live)
 
-### 1.2 ZooZoo의 답
-| 기존 데스크톱 펫 | ZooZoo |
+### 1.2 PetFam's answer
+| Existing desktop pets | PetFam |
 |---|---|
-| 항상 창 위에 떠 있음 | 기본은 창 **뒤**(바탕화면 레이어)에 살고, 가끔 창 가장자리로 빼꼼 |
-| 바탕화면은 그냥 그림 | 바탕화면이 **서식지**. 집이 있으면 들어가 쉬고, 바다면 헤엄침 |
-| 상태값 없음 또는 단순 배고픔 | **유대감**이 쌓이고, 무관심하면 멀어짐. 멀어져도 돌아올 수 있음 |
-| 랜덤 애니메이션 | 주인을 **관찰**함 (뭐 하는지 보고, 커서를 따라 보고, 장난침) |
+| Always float on top of windows | Lives **behind** windows by default (the desktop layer) and occasionally peeks out from a window's edge |
+| The desktop is just a picture | The desktop is a **habitat**. If there's a house it goes in to rest; if there's a sea it swims |
+| No state, or simple hunger | A **bond** builds up; neglect makes it drift away. Even then, it can come back |
+| Random animations | It **observes** its owner (watches what you do, follows the cursor with its eyes, plays pranks) |
 
-### 1.3 차별 포인트 (3개만 기억)
-1. **레이어 생활**: 창 뒤 ↔ 창 가장자리 ↔ 창 앞을 오가는 존재감 설계
-2. **서식지 = 바탕화면**: 월페이퍼를 바꾸면 펫의 생활이 바뀐다
-3. **유대감**: 키우는 만큼 가까워지고, 가까울수록 더 장난스럽고 더 많이 보인다
-
----
-
-## 2. 타깃과 사용 장면
-
-### 2.1 타깃
-- 1차: 하루 6시간 이상 PC 앞에 있는 사무직·개발자·학생. 반려동물을 키우고 싶지만 못 키우는 사람.
-- 2차: 월페이퍼·꾸미기 애호가 (Wallpaper Engine 사용자층)
-- 3차: 스트리머/VTuber (화면 위 동반자)
-
-### 2.2 하루 시나리오 (페르시안 고양이 '모모', 포메라니안 '콩이')
-- 09:00 PC 켬 → 바탕화면 집 앞에서 자고 있던 모모가 기지개. 밥그릇이 비어 있어 밥 줌 (유대 +)
-- 10:30 브라우저를 크게 띄우고 일하는 중 → 모모는 창 뒤라 안 보임. 가끔 창 오른쪽 아래 모서리에서 귀만 빼꼼
-- 11:00 긴 문서 타이핑 → 모모가 커서 옆에 앉더니 방금 쓴 단어 위에 드러누움(10초). 마우스로 살짝 밀면 비켜줌
-- 13:00 점심으로 자리 비움 → 모모는 놀이터 미끄럼틀에서 놂. 돌아와서 쓰다듬기 (유대 +)
-- 14:00 업무용 가상 데스크톱 2로 전환 → 강아지 '콩이'가 3초 뒤 화면 왼쪽 가장자리에서 꼬리 흔들며 뛰어 들어옴. 모모는 데스크톱 1의 집에서 낮잠 중 (트레이에 "모모: 데스크톱 1에서 자는 중" 표시)
-- 15:30 데스크톱 1로 돌아옴 → 콩이가 마당 진흙 웅덩이에서 뒹굴다 왔는지 배가 온통 진흙. 집 입구에 진흙 발자국이 찍혀 있음. 수건을 드래그해 씻겨줌 (유대 +3)
-- 18:00 데스크톱 1 바탕화면을 '밤바다'로 바꿈 → 모모는 해변에 앉고, 콩이는 파도에 뛰어들었다 나와 털이 홀쭉하게 젖은 채 몸을 털고, 모모는 튄 물방울에 질색하며 자리를 옮김
-- 3일간 밥 안 줌 → 모모가 집에 들어가 안 나옴. 빼꼼도 안 함. 콩이는 빈 그릇을 물고 창가에서 기다림. 밥 주고 하루 지나야 둘 다 원래대로
+### 1.3 Differentiators (remember just 3)
+1. **Layer life**: presence designed around moving between behind the window ↔ the window edge ↔ in front of the window
+2. **Habitat = desktop**: change the wallpaper and the pet's life changes
+3. **Bond**: the more you care for it the closer it gets, and the closer it is the more playful and visible it becomes
 
 ---
 
-## 3. 레이어 구조 (존재감 설계)
+## 2. Target users and usage scenes
 
-세 겹의 레이어에서 펫이 산다. 어느 레이어에 얼마나 머무느냐가 '존재감'이고, 유대감과 설정으로 조절된다.
+### 2.1 Target
+- Primary: office workers, developers and students who spend 6+ hours a day at a PC. People who would like a pet but can't have one.
+- Secondary: wallpaper and customisation enthusiasts (the Wallpaper Engine user base)
+- Tertiary: streamers/VTubers (an on-screen companion)
+
+### 2.2 A day in the life (Persian cat "Momo", Pomeranian "Kongi")
+- 09:00 Turn on the PC → Momo, who was sleeping in front of the house on the desktop, stretches. The food bowl is empty, so you feed her (bond +)
+- 10:30 Working with a big browser window open → Momo is behind the window, so she's not visible. Now and then just her ears peek out from the window's bottom-right corner
+- 11:00 Typing a long document → Momo sits next to the cursor, then lies down on top of the word you just typed (10 seconds). Nudge her gently with the mouse and she moves aside
+- 13:00 Away for lunch → Momo plays on the playground slide. When you return you pet her (bond +)
+- 14:00 Switch to work virtual desktop 2 → 3 seconds later the dog "Kongi" runs in from the left edge of the screen wagging his tail. Momo is napping in her house on desktop 1 (the tray shows "Momo: sleeping on desktop 1")
+- 15:30 Back to desktop 1 → Kongi seems to have been rolling in the yard's mud puddle; his belly is covered in mud. There are muddy paw prints at the house entrance. You drag the towel to clean him (bond +3)
+- 18:00 Change desktop 1's wallpaper to "night sea" → Momo sits on the beach, Kongi dives into the waves, comes out with his fur slicked down and shakes himself off, and Momo, disgusted by the flying droplets, moves away
+- No food for 3 days → Momo goes into the house and won't come out. No more peeking either. Kongi waits at the window with the empty bowl in his mouth. After you feed them, it takes a day for both to return to normal
+
+---
+
+## 3. Layer structure (designing presence)
+
+The pet lives in three layers. How long it stays in which layer is its "presence", tuned by the bond and settings.
 
 ```
-[앞마당]  최상단 오버레이. 창 위. 짧게만 (장난, 쓰다듬기 반응, 몸으로 알리기)
-[창가]    포그라운드 창의 가장자리. 빼꼼 내밀기. 몸의 20~40%만 보임
-[뒷마당]  바탕화면 레이어. 월페이퍼 위, 창 뒤. 기본 서식지
+[Front yard]  Topmost overlay. Above windows. Only briefly (pranks, reacting to petting, telling you with its body)
+[Window]      The edge of the foreground window. Peeking out. Only 20–40% of the body is visible
+[Backyard]    The desktop layer. Above the wallpaper, behind windows. The default habitat
 ```
 
-- **뒷마당(기본)**: 펫 시간의 80% 이상. 창을 다 닫거나 Win+D 하면 전체 생활이 보임.
-- **창가**: 주인이 뭘 하는지 궁금할 때. 포그라운드 창의 네 변 중 하나에서 얼굴·손·꼬리만 내밈. 몇 초 보고 다시 들어감.
-- **앞마당**: 하루 몇 번, 몇 초. 유대감이 높을수록 횟수 ↑. 항상 클릭 통과(click-through), 밀어내기 가능.
+- **Backyard (default)**: 80%+ of the pet's time. Close all windows or press Win+D and you see its whole life.
+- **Window**: when it's curious about what its owner is doing. It pokes out just its face, paws or tail from one of the four sides of the foreground window, watches for a few seconds and goes back in.
+- **Front yard**: a few times a day, for a few seconds. The higher the bond, the more often. Always click-through and can be pushed away.
 
-원칙: **펫은 기본적으로 '보이지 않을 권리'를 존중한다.** 보이는 건 이벤트이고, 이벤트는 유대감으로 번다.
+Principle: **by default the pet respects your "right not to see it".** Being visible is an event, and events are earned through the bond.
 
 ---
 
-## 4. 반려동물 시스템
+## 4. Pet system
 
-### 4.1 종류와 속성
-| 속성 | 서식 가능 영역 | 예시 | 시기 |
+### 4.1 Types and attributes
+| Attribute | Habitable areas | Examples | Timing |
 |---|---|---|---|
-| 육지 | ground, house, play | 고양이, 강아지, 햄스터 | MVP |
-| 수중 | water | 금붕어, 해파리 | v0.5. 물 없으면 못 나옴 |
-| 양서 | ground + water | 수달, 개구리, 오리 | v0.5 |
-| 하늘 | sky + perch | 참새, 앵무새 | v0.5 |
-| 특수 | 어디든 | 슬라임, 유령 | 이후 |
+| Land | ground, house, play | cat, dog, hamster | MVP |
+| Aquatic | water | goldfish, jellyfish | v0.5. Can't appear without water |
+| Amphibious | ground + water | otter, frog, duck | v0.5 |
+| Sky | sky + perch | sparrow, parrot | v0.5 |
+| Special | anywhere | slime, ghost | Later |
 
-MVP 라인업: **고양이 + 강아지 2종**. 성격 대비(독립형 vs 추종형)로 "펫마다 다르게 산다"를 보여준다. 물(water 존)은 강아지가 뛰어들고 고양이가 피하는 것으로 MVP에서도 검증된다. 수중 펫(금붕어)은 v0.5에서 어항 위젯·물속 전용 이동과 함께 추가한다.
+MVP line-up: **two species, cat + dog**. Their contrasting personalities (independent vs. follower) show that "each pet lives differently". Water (the water zone) is validated in the MVP too, with the dog jumping in and the cat avoiding it. Aquatic pets (goldfish) are added in v0.5 along with the fish-tank widget and underwater-only movement.
 
-### 4.1.1 MVP 캐릭터 시트
-| | 페르시안 고양이 '모모' (실버 태비) | 포메라니안 '콩이' (오렌지 세이블) |
+### 4.1.1 MVP character sheet
+| | Persian cat "Momo" (silver tabby) | Pomeranian "Kongi" (orange sable) |
 |---|---|---|
-| 한 줄 성격 | 독립적. 관심 있는 척 안 하면서 다 보고 있음 | 추종적. 주인이 어디 가든 따라감 |
-| 기본 레이어 비중 | 뒷마당 80 / 창가 15 / 앞마당 5 | 뒷마당 60 / 창가 30 / 앞마당 10 |
-| 시그니처 행동 | 타이핑한 단어 위에 눕기, 창틀에 걸터앉기, 선물 두고 가기 | 공 물어오기, 땅 파기, 진흙 뒹굴기, 주인 복귀 시 환영 점프, 창가에서 꼬리 흔들며 기다리기 |
-| 가상 데스크톱 이동 | 자기 마음대로. 주인이 오래 머물면 찾아옴 | 데스크톱 전환 후 1~3초 내 따라옴 (유대 15+) |
-| 방해 성향 | 높음 (눕기·밟기) | 중간 (커서 쫓기, 캐럿 옆 앉기) |
-| 멀어짐 연출 | 집에서 안 나옴, 클릭 무시 | 따라오지 않음, 창가에서 등 돌리고 앉음 |
-| 전용 상호작용 | 턱 긁기(쓰다듬기 방향) | '앉아/기다려' 명령(펫 카드), 공 던지기, 씻기기 |
-| 유대 '가족' 보상 | 무릎(캐럿 옆)에서 골골 잠 | 주인 이름 부르면 어느 데스크톱에서든 달려옴 |
+| Personality in one line | Independent. Pretends not to care but sees everything | Follower. Follows its owner wherever they go |
+| Default layer share | Backyard 80 / Window 15 / Front yard 5 | Backyard 60 / Window 30 / Front yard 10 |
+| Signature behaviours | Lying on typed words, perching on window frames, leaving gifts | Fetching the ball, digging, rolling in mud, welcome jump when the owner returns, waiting at the window wagging its tail |
+| Virtual desktop travel | Goes wherever she likes. Comes to find you if you stay long | Follows within 1–3 seconds of a desktop switch (bond 15+) |
+| Disruptiveness | High (lying down, stepping on things) | Medium (chasing the cursor, sitting next to the caret) |
+| Drifting-away staging | Won't come out of the house, ignores clicks | Doesn't follow, sits at the window with its back turned |
+| Exclusive interactions | Chin scratch (petting direction) | "Sit / Stay" commands (pet card), throwing the ball, bathing |
+| "Family" bond reward | Purring asleep on your lap (next to the caret) | Runs over from any desktop when you call its name |
 
-v0.5 추가 예정 금붕어 '방울': 뒷마당 100%, 물이 있는 셀끼리만 이동, 방해 없음, 멀어지면 어항 바닥에 가라앉음, 먹이 흩뿌리기 전용 상호작용, '가족' 단계에서 커서 따라 유영.
+Goldfish "Bubble", planned for v0.5: 100% backyard, moves only between cells with water, not disruptive, sinks to the bottom of the tank when drifting away, exclusive interaction is sprinkling food, swims after the cursor at the "Family" stage.
 
-### 4.2 욕구 (Needs)
-0~100. 시간에 따라 감소하며, 행동 선택의 입력값이 된다.
+### 4.2 Needs
+0–100. They decrease over time and are inputs to behaviour selection.
 
-| 욕구 | 감소 속도 | 채우는 법 |
+| Need | Decay rate | How to fill it |
 |---|---|---|
-| 배고픔 | 하루 2끼 기준 | 먹이 (드래그 앤 드롭) |
-| 에너지 | 활동량 비례 | 집·침대에서 잠 (자동) |
-| 재미 | 하루 | 장난감, 놀이터 존, 주인에게 장난 |
-| 애정 | 하루 | 쓰다듬기, 이름 부르기 |
-| 호기심 | 주인 활동 시 상승 | 빼꼼, 관찰 (자동) |
+| Hunger | Based on 2 meals a day | Food (drag and drop) |
+| Energy | Proportional to activity | Sleeping in a house or bed (automatic) |
+| Fun | Daily | Toys, play zone, pranks on the owner |
+| Affection | Daily | Petting, calling its name |
+| Curiosity | Rises while the owner is active | Peeking, observing (automatic) |
 
-### 4.3 유대감 (Bond)
-0~100. 모든 관계 행동의 누적값. 단계가 바뀌면 행동 레퍼토리가 열린다.
+### 4.3 Bond
+0–100. The accumulated value of all relationship actions. Each new stage unlocks more of the behaviour repertoire.
 
-| 단계 | 범위 | 보이는 변화 |
+| Stage | Range | Visible changes |
 |---|---|---|
-| 낯섦 | 0–14 | 멀리서만. 클릭하면 도망. 빼꼼 없음 |
-| 경계 | 15–29 | 먹이 먹으러 옴. 쓰다듬기 짧게 허용 |
-| 호기심 | 30–49 | 창가 빼꼼 시작. 커서를 눈으로 따라감 |
-| 친숙 | 50–69 | 장난 시작(타이핑 방해 1단계). 주인 근처에서 잠 |
-| 신뢰 | 70–89 | 앞마당 체류 ↑, 선물 물어옴 |
-| 가족 | 90–100 | 전용 애니메이션, 이름 반응, 다른 펫에게 주인 소개 |
+| Stranger | 0–14 | Only from afar. Runs away when clicked. No peeking |
+| Wary | 15–29 | Comes to eat. Allows brief petting |
+| Curious | 30–49 | Starts window peeking. Follows the cursor with its eyes |
+| Familiar | 50–69 | Starts pranks (typing disruption level 1). Sleeps near the owner |
+| Trusting | 70–89 | More time in the front yard, brings gifts |
+| Family | 90–100 | Exclusive animations, responds to its name, introduces the owner to other pets |
 
-**상승**: 먹이 +2, 쓰다듬기 +1/회(일 상한), 놀기 +2, 하루 1회 이상 접속 +1, 펫이 빼꼼할 때 반응해주기 +1
-**감소**: 24시간 무접촉 -1, 48시간 이후 -3/일, 배고픔 0 상태 지속 -2/일. **접속만 해도 감소는 멈춤** (압박 금지).
+**Increases**: food +2, petting +1 per time (daily cap), play +2, logging in at least once a day +1, responding when the pet peeks +1
+**Decreases**: 24 hours without contact −1, after 48 hours −3/day, staying at hunger 0 −2/day. **Simply logging in stops the decrease** (no pressure).
 
-**멀어짐 연출** (유대 하락 시): 빼꼼 중단 → 집에서 안 나옴 → 클릭 무시 → (유대 0이 7일 이상) '잠시 집 나감' 상태. 바탕화면에 쪽지만 남음. 먹이 그릇을 채워두면 1~2일 내 돌아옴. **죽지 않는다. 영구 상실 없음.**
+**Drifting-away staging** (when the bond drops): stops peeking → won't come out of the house → ignores clicks → (bond at 0 for 7+ days) "gone out for a while" state. Only a note is left on the desktop. Fill the food bowl and it comes back within 1–2 days. **It never dies. No permanent loss.**
 
-### 4.4 성격 파라미터
-펫 생성 시 랜덤 + 키우면서 변화.
-- 장난기 (0~1): 방해 행동 빈도
-- 소심함 (0~1): 빼꼼 지속시간, 도망 역치
-- 활동성 (0~1): 뒷마당 이동량, 잠 비율
-- 집순이/집돌이 (0~1): 집 존 선호도
-- 깔끔함 (0~1): 더러워지는 걸 피하는 정도, 스스로 그루밍하는 빈도 (4.5 참조)
+### 4.4 Personality parameters
+Random at pet creation + changes as you raise it.
+- Playfulness (0–1): frequency of disruptive behaviour
+- Shyness (0–1): peek duration, flee threshold
+- Activity (0–1): amount of movement in the backyard, share of time sleeping
+- Homebody (0–1): preference for the house zone
+- Tidiness (0–1): how much it avoids getting dirty, how often it grooms itself (see 4.5)
 
-### 4.5 외형 상태: 젖음, 진흙, 그리고 흔적
+### 4.5 Appearance state: wet, muddy, and traces
 
-펫이 서식지에서 한 일이 **몸에 남는다**. 물에 들어갔다 나오면 털이 젖어 처지고 물이 뚝뚝 떨어지며, 진흙에서 뒹굴면 배와 발에 진흙이 묻은 채로 돌아다닌다. 이게 "그림이 움직이는 것"과 "동물이 사는 것"의 차이다.
+What the pet did in its habitat **stays on its body**. After going into water its fur is wet and droopy and drips; after rolling in mud it walks around with mud on its belly and paws. This is the difference between "a picture that moves" and "an animal that lives".
 
-#### 4.5.1 상태 목록
-여러 상태가 동시에 겹칠 수 있고, 각 상태는 강도 0~1을 가진다.
+#### 4.5.1 State list
+Several states can overlap, and each has an intensity of 0–1.
 
-| 상태 | 생기는 조건 | 보이는 모습 | 사라지는 조건 | MVP |
+| State | How it occurs | How it looks | How it goes away | MVP |
 |---|---|---|---|---|
-| 젖음 | water 존 출입, 비 변형 월페이퍼에서 밖에 있음, 물장난 | 털이 어둡고 뭉쳐 처짐, 실루엣이 홀쭉해짐, 물방울 떨어짐, 걸으면 젖은 발자국 | 자연 건조 (낮 20분, 밤 40분, sun 존에서 2배 빠름). 몸 털기로 즉시 50% 감소. 수건 아이템으로 즉시 | ★ |
-| 진흙 | mud 존에서 뒹굴기·걷기, 젖은 상태로 ground(흙) 존에 눕기 | 발·배·등에 진흙 얼룩, 강도에 따라 범위 확대, 걸으면 진흙 발자국 | 물에 들어가면 씻김(→ 젖음으로 전환). 마르면 '마른 흙'이 되어 하루 뒤 떨어짐. 그루밍으로 서서히. 목욕 아이템으로 즉시 | ★ |
-| 모래 | sand 존(해변)에서 눕기·파기 | 털에 모래알 반짝임, 털면 모래 흩날림 | 몸 털기, 물 | v0.5 |
-| 눈 | snow 존 / 눈 변형 월페이퍼 | 등에 눈 쌓임, 집에 들어가면 녹아 젖음으로 전환 | 실내, 시간 | v0.5 |
-| 먼지·거미줄 | 오래 방치(유대 하락 중) 또는 hide 존에 오래 숨음 | 털이 푸석, 거미줄 한 가닥 | 쓰다듬기, 그루밍, 물 | v0.5 |
-| 풀·낙엽 | play 존 풀밭에서 구르기 | 털에 잎 한두 장 | 몸 털기, 시간 | v0.5 |
+| Wet | Entering/leaving a water zone, being outside on a rain-variant wallpaper, splashing | Fur darker, clumped and droopy, slimmer silhouette, dripping water, wet footprints when walking | Air-drying (20 min by day, 40 min at night, 2× faster in a sun zone). Shaking off removes 50% instantly. Towel item removes it instantly | ★ |
+| Muddy | Rolling or walking in a mud zone, lying on a ground (dirt) zone while wet | Mud stains on paws, belly and back, spreading with intensity, muddy footprints when walking | Entering water washes it off (→ turns into wet). When dry it becomes "dried dirt" and falls off after a day. Gradually through grooming. Bath item removes it instantly | ★ |
+| Sandy | Lying or digging in a sand zone (beach) | Sand grains glinting in the fur, sand scatters when it shakes | Shaking off, water | v0.5 |
+| Snowy | Snow zone / snow-variant wallpaper | Snow piles up on its back, melts into wet when it goes into the house | Indoors, time | v0.5 |
+| Dust and cobwebs | Long neglect (while the bond is dropping) or hiding in a hide zone for a long time | Fur looks dry and scruffy, a single strand of cobweb | Petting, grooming, water | v0.5 |
+| Grass and leaves | Rolling on the grass in a play zone | One or two leaves in the fur | Shaking off, time | v0.5 |
 
-#### 4.5.2 상태 간 연쇄 (실감의 핵심)
-- 젖은 채 흙 위에 누우면 → 진흙. 진흙인 채 물에 들어가면 → 깨끗하지만 젖음.
-- 눈 묻은 채 집에 들어가면 → 녹아서 젖음. 젖은 채 추운(밤·눈 변형) 밖에 오래 있으면 → 부들부들 떨며 집을 찾음.
-- 젖은 펫이 집에 들어가면 집 바닥에 젖은 자국이 잠시 남는다. 진흙 펫이 들어가면 집 입구에 진흙 자국.
-- 진흙 펫이 창가에서 빼꼼하면 **창 가장자리에 발자국이 찍힌다** (오버레이, 20초 후 사라짐, 텍스트 영역은 피함). 젖은 펫이면 물 얼룩.
-- 진흙 펫이 타이핑 방해 2단계(단어 위에 눕기)를 하면 그 자리에 진흙 자국이 몇 초 남는다. 방해 레벨 '보통' 이상에서만.
+#### 4.5.2 Chains between states (the core of realism)
+- Lie on dirt while wet → muddy. Go into water while muddy → clean but wet.
+- Go into the house with snow on → it melts and becomes wet. Stay outside in the cold (night or snow variant) for long while wet → shivers and looks for the house.
+- When a wet pet goes into the house, a wet mark stays on the house floor for a while. A muddy pet leaves mud marks at the house entrance.
+- When a muddy pet peeks from the window, **paw prints are stamped on the window edge** (overlay, disappear after 20 seconds, avoid text areas). A wet pet leaves water marks.
+- When a muddy pet does typing disruption level 2 (lying on a word), a mud mark stays there for a few seconds. Only at disruption level "Normal" or above.
 
-#### 4.5.3 펫별 차이
-| | 고양이 | 강아지 |
+#### 4.5.3 Differences by pet
+| | Cat | Dog |
 |---|---|---|
-| 물 | 싫어함. 스스로는 안 들어감. 비 오면 즉시 집으로. 물가에서 앞발만 담갔다가 털어냄 | 좋아함. 재미가 낮으면 물을 찾아감. 들어갔다 나오면 반드시 몸을 털고, 주변에 물방울이 튐 |
-| 진흙 | 피함(깔끔함 높음). 어쩌다 묻으면 그루밍으로 한 시간에 걸쳐 스스로 닦음 | 좋아함. mud 존이 있으면 하루 한두 번 뒹굶. 스스로 못 닦음 → **주인이 씻겨줘야 함** (유대 +3, 하루 1회) |
-| 젖었을 때 행동 | 구석에서 꼼짝 않고 핥기. 쓰다듬으려 하면 피함 | 주인에게 달려와 몸 털기 (창가에서 하면 창에 물방울) |
-| 말릴 때 | 수건을 드래그하면 처음엔 버둥거림, 유대 50+부터 가만히 있음 | 수건을 좋아함. 수건 놀이로 이어짐 |
+| Water | Dislikes it. Never goes in by itself. Heads home immediately when it rains. Dips just a front paw at the water's edge and shakes it off | Loves it. Seeks out water when fun is low. Always shakes itself off after coming out, spraying droplets around |
+| Mud | Avoids it (high tidiness). If it does get muddy, cleans itself by grooming over the course of an hour | Loves it. Rolls in a mud zone once or twice a day if there is one. Can't clean itself → **the owner has to wash it** (bond +3, once a day) |
+| Behaviour when wet | Stays still in a corner licking itself. Dodges attempts to pet it | Runs to its owner and shakes off (if it does this at the window, droplets on the window) |
+| Drying | Struggles at first when you drag the towel; from bond 50+ it stays still | Loves the towel. Turns into towel play |
 
-수중 펫(v0.5)은 항상 물속이므로 외형 상태가 없다.
+Aquatic pets (v0.5) are always underwater, so they have no appearance states.
 
-#### 4.5.4 더러움은 벌이 아니다
-- 더럽다고 욕구가 깎이거나 유대가 떨어지지 않는다. 더러움은 **주인이 돌볼 기회**다 (씻기기·말리기 = 유대 상승 상호작용).
-- 방치해도 자연 해소된다 (진흙은 마르고 떨어지고, 고양이는 스스로 닦는다). 단, 강아지 진흙은 하루가 걸리므로 그동안 집 입구와 창가에 흔적이 남는다. 이것이 유일한 '부담'이고, 설정에서 흔적 남기기를 끌 수 있다.
-- 깔끔함 성격이 높은 펫은 애초에 잘 안 더러워진다. 사용자는 펫 카드에서 이 성향을 볼 수 있다.
-
----
-
-## 5. 행동 시스템
-
-### 5.1 구조
-유틸리티 AI(욕구 × 컨텍스트 × 성격 → 행동 점수) + 행동별 상태 머신.
-
-```
-입력: needs, bond, personality, habitat_map, user_context, time
-         ↓
-유틸리티 평가 (2~5초마다) → 최고 점수 행동 선택 (히스테리시스로 떨림 방지)
-         ↓
-행동 실행 (경로탐색 → 애니메이션 → 완료/중단)
-```
-
-user_context: idle 여부, 포그라운드 창 종류(브라우저/에디터/게임/회의), 타이핑 중 여부, 전체화면 여부, 화면 공유 여부, 마우스 위치.
-
-### 5.2 행동 카탈로그 (★ = MVP)
-
-**생활 (뒷마당)**
-- ★ 걷기·뛰기·앉기·눕기·잠자기·기지개
-- ★ 집에 들어가 쉬기 (house 존) / 침대에서 자기
-- ★ 놀이터 이용 (play 존: 미끄럼틀 타기, 공 쫓기)
-- ★ 물에서 헤엄치기 (water 존. MVP는 강아지만. 수중·양서 펫은 v0.5)
-- ★ 강아지: 땅 파기 (ground 존), 공 물어오기, 집 앞 지키기
-- ★ 강아지: 진흙에서 뒹굴기 (mud 존), 물에 뛰어들기
-- ★ 몸 털기 (젖음·모래 해소, 물방울·모래 파티클), 고양이 그루밍 (진흙·먼지 서서히 해소)
-- ★ 젖은·진흙 발자국 남기기 (뒷마당 바닥, 집 입구) — 4.5 참조
-- ★ 모니터·가상 데스크톱 사이 이동 (화면 가장자리로 걸어 나가 이웃 셀로 들어옴. 6.4 참조)
-- 아이콘 위에 올라앉기 / 아이콘 뒤에 숨기 / 작업표시줄(Dock) 위 걷기
-- 열린 창의 상단 테두리에 걸터앉기 (창 뒤 레이어에서 보일 때)
-
-**관찰 (창가)**
-- ★ 빼꼼: 포그라운드 창 네 변 중 랜덤 위치에서 얼굴 내밀기 (2~6초)
-- ★ 빼꼼 중 커서 눈으로 따라가기
-- ★ 진흙·젖은 상태로 빼꼼하면 창 가장자리에 발자국·물 얼룩 (20초 후 사라짐, 텍스트 영역 회피)
-- ★ 강아지: 주인이 데스크톱을 바꾸면 따라와서 창가에 자리 잡기, 주인이 idle에서 돌아오면 환영 점프
-- 창이 움직이면 놀라서 숨기
-- 주인이 오래 idle이면 창가에서 기다리기
-
-**장난 (앞마당) — 유대 50+**
-- ★ 타이핑 방해 1단계: 캐럿 옆에 앉기 (가리지 않음)
-- ★ 타이핑 방해 2단계: 방금 친 단어 위에 눕기 (최대 10초, 마우스 접근 시 비킴)
-- 타이핑 방해 3단계: 캐럿을 따라 걸으며 글자 밟기 (유대 70+, 설정 opt-in)
-- 마우스 커서 쫓기 / 커서 잡기
-- 선물 가져오기 (바탕화면 어딘가에 아이템 두고 감)
-
-**반응**
-- ★ 쓰다듬기 반응 (골골, 꼬리)
-- ★ 먹이 반응
-- 알림 토스트 뜨면 쳐다보기
-- 배터리 부족 시 하품, 자정 넘으면 졸기
-
-### 5.3 방해 행동 안전장치 (협상 불가)
-방해 행동은 재미의 핵심이지만, 한 번 짜증나면 삭제된다.
-
-1. **방해 레벨 설정**: 끔 / 순함 / 보통 / 장난꾸러기. 기본값 '순함'(1단계만).
-2. **자동 방해금지**: 전체화면 앱, 화면 공유·녹화 감지, 프레젠테이션, 사용자 지정 앱(IDE 등), 사용자 지정 시간대.
-3. **빈도 상한**: 방해 행동은 시간당 최대 N회(레벨별 1/3/6), 한 번에 10초 이내.
-4. **즉시 쫓아내기**: 마우스를 펫 위로 가져가면 비킴. Ctrl 두 번 → 30분 휴식. 트레이에서 '1시간 조용히'.
-5. **클릭 통과**: 앞마당 레이어는 항상 입력을 통과시킴. 펫 때문에 클릭이 막히는 일은 없음 (쓰다듬기 모드만 예외).
-6. **텍스트 내용은 읽지 않음**: 캐럿 위치와 줄 높이만 사용.
-
-### 5.4 멀티펫
-- 2마리 이상이면 서로 인식: 같이 놀기, 자리 다툼, 강아지가 털어낸 물방울에 질색하는 고양이, (v0.5) 물고기를 구경하는 고양이.
-- 유대감은 펫별. 질투 없음 (스트레스 설계 금지).
+#### 4.5.4 Dirt is not a punishment
+- Being dirty doesn't lower needs or the bond. Dirt is **a chance for the owner to take care of it** (washing and drying = bond-raising interactions).
+- Even if left alone it resolves naturally (mud dries and falls off, cats clean themselves). However, a dog's mud takes a day, so traces remain at the house entrance and the window in the meantime. This is the only "burden", and leaving traces can be turned off in settings.
+- Pets with high tidiness rarely get dirty in the first place. The user can see this trait on the pet card.
 
 ---
 
-## 6. 서식지 시스템 (바탕화면)
+### 4.6 Growth (age and life stages)
 
-### 6.1 서식지 맵 (Habitat Map)
-월페이퍼 한 장을 펫이 이해할 수 있는 데이터로 바꾼 것.
+An adopted pet arrives as a **2-month-old baby** and grows by the number of **days spent together** with the user. A day counts when the PC is on and the user is active for 10+ minutes. It doesn't grow while the PC is off during a vacation (to keep the feeling of raising it together). A real year is too long, so time is compressed.
+
+| Stage | Days together | Displayed age (cat / dog) |
+|---|---|---|
+| 🍼 Baby | 0–14 days | 2→6 months old |
+| 🌱 Juvenile | 15–45 days | 6→12 months / 6→18 months |
+| 🐾 Adult | 46–365 days | 1 (1.5)→7 years |
+| 🍂 Senior | 366 days+ | 7 years+ (one year every two months) |
+
+**Energy and behaviour by age** (adult = 1.0, based on real animals' life patterns)
+
+| | Baby | Juvenile | Adult | Senior |
+|---|---|---|---|---|
+| Tiring rate | ×1.6 | ×1.0 | ×1.0 | ×1.3 |
+| Recovery while sleeping | ×1.5 | ×1.1 | ×1.0 | ×0.7 |
+| Fun need decay | ×1.3 | ×1.5 | ×1.0 | ×0.6 |
+| Hunger rate | ×1.4 | ×1.2 | ×1.0 | ×0.9 |
+| Walk / run | ×0.8 / ×1.1 | ×1.15 / ×1.1 | ×1.0 | ×0.75 / ×0.75 |
+| Jump height | ×0.6 | ×1.2 | ×1.0 | ×0.5 |
+| Sleepiness | From energy 70 and below, more often | 60 and below | 60 and below | From 70 and below, more often |
+
+Cats sleep about 20% more than dogs at every stage.
+
+**Appearance**: changes gradually over the days between stages. Babies have a 60% body, a relatively large head, short legs and big eyes. Juveniles are leggy. Seniors' fur fades, their muzzle and chest turn white, and they hold their head a little lower. Babies speak clumsily ("meow" → "mew", "woof" → "arf").
+
+**Events**: on a stage-up, a celebration speech bubble, confetti and a happy hop. On 30 days, 100 days, 1 year… together, it wears a party hat for that day. The info panel shows stage, age, days together, days left until the next stage, and adoption date.
+
+**Principle**: there is no death. Senior is the final stage. Pets that already existed (saves from before the growth feature) start as adults.
+
+## 5. Behaviour system
+
+### 5.1 Structure
+Utility AI (needs × context × personality → behaviour score) + a state machine per behaviour.
+
+```
+Input: needs, bond, personality, habitat_map, user_context, time
+         ↓
+Utility evaluation (every 2–5 seconds) → pick the highest-scoring behaviour (hysteresis prevents flip-flopping)
+         ↓
+Behaviour execution (pathfinding → animation → complete/abort)
+```
+
+user_context: whether idle, type of foreground window (browser/editor/game/meeting), whether typing, whether full screen, whether screen sharing, mouse position.
+
+### 5.2 Behaviour catalogue (★ = MVP)
+
+**Daily life (backyard)**
+- ★ Walk, run, sit, lie down, sleep, stretch
+- ★ Go into the house to rest (house zone) / sleep in a bed
+- ★ Use the playground (play zone: going down the slide, chasing a ball)
+- ★ Swim in water (water zone. Dog only in the MVP. Aquatic and amphibious pets in v0.5)
+- ★ Dog: digging (ground zone), fetching the ball, guarding the front of the house
+- ★ Dog: rolling in mud (mud zone), jumping into water
+- ★ Shaking off (removes wet and sand, droplet and sand particles), cat grooming (gradually removes mud and dust)
+- ★ Leaving wet and muddy footprints (backyard floor, house entrance) — see 4.5
+- ★ Travel between monitors and virtual desktops (walks out at the screen edge and enters the neighbouring cell. See 6.4)
+- Sitting on top of icons / hiding behind icons / walking on the taskbar (Dock)
+- Perching on the top border of an open window (when visible from the behind-window layer)
+
+**Observation (window)**
+- ★ Peek: pokes its face out at a random position on one of the four sides of the foreground window (2–6 seconds)
+- ★ Following the cursor with its eyes while peeking
+- ★ Peeking while muddy or wet leaves paw prints or water marks on the window edge (disappear after 20 seconds, avoid text areas)
+- ★ Dog: when the owner switches desktops it follows and settles at the window; when the owner returns from idle, a welcome jump
+- Hides in surprise when the window moves
+- Waits at the window when the owner has been idle for long
+
+**Pranks (front yard) — bond 50+**
+- ★ Typing disruption level 1: sits next to the caret (doesn't cover it)
+- ★ Typing disruption level 2: lies on top of the word just typed (up to 10 seconds, moves away when the mouse approaches)
+- Typing disruption level 3: walks along with the caret stepping on letters (bond 70+, opt-in in settings)
+- Chasing the mouse cursor / catching the cursor
+- Bringing gifts (leaves an item somewhere on the desktop)
+
+**Reactions**
+- ★ Reaction to petting (purring, tail)
+- ★ Reaction to food
+- Looks over when a notification toast appears
+- Yawns when the battery is low, dozes after midnight
+
+### 5.3 Safeguards for disruptive behaviour (non-negotiable)
+Disruptive behaviour is the heart of the fun, but annoy someone once and the app gets uninstalled.
+
+1. **Disruption level setting**: Off / Gentle / Normal / Mischievous. Default "Gentle" (level 1 only).
+2. **Automatic do-not-disturb**: full-screen apps, detected screen sharing or recording, presentations, user-specified apps (IDEs, etc.), user-specified time ranges.
+3. **Frequency cap**: at most N disruptive actions per hour (1/3/6 by level), each under 10 seconds.
+4. **Instant shoo**: move the mouse over the pet and it moves aside. Press Ctrl twice → 30-minute break. "Quiet for 1 hour" in the tray.
+5. **Click-through**: the front yard layer always passes input through. Clicks are never blocked by a pet (petting mode is the only exception).
+6. **Never reads text content**: uses only the caret position and line height.
+
+### 5.4 Multiple pets
+- With 2 or more pets they recognise each other: playing together, squabbling over spots, a cat disgusted by droplets a dog shook off, (v0.5) a cat watching the fish.
+- Bond is per pet. No jealousy (no designing for stress).
+
+---
+
+## 6. Habitat system (the desktop)
+
+### 6.1 Habitat Map
+A single wallpaper turned into data the pet can understand.
 
 ```json
 {
@@ -261,404 +294,405 @@ user_context: idle 여부, 포그라운드 창 종류(브라우저/에디터/게
 }
 ```
 
-존 타입: ground(걷기) / water(헤엄) / house(쉬기·잠) / play(놀기) / perch(앉기) / hide(숨기) / sky(날기) / blocked(출입 금지) / mud(진흙, 뒹굴면 더러워짐) / sand(모래) / sun(양지, 건조 2배) / snow(눈, v0.5).
-`surface`는 ground의 재질(dirt / grass / floor / stone)로, 젖은 펫이 누우면 진흙이 되는지(dirt만), 발자국이 남는지(floor·stone)를 정한다. `rain` 변형이 적용되면 밖에 있는 펫은 젖고 mud 존이 활성화된다.
+Zone types: ground (walk) / water (swim) / house (rest, sleep) / play (play) / perch (sit) / hide (hide) / sky (fly) / blocked (no entry) / mud (mud; rolling in it makes the pet dirty) / sand (sand) / sun (sunny spot, 2× drying) / snow (snow, v0.5).
+`surface` is the ground's material (dirt / grass / floor / stone); it decides whether a wet pet lying down turns muddy (dirt only) and whether footprints are left (floor, stone). When the `rain` variant is applied, pets outside get wet and mud zones become active.
 
-### 6.2 서식지 맵을 얻는 세 가지 경로
-| 경로 | 대상 | 정확도 | 시기 |
+### 6.2 Three ways to get a habitat map
+| Route | Target | Accuracy | Timing |
 |---|---|---|---|
-| ① 공식 서식지 월페이퍼 | ZooZoo 제공 팩 | 100% (메타데이터 동봉) | MVP |
-| ② 수동 존 에디터 | 사용자 임의 월페이퍼 | 사용자가 직접 지정 | MVP |
-| ③ 자동 인식 | 사용자 임의 월페이퍼 | 70~85% 목표 | v0.5 |
+| ① Official habitat wallpapers | Packs provided by PetFam | 100% (metadata included) | MVP |
+| ② Manual zone editor | Any user wallpaper | Specified directly by the user | MVP |
+| ③ Automatic detection | Any user wallpaper | Target 70–85% | v0.5 |
 
-③ 자동 인식 흐름: 월페이퍼 변경 감지 → 해시 캐시 확인 → 온디바이스 세그멘테이션(물/하늘/지면/건물) + 수평선 추정 → 초안 맵 생성 → "이렇게 봤어요" 확인 팝업(수정 가능). 실패 시 '평지' 기본 맵(화면 하단 전체가 ground).
+③ Automatic detection flow: detect wallpaper change → check hash cache → on-device segmentation (water/sky/ground/buildings) + horizon estimation → generate draft map → "Here's what I saw" confirmation popup (editable). On failure, a "flat ground" default map (the whole bottom of the screen is ground).
 
-### 6.3 물고기 규칙 (수중 펫, v0.5)
-MVP에서 water 존은 강아지가 뛰어들고 고양이가 피하는 지형으로만 쓰인다. 아래 규칙은 v0.5에서 금붕어를 추가할 때 적용한다.
-- water 존이 있을 때만 월페이퍼 안에서 헤엄침. water 존 밖으로는 절대 안 나감.
-- water 존이 없으면 바탕화면 구석에 **작은 어항 위젯**으로 대기. 어항 속에서 좁게 움직이며 가끔 밖을 쳐다봄 (월페이퍼를 바꾸라는 무언의 신호).
-- 바다·수족관 월페이퍼로 바꾸는 순간 어항에서 '방생' 연출 → 바다에서 자유롭게.
-- 육지 펫은 water 존 가장자리에서 구경만 (양서 제외).
+### 6.3 Fish rules (aquatic pets, v0.5)
+In the MVP, water zones are used only as terrain the dog jumps into and the cat avoids. The rules below apply when goldfish are added in v0.5.
+- Swims within the wallpaper only when there is a water zone. Never leaves the water zone.
+- Without a water zone, waits in a corner of the desktop as a **small fish-tank widget**. Moves in a small space inside the tank and occasionally looks outside (a silent hint to change the wallpaper).
+- The moment you switch to a sea or aquarium wallpaper, a "release" scene plays from the tank → it swims freely in the sea.
+- Land pets only watch from the edge of a water zone (except amphibians).
 
-### 6.4 공간 구조: 모니터와 가상 데스크톱
+### 6.4 Spatial structure: monitors and virtual desktops
 
-펫의 세계는 바탕화면 한 장이 아니라 **사용자가 가진 모든 화면**이다.
+The pet's world is not a single desktop but **every screen the user has**.
 
-#### 6.4.1 월드 모델
+#### 6.4.1 World model
 ```
-세계(World) = 가상 데스크톱(Windows 가상 데스크톱 / macOS Space) × 모니터
-셀(Cell)    = (데스크톱 d, 모니터 m) 한 칸. 셀마다 서식지 맵 1장 (그 셀의 월페이퍼)
-펫 위치     = (d, m, x, y)
+World    = virtual desktops (Windows virtual desktops / macOS Spaces) × monitors
+Cell     = one (desktop d, monitor m) slot. One habitat map per cell (that cell's wallpaper)
+Pet pos  = (d, m, x, y)
 ```
-- 보이지 않는 셀에서도 시뮬레이션은 계속된다 (렌더 없이 2초 틱 요약 시뮬레이션). 돌아왔을 때 펫은 그 사이에 한 일의 결과 위치에 있다.
-- 사용자는 데스크톱마다 다른 월페이퍼를 두어 **세계를 방처럼 구성**할 수 있다. 예: 데스크톱 1 = 집+마당, 데스크톱 2 = 바다, 데스크톱 3 = 업무(평지). 펫은 배고프면 그릇이 있는 방으로, 졸리면 집이 있는 방으로 알아서 찾아간다.
-- Windows 10처럼 모든 데스크톱이 같은 월페이퍼면: 같은 지도의 복제 방. 그래도 펫은 한 방에만 있다.
+- Simulation continues even in cells that aren't visible (a summarised simulation with 2-second ticks, no rendering). When you come back, the pet is wherever its activities in the meantime have taken it.
+- By giving each desktop a different wallpaper, the user can **arrange the world like rooms**. E.g. desktop 1 = house + yard, desktop 2 = sea, desktop 3 = work (flat ground). When hungry the pet finds its own way to the room with the bowl; when sleepy, to the room with the house.
+- If every desktop has the same wallpaper, as on Windows 10: duplicate rooms of the same map. Even so, the pet is only in one room.
 
-#### 6.4.2 이동 규칙 (문과 가장자리)
-- **모니터 사이**: 물리 배치대로. 왼쪽 모니터의 오른쪽 가장자리로 나가면 오른쪽 모니터 왼쪽 가장자리로 들어온다. DPI가 다르면 펫의 물리 크기를 유지하도록 스케일 보정.
-- **가상 데스크톱 사이**: OS의 데스크톱 순서(Ctrl+Win+←/→, 트랙패드 스와이프 방향)를 그대로 따른다. 데스크톱 2의 가장 왼쪽 모니터 왼쪽 가장자리로 나가면 → 데스크톱 1의 가장 오른쪽 모니터 오른쪽 가장자리로 들어온다. 사용자가 OS에서 느끼는 공간 감각과 펫의 이동 방향이 일치한다.
-- **연출**: 가장자리로 걸어 나감 → 1~3초 비어 있음 → 이웃 셀 반대편 가장자리로 걸어 들어옴. 사용자가 마침 그 데스크톱을 보고 있으면 들어오는 장면을 본다.
-- **출입 금지 셀**: 전체화면 앱이 있는 데스크톱(macOS 전체화면 Space 포함), 사용자가 '펫 없음'으로 지정한 데스크톱. 펫은 통과만 하고 나타나지 않는다.
-- **물고기 (v0.5)**: water 존이 있는 셀끼리만 이동 (물속 통로가 있다고 가정). 물이 있는 셀이 하나도 없으면 어항 위젯은 현재 보고 있는 셀을 따라다닌다.
+#### 6.4.2 Travel rules (doors and edges)
+- **Between monitors**: follows the physical arrangement. Leave by the right edge of the left monitor and you enter at the left edge of the right monitor. If DPI differs, scaling is corrected to keep the pet's physical size.
+- **Between virtual desktops**: follows the OS desktop order (Ctrl+Win+←/→, trackpad swipe direction) exactly. Leave by the left edge of the leftmost monitor on desktop 2 → enter at the right edge of the rightmost monitor on desktop 1. The pet's direction of travel matches the user's sense of space in the OS.
+- **Staging**: walks out at the edge → 1–3 seconds empty → walks in from the opposite edge of the neighbouring cell. If the user happens to be looking at that desktop, they see it arrive.
+- **No-entry cells**: desktops with a full-screen app (including macOS full-screen Spaces), desktops the user has marked as "No pets". The pet only passes through and never appears.
+- **Fish (v0.5)**: travel only between cells that have a water zone (assuming an underwater passage). If no cell has water, the fish-tank widget follows the cell currently being viewed.
 
-#### 6.4.3 이동 모드 (설정, 펫별)
-| 모드 | 동작 | 기본 |
+#### 6.4.3 Travel modes (setting, per pet)
+| Mode | Behaviour | Default |
 |---|---|---|
-| 자유 | 욕구·호기심에 따라 돌아다님. 주인이 한 데스크톱에 N분 이상 머물면 호기심으로 찾아옴 (유대 높을수록 N 작아짐) | 고양이 |
-| 따라다니기 | 데스크톱 전환 후 1~3초 내 가장자리로 뛰어 들어옴 | 강아지 |
-| 집 고정 | 서식지가 있는 특정 데스크톱에서만 생활 | — |
+| Free | Roams according to needs and curiosity. If the owner stays on one desktop for N+ minutes, comes out of curiosity (the higher the bond, the smaller N) | Cat |
+| Follow | Runs in from the edge within 1–3 seconds of a desktop switch | Dog |
+| Stay home | Lives only on a specific desktop that has its habitat | — |
 
-#### 6.4.4 펫 찾기
-- 트레이 아이콘·펫 카드에 현재 위치 표시: "모모: 데스크톱 2(바다) 모니터 1에서 수영 중".
-- 펫 카드에서 **부르기** → 유대 30+ 펫은 데스크톱을 넘어 현재 셀로 달려온다 (강아지는 유대 15+). 유대가 낮으면 무시.
-- 데스크톱이 삭제되면 그 셀의 펫은 이웃 셀로 이동. 모니터가 분리되면 남은 모니터로.
+#### 6.4.4 Finding your pet
+- The tray icon and pet card show its current location: "Momo: swimming on desktop 2 (sea), monitor 1".
+- **Call** from the pet card → a pet with bond 30+ runs across desktops to the current cell (bond 15+ for dogs). With a low bond it ignores you.
+- If a desktop is deleted, pets in that cell move to a neighbouring cell. If a monitor is disconnected, to the remaining monitors.
 
-#### 6.4.5 지형으로서의 OS 요소
-- 데스크톱 아이콘: 올라앉기·뒤에 숨기 가능한 소품. 아이콘 위치는 OS에서 읽어옴 (macOS는 Finder 자동화 권한 필요, 미허용 시 아이콘 없음으로 취급).
-- 작업표시줄/Dock: 바닥선. 그 위를 걸을 수 있음. Dock 자동 숨김이면 바닥선만 남음.
-- 열린 창(뒷마당에서 볼 때): 지붕. 창틀에 걸터앉음.
+#### 6.4.5 OS elements as terrain
+- Desktop icons: props it can sit on or hide behind. Icon positions are read from the OS (macOS needs Finder automation permission; if not granted, treated as having no icons).
+- Taskbar/Dock: a floor line. It can walk on top of it. If the Dock auto-hides, only the floor line remains.
+- Open windows (seen from the backyard): roofs. It perches on window frames.
 
-### 6.5 시간·날씨
-- 공식 월페이퍼는 낮/저녁/밤 3종 세트. 시스템 시간에 따라 자동 전환.
-- 날씨 연동(선택): 비 오면 펫이 집에 들어감. v1.0 이후.
-
----
-
-## 7. 상호작용과 UI
-
-### 7.1 직접 상호작용
-- **먹이주기**: 트레이·펫 카드에서 먹이를 드래그해 펫 근처에 놓음. 그릇을 설치해 두면 채워둔 만큼 알아서 먹음.
-- **쓰다듬기**: 펫 위에서 마우스 길게 누르기(0.5초) → 쓰다듬기 모드. 드래그 방향 따라 반응.
-- **장난감**: 공 던지기(드래그 후 놓기), 깃털(커서를 따라옴).
-- **씻기기·말리기**: 수건 아이템을 펫에 드래그 → 문질러 말림(젖음 즉시 해소, 진흙은 절반). 욕조·호스 아이템을 쓰거나 펫을 water 존에 내려놓으면 진흙이 씻기고 젖음 상태가 됨. 젖은 펫을 sun 존에 내려놓으면 빨리 마름. 하루 1회 유대 +3.
-- **발자국 닦기**: 바닥·집 입구의 진흙 자국을 드래그로 쓸어 지움. 방치해도 10분 뒤 자연 소멸.
-- **안아 옮기기**: 드래그로 들어서 다른 곳에 내려놓기 (유대 30+). 진흙 펫을 들면 커서에 진흙이 잠깐 묻음.
-- **이름 부르기**: 마이크로 이름 감지 → 쳐다봄. v1.0 이후, opt-in.
-
-### 7.2 UI 구성
-- **트레이 아이콘**: 펫 상태 점(배고픔/기분), 빠른 메뉴(1시간 조용히, 먹이, 설정)
-- **펫 카드**: 펫 클릭 → 작은 팝오버. 이름, 유대 단계, 욕구 바, 오늘의 일기 한 줄
-- **서식지 에디터**: 월페이퍼 위에 존 폴리곤 그리기. 미리보기로 펫이 바로 걸어다님
-- **설정**: 방해 레벨, 방해금지 앱·시간, 레이어별 노출 빈도, 펫별 이동 모드(자유/따라다니기/집 고정), 데스크톱별 '펫 없음' 지정, 모션 줄이기, 시작 시 실행
-
-### 7.3 알림 철학
-- OS 알림은 거의 안 씀. 펫이 **몸으로** 알린다 (배고프면 빈 그릇을 끌고 창가에 나타남).
-- 하루 1회 요약(선택): "모모가 오늘 미끄럼틀 12번 탔어요"
+### 6.5 Time and weather
+- Official wallpapers come as a set of 3: day/evening/night. They switch automatically with system time.
+- Weather integration (optional): when it rains the pet goes into the house. After v1.0.
 
 ---
 
-## 8. 기술 아키텍처
+## 7. Interaction and UI
 
-### 8.1 모듈
+### 7.1 Direct interaction
+- **Feeding**: drag food from the tray or pet card and drop it near the pet. If you set up a bowl, it eats on its own from whatever you filled.
+- **Petting**: press and hold the mouse on the pet (0.5 seconds) → petting mode. Reacts to the drag direction.
+- **Toys**: throwing a ball (drag and release), a feather (follows the cursor).
+- **Washing and drying**: drag the towel item onto the pet → rub it dry (wet removed instantly, mud halved). Using a bathtub or hose item, or setting the pet down in a water zone, washes off the mud and leaves it wet. Setting a wet pet down in a sun zone dries it quickly. Bond +3 once a day.
+- **Wiping footprints**: sweep away mud marks on the floor or house entrance by dragging. Left alone they disappear naturally after 10 minutes.
+- **Pick up and carry**: lift by dragging and set down elsewhere (bond 30+). Picking up a muddy pet briefly gets mud on the cursor.
+- **Calling its name**: detects its name through the microphone → looks over. After v1.0, opt-in.
+
+### 7.2 UI components
+- **Tray icon**: pet status dot (hunger/mood), quick menu (Quiet for 1 hour, Food, Settings)
+- **Pet card**: click the pet → small popover. Name, bond stage, need bars, a one-line diary entry for today
+- **Habitat editor**: draw zone polygons over the wallpaper. In the preview the pet walks around right away
+- **Settings**: disruption level, do-not-disturb apps and times, visibility frequency per layer, per-pet travel mode (Free/Follow/Stay home), "No pets" per desktop, reduce motion, launch at startup
+
+### 7.3 Notification philosophy
+- Almost no OS notifications. The pet tells you **with its body** (when hungry it appears at the window dragging the empty bowl).
+- Optional once-a-day summary: "Momo went down the slide 12 times today"
+
+---
+
+## 8. Technical architecture
+
+### 8.1 Modules
 ```
-┌─ Core (플랫폼 독립) ──────────────────────────────┐
-│ 행동 엔진 · 욕구/유대 시뮬레이션 · 서식지 맵        │
-│ 경로탐색(폴리곤 navmesh) · 세이브/로드              │
-└───────────────────────────────────────────────────┘
-┌─ Renderer ───┐ ┌─ Platform ──────────────────┐ ┌─ Vision ────────┐
-│ 2D 스프라이트 │ │ 레이어 창 관리(뒤/창가/앞)   │ │ 월페이퍼 변경   │
-│ 스켈레탈 애니 │ │ 포그라운드 창 rect, 캐럿     │ │ 감지            │
-│ (Spine 등)   │ │ 아이콘·작업표시줄 위치        │ │ 세그멘테이션    │
-│              │ │ 방해금지 신호(전체화면/공유)  │ │ (v0.5)          │
-└──────────────┘ └─────────────────────────────┘ └─────────────────┘
+┌─ Core (platform-independent) ─────────────────────────┐
+│ Behaviour engine · needs/bond simulation · habitat map │
+│ Pathfinding (polygon navmesh) · save/load              │
+└────────────────────────────────────────────────────────┘
+┌─ Renderer ────────┐ ┌─ Platform ───────────────────────┐ ┌─ Vision ──────────┐
+│ 2D sprites        │ │ Layer window mgmt (back/window/  │ │ Wallpaper change  │
+│ Skeletal animation│ │ front)                           │ │ detection         │
+│ (Spine etc.)      │ │ Foreground window rect, caret    │ │ Segmentation      │
+│                   │ │ Icon and taskbar positions       │ │ (v0.5)            │
+│                   │ │ DND signals (full screen/share)  │ │                   │
+└───────────────────┘ └──────────────────────────────────┘ └───────────────────┘
 ```
 
-### 8.1.1 외형 상태 렌더링 (4.5의 구현)
-상태마다 스프라이트를 따로 그리면 애니메이션 수 × 상태 수로 아트 비용이 폭발한다. 대신 **기본 스프라이트 위에 상태 레이어를 합성**한다.
+### 8.1.1 Rendering appearance states (implementing 4.5)
+Drawing separate sprites for each state makes art cost explode as number of animations × number of states. Instead we **composite state layers on top of the base sprite**.
 
 ```
-최종 픽셀 = 기본 스프라이트
-          → 젖음: 색조 보정(어둡고 채도↓, 강도 비례) + '젖은 실루엣' 스킨(털 뭉침, 스켈레탈 슬롯 교체)
-          → 진흙: 부위별 데칼 마스크(발·배·등·얼굴) × 강도 → 진흙 텍스처 곱하기
-          → 모래·눈·풀: 포인트 데칼 스프라이트를 마스크 범위 안에 뿌림
-          → 파티클: 물방울(젖음), 떨어지는 흙 조각(진흙 마름), 털기 시 방사형
+Final pixel = base sprite
+            → Wet: colour grading (darker, less saturated, proportional to intensity) + "wet silhouette" skin (clumped fur, skeletal slot swap)
+            → Mud: per-part decal masks (paws, belly, back, face) × intensity → multiply mud texture
+            → Sand, snow, grass: scatter point decal sprites within the mask area
+            → Particles: water droplets (wet), falling dirt flakes (drying mud), radial burst when shaking
 ```
 
-- 스켈레탈 애니메이션(Spine 또는 자체 리그)의 **슬롯·스킨**을 쓴다. 젖은 귀·꼬리는 스킨 교체, 진흙은 부위 슬롯에 붙는 데칼 어태치먼트. 애니메이션 클립은 상태와 무관하게 공유된다.
-- 부위 마스크는 종당 1세트(발·배·등·얼굴·꼬리). 진흙 강도 0.3이면 발만, 0.7이면 배까지, 1.0이면 등·얼굴까지 번진다.
-- 흔적(발자국·얼룩)은 서식지 레이어 위의 **데칼 버퍼**에 찍고 알파를 시간에 따라 줄인다. 창가 발자국은 오버레이 창에 같은 방식으로 찍되, 포그라운드 창의 텍스트 영역(캐럿 주변 줄)은 피한다.
-- 아트 산출물: 종당 기본 스킨 + 젖은 스킨 1벌 + 진흙 데칼 4~5장 + 발자국 2종. 애니메이션 추가 없음.
-- 성능: 파티클 동시 50개 상한, 데칼 버퍼는 모니터당 1장(RGBA, 월페이퍼 해상도의 1/2).
+- Uses the **slots and skins** of skeletal animation (Spine or our own rig). Wet ears and tail are a skin swap; mud is a decal attachment on per-part slots. Animation clips are shared regardless of state.
+- One set of part masks per species (paws, belly, back, face, tail). Mud intensity 0.3 covers only the paws, 0.7 reaches the belly, 1.0 spreads to the back and face.
+- Traces (footprints, stains) are stamped into a **decal buffer** above the habitat layer and their alpha fades over time. Window-edge footprints are stamped the same way into the overlay window, but avoid the foreground window's text area (the lines around the caret).
+- Art deliverables: per species, a base skin + 1 wet skin + 4–5 mud decals + 2 kinds of footprints. No additional animations.
+- Performance: cap of 50 simultaneous particles; one decal buffer per monitor (RGBA, half the wallpaper resolution).
 
-### 8.2 Windows 구현 포인트
-| 과제 | 접근 |
+### 8.2 Windows implementation notes
+| Task | Approach |
 |---|---|
-| 창 뒤·월페이퍼 위 렌더링 | Progman에 0x052C 메시지 → 생성된 WorkerW에 렌더 창을 SetParent (Wallpaper Engine / Lively 방식). 아이콘 뒤에 그려지므로, 아이콘 '앞'에 보여야 하면 아이콘 위치를 읽어 가림 처리 |
-| 앞마당 오버레이 | WS_EX_LAYERED + WS_EX_TRANSPARENT + WS_EX_TOPMOST + WS_EX_NOACTIVATE 투명 창. 펫 스프라이트 위에 커서가 있을 때만 TRANSPARENT 해제(쓰다듬기) |
-| 포그라운드 창 가장자리 | GetForegroundWindow + DwmGetWindowAttribute(EXTENDED_FRAME_BOUNDS). 최대화·스냅 상태 고려 |
-| 캐럿 위치 | 1순위 UI Automation(TextPattern 캐럿 bounding rect), 2순위 GetGUIThreadInfo(rcCaret), 3순위 IME 조합창 위치. Electron·브라우저는 UIA 커버리지 확인 필요 |
-| 타이핑 감지 | 저수준 키보드 훅은 쓰지 않음. GetLastInputInfo + 포그라운드 변화 + UIA 텍스트 변경 이벤트로 충분 (키 내용 미수집) |
-| 전체화면·공유 감지 | SHQueryUserNotificationState(BUSY / D3D_FULL_SCREEN / PRESENTATION_MODE). 화면 공유는 회의 앱 포그라운드 여부로 보조 |
-| 아이콘 위치 | 데스크톱 SysListView32의 LVM_GETITEMPOSITION, 또는 UIA |
-| 월페이퍼 변경 감지 | IDesktopWallpaper COM(모니터별) + 레지스트리 감시 + 파일 해시. Windows 11은 가상 데스크톱마다 월페이퍼가 다를 수 있으므로 데스크톱 전환 후 재조회 |
-| 가상 데스크톱: 현재 데스크톱 감지 | 공개 API IVirtualDesktopManager는 "창이 현재 데스크톱에 있는가"만 제공 → 데스크톱마다 보이지 않는 마커 창을 두고 IsWindowOnCurrentVirtualDesktop로 판정. 트리거는 EVENT_SYSTEM_FOREGROUND 훅 + 200ms 폴링. 비공개 IVirtualDesktopNotification은 빌드별 GUID가 바뀌므로 버전 테이블로 감싸고 실패 시 폴링 폴백 |
-| 가상 데스크톱: 목록과 순서 | 레지스트리 `HKCU\...\Explorer\VirtualDesktops\VirtualDesktopIDs` (순서대로 GUID 배열) 감시. 이웃 관계는 이 순서로 결정 |
-| 가상 데스크톱: 뒷마당 창 | WorkerW 자식 창은 모든 가상 데스크톱에서 보이므로 창은 하나. 현재 데스크톱 ID에 해당하는 셀만 그린다 |
-| 가상 데스크톱: 창가·앞마당 오버레이 | 일반 창은 생성된 데스크톱에만 보임 → 전환 감지 시 IVirtualDesktopManager::MoveWindowToDesktop(공개)로 현재 데스크톱으로 이동. 비공개 Pinned API로 고정하는 건 최적화 옵션 |
-| 다중 모니터 | EnumDisplayMonitors + PerMonitorV2 DPI. WM_DISPLAYCHANGE로 배치 변경 감지. 뒷마당 창은 가상 스크린 전체 크기 하나, 오버레이는 모니터당 하나 |
+| Rendering behind windows and above the wallpaper | Send message 0x052C to Progman → SetParent the render window onto the spawned WorkerW (the Wallpaper Engine / Lively approach). It draws behind icons, so if it must appear "in front of" icons, read the icon positions and handle occlusion |
+| Front yard overlay | Transparent window with WS_EX_LAYERED + WS_EX_TRANSPARENT + WS_EX_TOPMOST + WS_EX_NOACTIVATE. TRANSPARENT is cleared only while the cursor is over a pet sprite (petting) |
+| Foreground window edges | GetForegroundWindow + DwmGetWindowAttribute(EXTENDED_FRAME_BOUNDS). Account for maximised and snapped states |
+| Caret position | 1st choice UI Automation (TextPattern caret bounding rect), 2nd GetGUIThreadInfo(rcCaret), 3rd the IME composition window position. UIA coverage needs checking for Electron and browsers |
+| Typing detection | No low-level keyboard hook. GetLastInputInfo + foreground changes + UIA text-changed events are enough (key contents are not collected) |
+| Full-screen and sharing detection | SHQueryUserNotificationState (BUSY / D3D_FULL_SCREEN / PRESENTATION_MODE). Screen sharing is supplemented by whether a meeting app is in the foreground |
+| Icon positions | LVM_GETITEMPOSITION on the desktop SysListView32, or UIA |
+| Wallpaper change detection | IDesktopWallpaper COM (per monitor) + registry watch + file hash. On Windows 11 each virtual desktop can have a different wallpaper, so re-query after a desktop switch |
+| Virtual desktops: detecting the current desktop | The public IVirtualDesktopManager API only tells you "is this window on the current desktop" → keep an invisible marker window on each desktop and check with IsWindowOnCurrentVirtualDesktop. Triggered by an EVENT_SYSTEM_FOREGROUND hook + 200ms polling. The private IVirtualDesktopNotification changes GUID per build, so wrap it in a version table and fall back to polling on failure |
+| Virtual desktops: list and order | Watch the registry `HKCU\...\Explorer\VirtualDesktops\VirtualDesktopIDs` (an ordered array of GUIDs). Neighbour relationships are determined by this order |
+| Virtual desktops: backyard window | A WorkerW child window is visible on every virtual desktop, so there is one window. Only the cell for the current desktop ID is drawn |
+| Virtual desktops: window and front yard overlays | Normal windows are only visible on the desktop they were created on → when a switch is detected, move them to the current desktop with IVirtualDesktopManager::MoveWindowToDesktop (public). Pinning via the private Pinned API is an optional optimisation |
+| Multiple monitors | EnumDisplayMonitors + PerMonitorV2 DPI. Detect layout changes via WM_DISPLAYCHANGE. One backyard window covering the whole virtual screen, one overlay per monitor |
 
-### 8.3 macOS 구현 포인트 (MVP)
-| 과제 | 접근 |
+### 8.3 macOS implementation notes (MVP)
+| Task | Approach |
 |---|---|
-| 창 뒤·월페이퍼 위 렌더링 | NSWindow level = kCGDesktopIconWindowLevel - 1 (월페이퍼 위, 아이콘 아래). collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]. 아이콘 '앞'에 보여야 하면 Finder 아이콘 위치를 읽어 가림 처리 |
-| 앞마당 오버레이 | NSStatusWindowLevel 투명 창, ignoresMouseEvents = true. 쓰다듬기 모드에서만 false. .fullScreenAuxiliary를 넣지 않으면 전체화면 Space에는 자동으로 안 나타남 (원하는 동작) |
-| 포그라운드 창 가장자리 | NSWorkspace.frontmostApplication → AX kAXFocusedWindowAttribute → 위치·크기. 접근성 권한 필요 |
-| 캐럿 위치 | AXFocusedUIElement → AXSelectedTextRange → kAXBoundsForRangeParameterizedAttribute. 네이티브 앱은 양호, Electron·터미널은 부분 지원 → 미검출 시 창가 행동으로 대체 |
-| 타이핑·idle 감지 | CGEventSource secondsSinceLastEventType (키 내용 미수집). 키 로깅 훅 사용 안 함 |
-| 전체화면·공유 감지 | 포그라운드 창 프레임 == 화면 프레임 + 메뉴바 숨김 여부, NSApplication presentationOptions. 화면 공유는 회의 앱 포그라운드 여부로 보조 |
-| 아이콘 위치 | Finder 스크립팅(Automation 권한, 선택). 미허용 시 아이콘 없음으로 취급 |
-| Dock 위치 | NSScreen.frame과 visibleFrame 차이로 계산 |
-| 월페이퍼 변경 감지 | NSWorkspace.desktopImageURL(for: screen) 폴링(2초) + 파일 해시. Space마다 다를 수 있으므로 Space 전환 후 재조회 |
-| Space: 전환 감지 | NSWorkspace.activeSpaceDidChangeNotification (공개) |
-| Space: ID·순서 | 공개 API 없음. 비공개 CGS(CGSGetActiveSpace, CGSCopyManagedDisplaySpaces)를 OS 버전별로 감싸서 사용. 실패 시 폴백: 월페이퍼 해시로 Space를 식별(같은 월페이퍼면 같은 셀로 취급) + 순서는 '처음 본 순서' |
-| Space: 창 처리 | 뒷마당·오버레이 모두 .canJoinAllSpaces이므로 창은 하나. 현재 Space에 해당하는 셀만 그린다 |
-| 다중 모니터 | NSScreen.screens, backingScaleFactor. didChangeScreenParametersNotification으로 배치 변경 감지 |
-| 권한 | 접근성(필수: 캐럿·포그라운드), Automation-Finder(선택: 아이콘), 마이크(v1.0 이름 부르기, 선택). 온보딩에서 이유를 설명하고 미허용 시 기능만 빠짐 |
-| 시작 시 실행 | SMAppService |
+| Rendering behind windows and above the wallpaper | NSWindow level = kCGDesktopIconWindowLevel - 1 (above the wallpaper, below icons). collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]. If it must appear "in front of" icons, read Finder icon positions and handle occlusion |
+| Front yard overlay | Transparent window at NSStatusWindowLevel, ignoresMouseEvents = true. false only in petting mode. Without .fullScreenAuxiliary it automatically won't appear in full-screen Spaces (the desired behaviour) |
+| Foreground window edges | NSWorkspace.frontmostApplication → AX kAXFocusedWindowAttribute → position and size. Requires Accessibility permission |
+| Caret position | AXFocusedUIElement → AXSelectedTextRange → kAXBoundsForRangeParameterizedAttribute. Good in native apps, partial support in Electron and terminals → if not detected, fall back to window-edge behaviour |
+| Typing and idle detection | CGEventSource secondsSinceLastEventType (key contents not collected). No key-logging hooks |
+| Full-screen and sharing detection | Foreground window frame == screen frame + whether the menu bar is hidden, NSApplication presentationOptions. Screen sharing is supplemented by whether a meeting app is in the foreground |
+| Icon positions | Finder scripting (Automation permission, optional). If not granted, treated as having no icons |
+| Dock position | Computed from the difference between NSScreen.frame and visibleFrame |
+| Wallpaper change detection | Poll NSWorkspace.desktopImageURL(for: screen) (every 2 seconds) + file hash. It can differ per Space, so re-query after a Space switch |
+| Space: switch detection | NSWorkspace.activeSpaceDidChangeNotification (public) |
+| Space: ID and order | No public API. Use private CGS (CGSGetActiveSpace, CGSCopyManagedDisplaySpaces) wrapped per OS version. Fallback on failure: identify Spaces by wallpaper hash (same wallpaper is treated as the same cell) + order is "order first seen" |
+| Space: window handling | Both backyard and overlay are .canJoinAllSpaces, so there is one window. Only the cell for the current Space is drawn |
+| Multiple monitors | NSScreen.screens, backingScaleFactor. Detect layout changes via didChangeScreenParametersNotification |
+| Permissions | Accessibility (required: caret, foreground), Automation-Finder (optional: icons), Microphone (v1.0 name calling, optional). Onboarding explains why; if not granted, only those features are missing |
+| Launch at startup | SMAppService |
 
-### 8.3.1 플랫폼 동등성 (MVP 목표)
-| 기능 | Windows | macOS | 비고 |
+### 8.3.1 Platform parity (MVP goal)
+| Feature | Windows | macOS | Notes |
 |---|---|---|---|
-| 뒷마당(창 뒤) 렌더링 | ○ WorkerW | ○ 창 레벨 | 둘 다 아이콘 아래. 아이콘 앞 표시는 Win ○ / mac △(권한) |
-| 창가 빼꼼 | ○ | ○ | |
-| 앞마당 클릭 통과 | ○ | ○ | |
-| 캐럿 기반 장난 | ○ UIA / △ 일부 Electron | ○ AX / △ Electron·터미널 | 미검출 시 창가 행동으로 대체 (공통) |
-| 전체화면 자동 DND | ○ | ○ | |
-| 가상 데스크톱 이동 | ○ (순서: 레지스트리) | ○ (순서: 비공개 API, 폴백 있음) | |
-| 데스크톱별 서식지 | ○ Win11 / △ Win10(동일 월페이퍼) | ○ | |
-| 다중 모니터 | ○ | ○ | |
-| 아이콘 지형 | ○ | △ 권한 필요 | v0.5 |
-| 작업표시줄/Dock 지형 | ○ | ○ | v0.5 |
+| Backyard (behind windows) rendering | ○ WorkerW | ○ window level | Both below icons. Showing in front of icons: Win ○ / mac △ (permission) |
+| Window peek | ○ | ○ | |
+| Front yard click-through | ○ | ○ | |
+| Caret-based pranks | ○ UIA / △ some Electron | ○ AX / △ Electron, terminals | If not detected, fall back to window-edge behaviour (both) |
+| Automatic DND for full screen | ○ | ○ | |
+| Virtual desktop travel | ○ (order: registry) | ○ (order: private API, with fallback) | |
+| Habitat per desktop | ○ Win11 / △ Win10 (same wallpaper) | ○ | |
+| Multiple monitors | ○ | ○ | |
+| Icons as terrain | ○ | △ permission required | v0.5 |
+| Taskbar/Dock as terrain | ○ | ○ | v0.5 |
 
-### 8.4 성능 예산
-- idle CPU < 1%, 활동 시 < 3% (1코어 기준)
-- 메모리 < 150MB (펫 2마리, 4K 서식지)
-- 60fps 상한, 뒷마당은 30fps. 창에 완전히 가려지면 렌더 정지 (DWM occlusion 확인)
-- 배터리 모드: 애니메이션 빈도 50% 감소
+### 8.4 Performance budget
+- Idle CPU < 1%, active < 3% (per core)
+- Memory < 150MB (2 pets, 4K habitat)
+- 60fps cap, 30fps for the backyard. Stop rendering when fully covered by windows (check DWM occlusion)
+- Battery mode: 50% fewer animation updates
 
-### 8.5 데이터
-- 로컬 저장: SQLite (펫 상태, 유대 로그, 서식지 맵 캐시). 오프라인 완전 동작.
-- 시간 조작 방어: 세이브 시각과 단조 시계 병행 (가볍게만).
-- 클라우드 동기화: v1.0 이후, 선택.
+### 8.5 Data
+- Local storage: SQLite (pet state, bond log, habitat map cache). Works fully offline.
+- Protection against clock tampering: use save timestamps together with a monotonic clock (lightly only).
+- Cloud sync: after v1.0, optional.
 
-### 8.6 스택 추천
-MVP부터 Windows·macOS를 동시에 내보내므로 **코드베이스 하나 + 얇은 네이티브 층 둘**이 전제다.
+### 8.6 Recommended stack
+Since we ship Windows and macOS together from the MVP, the premise is **one codebase + two thin native layers**.
 
-**추천: C# / .NET 8 + Avalonia(SkiaSharp 렌더) + 플랫폼별 네이티브 층**
-- Core(행동 엔진·서식지·월드 모델·세이브)는 순수 .NET. 플랫폼 코드는 `IPlatform` 인터페이스 뒤에 둔다 (창 레이어, 포그라운드·캐럿, 데스크톱·모니터 열거, 월페이퍼, DND 신호).
-- Windows 층: P/Invoke로 Win32·COM 직접 호출. WorkerW·UIA·DWM 레퍼런스(Lively Wallpaper, 오픈소스)가 같은 스택.
-- macOS 층: Avalonia 창의 NSWindow 핸들을 받아 창 레벨·collectionBehavior를 설정. AX·CGS·NSWorkspace 호출은 작은 Swift dylib 하나로 묶어 P/Invoke (objc 런타임을 C#에서 직접 다루는 것보다 유지보수가 쉬움).
-- 렌더링은 양쪽 모두 Skia 한 경로. 스프라이트·스켈레탈 애니메이션 코드가 플랫폼마다 갈리지 않는다.
-- 리스크: Avalonia 투명 창 + 창 레벨 조합을 macOS에서 초기 1주 내 스파이크로 검증해야 함. 실패 시 macOS 셸만 Swift/AppKit으로 바꾸고 Core는 .NET으로 유지(NativeAOT 라이브러리).
+**Recommendation: C# / .NET 8 + Avalonia (SkiaSharp rendering) + a native layer per platform**
+- Core (behaviour engine, habitat, world model, saving) is pure .NET. Platform code sits behind an `IPlatform` interface (window layers, foreground and caret, desktop and monitor enumeration, wallpaper, DND signals).
+- Windows layer: call Win32 and COM directly via P/Invoke. References for WorkerW, UIA and DWM (Lively Wallpaper, open source) use the same stack.
+- macOS layer: take the Avalonia window's NSWindow handle and set the window level and collectionBehavior. Bundle AX, CGS and NSWorkspace calls into one small Swift dylib and P/Invoke it (easier to maintain than handling the objc runtime directly from C#).
+- Rendering is a single Skia path on both. Sprite and skeletal animation code doesn't diverge per platform.
+- Risk: the combination of Avalonia transparent windows + window levels must be validated on macOS in a spike within the first week. If it fails, swap only the macOS shell to Swift/AppKit and keep Core in .NET (as a NativeAOT library).
 
-대안:
-- Rust(winit + wgpu/skia-safe) + windows-rs/objc2: 성능·배포 크기 최적. 그러나 UI 도구(에디터·설정 화면) 생산성이 낮고 팀 숙련도 의존.
-- Electron: setVisibleOnAllWorkspaces, 'desktop' 창 타입 등 크로스플랫폼 창 제어가 이미 있음. 그러나 레이어 3개 × 모니터 수만큼 창이 생겨 메모리 예산(150MB)을 넘기 쉽고, WorkerW는 네이티브 애드온 필요.
-- Godot 4: 애니메이션·물리 생산성 최고. 다중 레이어 창·Space 제어는 GDExtension으로 직접 구현해야 함.
+Alternatives:
+- Rust (winit + wgpu/skia-safe) + windows-rs/objc2: best for performance and distribution size. But productivity for UI tooling (editor, settings screens) is low, and it depends on team expertise.
+- Electron: already has cross-platform window control such as setVisibleOnAllWorkspaces and the 'desktop' window type. But with 3 layers × number of monitors worth of windows it easily exceeds the memory budget (150MB), and WorkerW needs a native add-on.
+- Godot 4: the best productivity for animation and physics. Multi-layer windows and Space control have to be implemented ourselves via GDExtension.
 
 ---
 
-## 9. 캐릭터 아트 파이프라인
+## 9. Character art pipeline
 
-### 9.1 방식: 스켈레탈(뼈대) 애니메이션
-캐릭터를 부위별 조각으로 그리고 뼈대에 붙여 움직인다. 그림은 한 벌, 동작은 데이터.
+### 9.1 Approach: skeletal (bone) animation
+Characters are drawn as separate parts, attached to a skeleton and animated. One set of drawings; motion is data.
 
-| | 스켈레탈 (채택) | 프레임별 픽셀 아트 |
+| | Skeletal (chosen) | Frame-by-frame pixel art |
 |---|---|---|
-| 동작 30개 제작 | 조각 한 벌 + 키프레임 데이터 | 동작당 8~16장 × 30 = 수백 장 수작업 |
-| 외형 상태(젖음·진흙) | 스킨 교체·데칼 슬롯으로 덧입힘 | 상태마다 전부 다시 그림 |
-| 4K·DPI 대응 | 벡터 또는 고해상 조각으로 무손실 | 정수 배율만 깨끗함 |
-| 고양이·강아지 공유 | 사족 리그·걷기 동작 재활용 | 공유 불가 |
-| 약점 | 종이인형 느낌, 큰 회전 동작은 각도별 조각 필요 | 손맛, 레트로 매력 |
+| Producing 30 motions | One set of parts + keyframe data | 8–16 frames per motion × 30 = hundreds of hand-drawn frames |
+| Appearance states (wet, mud) | Layered on via skin swaps and decal slots | Redraw everything for each state |
+| 4K and DPI support | Lossless with vector or high-res parts | Clean only at integer scales |
+| Sharing between cat and dog | Reuse the quadruped rig and walk motion | Not shareable |
+| Weaknesses | Paper-doll feel; large rotations need parts per angle | Handcrafted feel, retro charm |
 
-도구: **Spine** (Essential 또는 Pro, 메시 변형·IK는 Pro). 런타임 spine-csharp를 Skia 렌더러에 연결한다. 무료 대안은 DragonBones.
+Tool: **Spine** (Essential or Pro; mesh deformation and IK require Pro). Hook the spine-csharp runtime into the Skia renderer. A free alternative is DragonBones.
 
-### 9.2 스타일 가이드
-- **크기**: 기본 신장 112px (1x, 100% DPI). 2x·4K에서는 조각 원본을 448px로 그려 축소한다. 아이콘(96px)보다 약간 크고 작업표시줄(48px)보다 두 배 큰 체감.
-- **실루엣 우선**: 48px로 축소해도 고양이인지 강아지인지 구분돼야 한다. 귀·꼬리 형태로 종을 구분하고, 디테일보다 윤곽에 투자한다.
-- **선과 색**: 가는 외곽선(1.5px @1x) + 단순 셀 셰이딩 2단계. 어떤 월페이퍼 위에서도 읽히도록 외곽선은 필수. 색은 종당 기본 팔레트 6색 이내, 코스튬·스킨은 팔레트 교체로 처리.
-- **표정**: 눈·입은 별도 슬롯. 기본, 졸림, 놀람, 행복, 심술, 질색 6종 조합.
-- **시점**: 측면 3/4 뷰를 기준. 창가 빼꼼용으로 정면 얼굴과 위·아래·좌·우에서 내미는 머리 조각을 따로 둔다.
-- **움직임 톤**: 과장은 적당히. 실제 동물 영상을 참고해 무게감을 유지한다 (고양이는 유연·느긋, 강아지는 탄력·급함).
+### 9.2 Style guide
+- **Size**: base height 112px (1x, 100% DPI). For 2x and 4K, parts are drawn at 448px and scaled down. Feels slightly larger than an icon (96px) and twice the taskbar (48px).
+- **Silhouette first**: even scaled down to 48px, it must be clear whether it's a cat or a dog. Distinguish species by ear and tail shapes, and invest in outlines over detail.
+- **Line and colour**: thin outline (1.5px @1x) + simple two-step cel shading. Outlines are mandatory so it reads on any wallpaper. Up to 6 base palette colours per species; costumes and skins are handled by palette swaps.
+- **Expressions**: eyes and mouth are separate slots. Combinations of 6: neutral, sleepy, surprised, happy, grumpy, disgusted.
+- **View**: side 3/4 view as the baseline. For window peeking, keep separate parts for a front-facing face and heads poking out from the top, bottom, left and right.
+- **Tone of motion**: moderate exaggeration. Keep a sense of weight by referencing real animal footage (cats: supple and relaxed, dogs: bouncy and hasty).
 
-### 9.3 작업 흐름과 산출물
-| 단계 | 산출물 | 비고 |
+### 9.3 Workflow and deliverables
+| Step | Deliverables | Notes |
 |---|---|---|
-| 1. 컨셉 | 종당 턴어라운드(정면·측면·뒷면), 표정 시트, 색 팔레트 | AI 이미지 생성으로 방향 탐색 가능. 최종본은 사람이 정리 |
-| 2. 조각 분리 | 레이어드 PSD: 부위별 조각, 젖은 털용 대체 조각(귀·꼬리·몸통·배), 머리 4방향 조각 | 조각 경계는 관절 뒤로 숨김. 겹침 여유 8px |
-| 3. 리깅 | Spine 프로젝트: 공용 사족 리그에 조각 부착, 슬롯·스킨·데칼 슬롯 정의 | 9.4 규격 준수 |
-| 4. 애니메이션 | 1차 필수 → 2차 MVP → 3차 (9.5) | 동작마다 루프 여부·전환 포즈 명시 |
-| 5. 내보내기 | Spine JSON + 텍스처 아틀라스(PNG, 2048², 프리멀티플라이드 알파) | 스킨별 아틀라스 분리 금지, 한 아틀라스에 |
-| 6. 통합 검수 | 앱에서 1x·2x·4K, 밝은·어두운 월페이퍼 위 실루엣 확인, 레이어 3곳(뒷마당·창가·앞마당)에서 확인 | 9.7 품질 기준 |
+| 1. Concept | Per-species turnaround (front, side, back), expression sheet, colour palette | AI image generation can be used to explore direction. Final versions are cleaned up by a person |
+| 2. Part separation | Layered PSD: per-part pieces, replacement pieces for wet fur (ears, tail, body, belly), head pieces for 4 directions | Hide part seams behind joints. 8px overlap margin |
+| 3. Rigging | Spine project: attach parts to the shared quadruped rig, define slots, skins and decal slots | Follow the 9.4 spec |
+| 4. Animation | 1st tier essentials → 2nd tier MVP → 3rd tier (9.5) | State for each motion whether it loops and its transition poses |
+| 5. Export | Spine JSON + texture atlas (PNG, 2048², premultiplied alpha) | Don't split atlases per skin; use one atlas |
+| 6. Integration review | Check silhouettes in the app at 1x, 2x and 4K on light and dark wallpapers, in all 3 layers (backyard, window, front yard) | 9.7 quality criteria |
 
-### 9.4 리그 규격 (공용 사족 리그)
-고양이와 강아지는 같은 뼈대 구조를 쓴다. 비율만 다르다.
-- **뼈**: root → hip → spine1 → spine2 → neck → head (+ ear_L/R, jaw) / 꼬리 tail1~tail4 / 앞다리 shoulder·elbow·paw × 2 / 뒷다리 hip·knee·paw × 2. 총 24개 이내.
-- **IK**: 네 발에 IK 1개씩. 바닥선(gravity_line)과 경사에 맞춰 발을 붙이기 위함.
-- **슬롯**: 그리기 순서를 결정. 뒷다리 → 꼬리 → 몸통 → 앞다리 → 머리 → 귀 → 표정.
-- **스킨**: `base`, `wet` (젖은 귀·꼬리·몸통·배 조각으로 교체). 코스튬은 스킨 추가로 처리.
-- **데칼 슬롯**: `mud_paw_FL/FR/BL/BR`, `mud_belly`, `mud_back`, `mud_face`. 기본 비어 있고, 런타임이 강도에 따라 데칼 어태치먼트를 켠다. 모래·눈·풀은 같은 슬롯에 다른 어태치먼트.
-- **이벤트**: 발이 땅에 닿는 프레임(발자국 찍기), 몸 털기 정점(파티클 방출), 빼꼼 완료(시선 추적 시작)를 Spine 이벤트로 심는다.
-- **상한**: 뼈 24, 슬롯 40, 메시 정점 종당 600. 펫 2마리 동시에 CPU 1% 예산 안에 들어가야 한다.
+### 9.4 Rig spec (shared quadruped rig)
+Cats and dogs use the same skeleton structure. Only proportions differ.
+- **Bones**: root → hip → spine1 → spine2 → neck → head (+ ear_L/R, jaw) / tail tail1–tail4 / front legs shoulder, elbow, paw × 2 / hind legs hip, knee, paw × 2. 24 or fewer in total.
+- **IK**: one IK per paw, to plant the feet on the floor line (gravity_line) and slopes.
+- **Slots**: determine draw order. Hind legs → tail → body → front legs → head → ears → expression.
+- **Skins**: `base`, `wet` (swaps in wet ear, tail, body and belly pieces). Costumes are handled by adding skins.
+- **Decal slots**: `mud_paw_FL/FR/BL/BR`, `mud_belly`, `mud_back`, `mud_face`. Empty by default; the runtime turns decal attachments on according to intensity. Sand, snow and grass are different attachments on the same slots.
+- **Events**: embed Spine events for the frame a paw touches the ground (stamp footprint), the peak of a shake (emit particles), and peek complete (start gaze tracking).
+- **Limits**: 24 bones, 40 slots, 600 mesh vertices per species. Two pets at once must fit within the 1% CPU budget.
 
-### 9.5 애니메이션 목록
-| 차수 | 동작 | 공유 | 비고 |
+### 9.5 Animation list
+| Tier | Motions | Sharing | Notes |
 |---|---|---|---|
-| 1차 필수 (10) | 대기, 걷기, 달리기, 앉기, 눕기, 잠, 기지개, 빼꼼(머리 내밀기), 몸 털기, 쓰다듬기 반응 | 걷기·달리기·앉기·눕기·잠은 리그 공유 후 종별 타이밍 조정 | 프로토타입에 들어가는 최소 세트 |
-| 2차 MVP (14) | 먹기, 그루밍(고양이)/긁기(강아지), 창틀 걸터앉기, 놀이터(미끄럼틀·공 쫓기), 헤엄(강아지), 물 질색(고양이), 땅 파기·진흙 뒹굴기(강아지), 캐럿 옆 앉기, 단어 위 눕기, 커서 눈 따라가기(머리·눈 회전만), 환영 점프(강아지), 선물 두기(고양이), 집 들어가기·나오기, 데스크톱 가장자리 퇴장·입장 | 대부분 종별 고유 | |
-| 3차 (유대 상위·장난) | 글자 밟기, 커서 잡기, 무릎에서 골골, 등 돌리고 앉기(멀어짐), 집 나감 쪽지, 안겨 옮겨지기, 수건 버둥·수건 놀이, 씻기기 반응 | | v0.1 후반~v0.5 |
+| 1st tier essentials (10) | Idle, walk, run, sit, lie down, sleep, stretch, peek (poke head out), shake off, petting reaction | Walk, run, sit, lie down and sleep share the rig, with per-species timing adjustments | The minimum set for the prototype |
+| 2nd tier MVP (14) | Eat, grooming (cat) / scratching (dog), perching on a window frame, playground (slide, chasing a ball), swimming (dog), disgust at water (cat), digging and rolling in mud (dog), sitting next to the caret, lying on a word, following the cursor with its eyes (head and eye rotation only), welcome jump (dog), leaving a gift (cat), entering and leaving the house, exiting and entering at the desktop edge | Mostly species-specific | |
+| 3rd tier (high bond, pranks) | Stepping on letters, catching the cursor, purring on your lap, sitting with its back turned (drifting away), "gone out" note, being carried, struggling with the towel / towel play, bathing reaction | | Late v0.1 to v0.5 |
 
-규칙: 모든 동작은 `대기`에서 시작해 `대기`로 끝나거나, 전환 포즈를 명시한다. 루프 동작은 첫·끝 프레임이 같아야 한다.
+Rule: every motion starts from `idle` and ends in `idle`, or specifies its transition poses. Looping motions must have identical first and last frames.
 
-### 9.6 빼꼼 전용 에셋
-창가 레이어는 몸의 20~40%만 보이므로 전신 동작을 쓰지 않는다.
-- 머리 조각 4방향(위에서 내려오기, 아래에서 올라오기, 좌·우에서 나오기) + 앞발 한 쌍 + 꼬리 끝.
-- 눈은 커서 방향에 따라 런타임이 동공 위치를 옮긴다 (동공은 별도 슬롯, 범위 제한).
-- 진흙·젖음 상태는 머리·앞발 조각의 데칼 슬롯으로 동일하게 적용.
+### 9.6 Peek-only assets
+The window layer shows only 20–40% of the body, so full-body motions aren't used.
+- Head pieces for 4 directions (coming down from the top, coming up from the bottom, coming out from the left and right) + a pair of front paws + the tail tip.
+- The runtime moves the pupils according to the cursor direction (pupils are a separate slot, with a limited range).
+- Mud and wet states apply the same way via decal slots on the head and front paw pieces.
 
-### 9.7 품질 기준 (검수 게이트)
-- 48px 실루엣 테스트: 흑백 실루엣만 보고 종과 동작(걷기/앉기/잠)을 맞힐 수 있어야 한다.
-- 월페이퍼 테스트: 흰 배경, 검은 배경, 복잡한 사진 위에서 외곽선이 유지되는지.
-- 종이인형 테스트: 뒤돌기·뒹굴기에서 조각 경계가 드러나면 각도별 조각을 추가한다.
-- 상태 테스트: `wet` 스킨 + 진흙 데칼 1.0을 켠 상태로 1차 필수 10개를 전부 재생해 깨짐이 없는지.
-- 성능 테스트: 2마리 동시 재생 시 CPU·메모리 예산(8.4) 통과.
+### 9.7 Quality criteria (review gates)
+- 48px silhouette test: from a black-and-white silhouette alone, you must be able to tell the species and the motion (walk/sit/sleep).
+- Wallpaper test: whether outlines hold up on a white background, a black background, and a busy photo.
+- Paper-doll test: if part seams show when turning around or rolling over, add parts per angle.
+- State test: play all 10 first-tier essentials with the `wet` skin + mud decal 1.0 enabled and check nothing breaks.
+- Performance test: two pets playing simultaneously pass the CPU and memory budget (8.4).
 
-### 9.8 제작 주체와 일정
-- **0~2주 (기술 스파이크)**: 아트 없음. 코드로 그린 타원·원 조합의 더미 펫으로 창 레이어·데스크톱 이동을 검증한다.
-- **2~4주**: 컨셉 확정. 내부에서 AI 생성·스케치로 방향을 잡고, 외주 애니메이터와 턴어라운드를 확정한다.
-- **4~9주**: 외주 애니메이터 1명이 조각 분리 → 리깅 → 1차 필수 10개 → 2차 MVP. 고양이 먼저 끝내고 리그를 복제해 강아지.
-- **9~12주**: 외형 상태 스킨·데칼, 빼꼼 에셋, 3차 일부. 통합 검수 반복.
-- 외주 요건: Spine 리깅 경험, 사족 동물 애니메이션 포트폴리오. 작업 단위는 "종당 조각+리깅+1차 10개" 고정가, 이후 동작당 단가.
-- AI 생성은 컨셉 탐색과 월페이퍼(서식지) 배경 초안까지만. 캐릭터 조각과 애니메이션은 일관성 때문에 사람이 만든다. 생성 이미지를 최종 에셋에 쓸 경우 라이선스·학습 데이터 출처를 확인한다.
+### 9.8 Who makes it and schedule
+- **Weeks 0–2 (technical spike)**: no art. Validate window layers and desktop travel with a placeholder pet made of ellipses and circles drawn in code.
+- **Weeks 2–4**: lock the concept. Set the direction internally with AI generation and sketches, and finalise the turnaround with a contract animator.
+- **Weeks 4–9**: one contract animator does part separation → rigging → 10 first-tier essentials → second-tier MVP. Finish the cat first, then duplicate the rig for the dog.
+- **Weeks 9–12**: appearance-state skins and decals, peek assets, some of the third tier. Repeated integration reviews.
+- Contractor requirements: Spine rigging experience, a portfolio of quadruped animal animation. Work is billed as a fixed price per species for "parts + rigging + 10 first-tier motions", then a unit price per motion.
+- AI generation is limited to concept exploration and draft wallpaper (habitat) backgrounds. Character parts and animations are made by people for consistency. If generated images are used in final assets, verify licensing and the provenance of training data.
 
-### 9.9 에셋 네이밍과 저장
-- 경로: `assets/pets/{species}/` 아래 `rig.json`, `atlas.png`, `atlas.atlas`, `concept/`, `src.psd`.
-- 슬롯·스킨 이름은 9.4 규격을 그대로 쓴다. 코드가 이름으로 참조하므로 임의 변경 금지.
-- 원본 PSD와 Spine 프로젝트는 Git LFS. 내보낸 아틀라스만 일반 Git.
+### 9.9 Asset naming and storage
+- Path: under `assets/pets/{species}/`: `rig.json`, `atlas.png`, `atlas.atlas`, `concept/`, `src.psd`.
+- Slot and skin names follow the 9.4 spec exactly. Code references them by name, so don't rename them arbitrarily.
+- Source PSDs and Spine projects go in Git LFS. Only the exported atlases go in regular Git.
 
 ---
 
-## 10. 설치와 배포
+## 10. Installation and distribution
 
-### 9.1 형태
-- **설치형 네이티브 데스크톱 앱.** 창 뒤 렌더링, 월페이퍼 읽기, 다른 앱의 캐럿 위치, 가상 데스크톱 전환 감지는 브라우저에서 불가능하다.
-- 서버 없이 완전 동작. 펫 상태·유대·서식지 맵은 로컬 저장. 서버는 v1.0(클라우드 동기화, 마켓)부터.
-- 실행 형태: 창 없는 백그라운드 앱. Windows는 트레이 아이콘, macOS는 메뉴바 아이콘만 보인다. 로그인 시 자동 실행(기본 켬, 설정에서 끔).
+### 9.1 Form
+- **An installed native desktop app.** Rendering behind windows, reading the wallpaper, other apps' caret positions and detecting virtual desktop switches are impossible from a browser.
+- Works fully without a server. Pet state, bond and habitat maps are stored locally. A server only from v1.0 (cloud sync, marketplace).
+- How it runs: a windowless background app. Only a tray icon on Windows and a menu bar icon on macOS are visible. Launches automatically at login (on by default, can be turned off in settings).
 
-### 9.2 플랫폼별 패키징
+### 9.2 Packaging per platform
 | | Windows | macOS |
 |---|---|---|
-| 배포 파일 | 설치 .exe (Inno Setup) + 포터블 .zip | .dmg (Applications로 드래그) |
-| 빌드 | .NET self-contained, 단일 실행 파일, x64 + ARM64 | .NET self-contained, Universal(arm64 + x64) .app 번들 |
-| 예상 크기 | 70~90MB (런타임 포함) | 90~110MB (Universal) |
-| 서명 | 코드 서명 인증서 (EV 권장: SmartScreen 경고 즉시 회피) | Developer ID 서명 + Apple 공증(notarization). 미공증 시 Gatekeeper 차단 |
-| 스토어 | Microsoft Store 병행 가능 (MSIX 패키지). 단, Store 버전은 WorkerW 등이 제한될 수 있어 검증 필요 | **Mac App Store 불가.** 샌드박스에서 접근성 API·창 레벨 제어·비공개 API 사용 불가 → 직접 배포만 |
-| 설치 위치 | 사용자별 설치 (관리자 권한 불필요) | /Applications 또는 ~/Applications |
-| 최소 OS | Windows 10 21H2 이상 (가상 데스크톱 API 안정 버전). Windows 11 권장 | macOS 13 Ventura 이상 |
+| Distribution files | Installer .exe (Inno Setup) + portable .zip | .dmg (drag to Applications) |
+| Build | .NET self-contained, single executable, x64 + ARM64 | .NET self-contained, Universal (arm64 + x64) .app bundle |
+| Expected size | 70–90MB (runtime included) | 90–110MB (Universal) |
+| Signing | Code signing certificate (EV recommended: avoids SmartScreen warnings immediately) | Developer ID signing + Apple notarization. Gatekeeper blocks it if not notarized |
+| Store | Microsoft Store possible in parallel (MSIX package). However, the Store version may have restrictions on WorkerW etc., so this needs verification | **Mac App Store not possible.** The sandbox doesn't allow the Accessibility API, window level control or private APIs → direct distribution only |
+| Install location | Per-user install (no admin rights needed) | /Applications or ~/Applications |
+| Minimum OS | Windows 10 21H2 or later (the version where the virtual desktop API is stable). Windows 11 recommended | macOS 13 Ventura or later |
 
-### 9.3 첫 실행 온보딩
-1. 펫 고르기 (고양이·강아지 중 1마리, 이름 짓기)
-2. 공식 서식지 월페이퍼 1장 적용 제안 ("지금 바탕화면을 바꿔도 될까요?" 동의 시에만 교체, 원래 월페이퍼는 백업)
-3. 권한 안내
-   - macOS: 접근성 권한 요청. 이유를 한 줄로 설명("펫이 창 가장자리에서 빼꼼하려면 지금 어떤 창이 앞에 있는지 알아야 해요"). 거부해도 뒷마당 생활·데스크톱 이동은 동작하고, 창가·장난만 빠진다고 알림.
-   - Windows: 별도 권한 없음.
-4. 30초 튜토리얼: 펫이 창 뒤에서 걸어 나와 창가에서 빼꼼 → 쓰다듬기 → 데스크톱 전환 시 따라오는 장면을 실제로 보여줌
-5. 방해 레벨 선택 (기본 '순함'), 로그인 시 자동 실행 확인
+### 9.3 First-run onboarding
+1. Choose a pet (one of cat or dog, give it a name)
+2. Offer to apply one official habitat wallpaper ("Is it OK to change your desktop background now?" — replaced only if you agree; the original wallpaper is backed up)
+3. Permission guidance
+   - macOS: request Accessibility permission. Explain why in one line ("For your pet to peek from the edge of a window, it needs to know which window is in front"). Tell the user that even if they decline, backyard life and desktop travel still work and only window peeking and pranks are missing.
+   - Windows: no extra permissions.
+4. 30-second tutorial: actually shows the pet walking out from behind a window and peeking at the window edge → petting → following you when you switch desktops
+5. Choose the disruption level (default "Gentle"), confirm launch at login
 
-### 9.4 업데이트
-- 앱 내 자동 업데이트. Windows는 Velopack(Squirrel 계열), macOS는 Sparkle. 둘 다 델타 업데이트 지원으로 매 버전 다운로드 수 MB 수준.
-- 업데이트 체크 하루 1회. 다운로드는 백그라운드, 적용은 다음 실행 때(작업 중 재시작 강요 금지). 펫이 "새 옷이 왔어요" 식으로 몸으로 알리는 것 외에 OS 알림 없음.
-- 채널: stable / beta. 베타는 설정에서 opt-in.
-- 업데이트 서버: 정적 파일 호스팅이면 충분 (GitHub Releases 또는 CDN). 피드 파일(RSS/JSON)에 서명.
-- 서식지 팩·펫 팩은 앱 업데이트와 분리된 콘텐츠 번들(.zoozoo 파일)로 배포. 더블클릭하면 앱이 가져온다.
+### 9.4 Updates
+- Automatic in-app updates. Velopack (Squirrel family) on Windows, Sparkle on macOS. Both support delta updates, so each version's download is a few MB.
+- Checks for updates once a day. Downloads in the background, applies on next launch (never forces a restart mid-work). No OS notifications apart from the pet telling you with its body, along the lines of "New clothes have arrived".
+- Channels: stable / beta. Beta is opt-in in settings.
+- Update server: static file hosting is enough (GitHub Releases or a CDN). The feed file (RSS/JSON) is signed.
+- Habitat packs and pet packs are distributed as content bundles (.petfam files) separate from app updates. Double-click one and the app imports it.
 
-### 9.5 제거와 데이터
-- 제거 시 펫 데이터(유대 기록 포함)는 기본 보존. 제거 프로그램에서 "펫 데이터도 지우기" 체크박스 제공.
-- 데이터 위치: Windows `%LOCALAPPDATA%\ZooZoo`, macOS `~/Library/Application Support/ZooZoo`. 내보내기/가져오기(.zip) 지원으로 PC 이전 가능.
-- 온보딩에서 교체한 월페이퍼는 제거 시 원래대로 복원.
+### 9.5 Uninstalling and data
+- On uninstall, pet data (including the bond history) is kept by default. The uninstaller provides a "Also delete pet data" checkbox.
+- Data location: Windows `%LOCALAPPDATA%\PetFam`, macOS `~/Library/Application Support/PetFam`. Export/import (.zip) is supported for moving to another PC.
+- A wallpaper replaced during onboarding is restored to the original on uninstall.
 
-### 9.6 빌드·릴리스 파이프라인
-- GitHub Actions: Windows 러너와 macOS 러너에서 각각 빌드·서명·공증 → 아티팩트 업로드 → 릴리스 태그 시 업데이트 피드 갱신.
-- 서명 키·공증 자격증명은 CI 시크릿으로만 보관. 로컬 서명 빌드 금지.
-- 릴리스 전 체크: 성능 예산(8.4) 자동 측정, Windows 10/11 · macOS 13/14/15 스모크 테스트(창 레이어 생성, 데스크톱 전환, 캐럿 검출 3개 앱).
+### 9.6 Build and release pipeline
+- GitHub Actions: build, sign and notarize on a Windows runner and a macOS runner respectively → upload artifacts → update the update feed on a release tag.
+- Signing keys and notarization credentials are kept only as CI secrets. No locally signed builds.
+- Pre-release checks: automatic measurement of the performance budget (8.4), smoke tests on Windows 10/11 and macOS 13/14/15 (window layer creation, desktop switching, caret detection in 3 apps).
 
-### 9.7 기업 환경
-- 그룹 정책(Windows)·구성 프로파일(macOS)로 방해 레벨 상한, 자동 업데이트 끔, 방해금지 앱 목록 고정 가능.
-- 무음 설치 옵션(`/SILENT`, pkg 무인 설치) 제공. v1.0 이후.
-
----
-
-## 11. 프라이버시·안전·윤리
-- **화면 내용을 읽지 않는다.** 캐럿 위치, 창 크기, 앱 이름까지만. 키 입력 내용 미수집. 설정 화면 첫 줄에 명시.
-- 모든 처리 로컬. 자동 서식지 인식도 온디바이스 우선. 클라우드 인식은 opt-in + 월페이퍼 이미지 전송 동의.
-- **죄책감 설계 금지**: "모모가 굶고 있어요" 푸시 알림 없음. 펫은 죽지 않고, 영구 상실 없음. 멀어짐은 되돌릴 수 있음.
-- 접근성: 모션 줄이기 옵션. 스크린리더 사용 시 앞마당 레이어 자동 비활성.
-- 업무 환경: 관리자 정책으로 방해 레벨 상한 고정 가능.
+### 9.7 Enterprise environments
+- Group Policy (Windows) and configuration profiles (macOS) can cap the disruption level, turn off automatic updates, and lock the do-not-disturb app list.
+- Silent install options (`/SILENT`, unattended pkg install). After v1.0.
 
 ---
 
-## 12. 수익 모델
-- 무료: 펫 1마리(고양이 또는 강아지), 공식 서식지 3종, 수동 에디터
-- 유료 팩(일회성): 펫 팩(종당), 서식지 팩(테마당 3~5장, 낮/밤 포함), 코스튬
-- ZooZoo Plus(월 구독, 선택): 자동 서식지 인식 고급 모델, 클라우드 동기화, 멀티펫 무제한, 계절 한정 서식지
-- **하지 않는 것**: 먹이 유료 판매, 유대감 부스터 판매, 광고
-- 크리에이터 마켓(v1.0 이후): 서식지 월페이퍼·펫 스킨 제작자 수익 분배. Wallpaper Engine 워크샵 모델.
+## 11. Privacy, safety and ethics
+- **Never reads screen content.** Only the caret position, window size and app name. Keystroke contents are not collected. Stated on the first line of the settings screen.
+- All processing is local. Automatic habitat detection is on-device first. Cloud detection is opt-in + consent to send the wallpaper image.
+- **No guilt-driven design**: no push notifications like "Momo is starving". Pets don't die, and there is no permanent loss. Drifting away is reversible.
+- Accessibility: a reduce-motion option. The front yard layer is disabled automatically when a screen reader is in use.
+- Work environments: the disruption level cap can be locked by admin policy.
 
 ---
 
-## 13. 로드맵
-| 버전 | 목표 | 범위 |
+## 12. Business model
+- Free: 1 pet (cat or dog), 3 official habitats, manual editor
+- Paid packs (one-time): pet packs (per species), habitat packs (3–5 per theme, including day/night), costumes
+- PetFam Plus (monthly subscription, optional): advanced model for automatic habitat detection, cloud sync, unlimited pets, seasonal limited habitats
+- **What we won't do**: selling food, selling bond boosters, ads
+- Creator marketplace (after v1.0): revenue sharing for creators of habitat wallpapers and pet skins. The Wallpaper Engine Workshop model.
+
+---
+
+## 13. Roadmap
+| Version | Goal | Scope |
 |---|---|---|
-| v0.1 (MVP, 12~14주) | "창 뒤에 살고, 바탕화면을 이해하고, 내 모든 화면을 돌아다닌다"를 증명 | **Windows + macOS 동시**. 고양이+강아지. 공식 서식지 3종(집+놀이터(진흙 웅덩이 포함) / 바다(모래사장) / 방). 3레이어. 가상 데스크톱·다중 모니터 이동(이동 모드 3종, 부르기). 욕구·유대 기본. 외형 상태 2종(젖음·진흙) + 발자국 흔적 + 몸 털기·그루밍. 먹이·쓰다듬기·공 던지기·씻기기·말리기. 방해 1~2단계. 수동 존 에디터. 트레이 |
-| v0.5 | 서식지 자동화 + 펫 다양화 | 자동 서식지 인식. 금붕어(어항 위젯, 물속 전용 이동), 양서·하늘 펫. 멀티펫 3마리 동시. 아이콘·작업표시줄·Dock 지형. 낮/밤/비 세트. 외형 상태 추가(모래·눈·먼지·풀). 성격 파라미터 |
-| v1.0 | 생태계 | 크리에이터 마켓. 클라우드 동기화. 이름 부르기. 날씨 |
-| 이후 | 함께 사는 느낌 | 펫끼리 사회성, 친구 PC 펫 놀러오기, 모바일 동기화(퇴근 후 폰에서 보기) |
+| v0.1 (MVP, 12–14 weeks) | Prove "it lives behind windows, understands the desktop, and roams across all my screens" | **Windows + macOS together**. Cat + dog. 3 official habitats (house + playground (with a mud puddle) / sea (sandy beach) / room). 3 layers. Virtual desktop and multi-monitor travel (3 travel modes, calling). Basic needs and bond. 2 appearance states (wet, mud) + footprint traces + shaking off and grooming. Feeding, petting, ball throwing, washing, drying. Disruption levels 1–2. Manual zone editor. Tray |
+| v0.5 | Habitat automation + more pet variety | Automatic habitat detection. Goldfish (fish-tank widget, underwater-only movement), amphibious and sky pets. 3 pets at once. Icons, taskbar and Dock as terrain. Day/night/rain sets. More appearance states (sand, snow, dust, grass). Personality parameters |
+| v1.0 | Ecosystem | Creator marketplace. Cloud sync. Calling by name. Weather |
+| Later | The feeling of living together | Social behaviour between pets, pets visiting friends' PCs, mobile sync (check on them from your phone after work) |
 
-MVP 검증 질문: 2주 후에도 켜 두는가? (D14 유지율). 끄게 된 이유 1위가 '방해'인가 '심심함'인가?
+MVP validation questions: is it still running after 2 weeks? (D14 retention). Is the top reason for turning it off "disruption" or "boredom"?
 
 ---
 
-## 14. 리스크와 대응
-| 리스크 | 영향 | 대응 |
+## 14. Risks and mitigations
+| Risk | Impact | Mitigation |
 |---|---|---|
-| 방해 행동이 짜증 유발 → 삭제 | 치명 | 기본 '순함', 상한·쫓아내기·자동 DND. 베타에서 방해 레벨별 유지율 비교 |
-| WorkerW 방식이 Windows 업데이트로 깨짐 | 높음 | Lively·WE 커뮤니티 추적. 실패 시 '아이콘 뒤' 포기하고 최하단 일반 창으로 폴백 |
-| 가상 데스크톱 비공개 API (Windows 알림 인터페이스, macOS CGS)가 OS 업데이트로 깨짐 | 중간 | 비공개 API는 버전 테이블로 감싸고 항상 공개 API 폴백(Windows: 마커 창 폴링, macOS: 월페이퍼 해시 식별)을 유지. 폴백 모드에서도 "펫이 돌아다닌다"는 핵심은 동작 |
-| 두 플랫폼 동시 개발로 MVP 지연 | 높음 | Core를 먼저 완성하고 플랫폼 층은 `IPlatform` 계약으로 병렬 개발. 첫 2주에 양쪽 창 레이어 스파이크로 기술 리스크를 앞당겨 소거 |
-| macOS 접근성 권한 거부 | 중간 | 권한 없이도 뒷마당 생활·가상 데스크톱 이동은 동작. 창가·장난만 빠짐을 온보딩에서 설명 |
-| 펫이 다른 데스크톱에 있어서 "사라진 줄 앎" | 중간 | 트레이에 현재 위치 상시 표시, 부르기 기능, 첫 실행 튜토리얼에서 데스크톱 이동을 직접 보여줌 |
-| 캐럿 위치를 못 얻는 앱 (일부 Electron, 게임) | 중간 | 캐럿 미검출 시 창 가장자리 행동으로 대체. 앱별 지원 목록 공개 |
-| 자동 서식지 인식 오탐 (바닥을 물로 인식) | 중간 | 확인 팝업, 수동 수정, 신뢰도 낮으면 '평지' 폴백 |
-| 유대 감소가 죄책감으로 작동 | 평판 | 접속만으로 감소 정지, 알림 없음, 복귀 쉬움 |
-| 성능 (항상 켜 있는 앱) | 높음 | 성능 예산 CI 측정, 가려지면 렌더 정지 |
-| 미서명 배포로 "알 수 없는 개발자" 경고 → 설치 이탈 | 높음 | 출시 전 EV 코드 서명(Windows)·Developer ID + 공증(macOS) 확보. 인증서 발급에 2~4주 걸리므로 MVP 중반에 착수 |
-| 아트 제작 비용 (종당 애니메이션 30+개) | 높음 | 스켈레탈 애니메이션 + 공용 사족 리그(고양이·강아지 공유). 첫 2종에 집중. 파이프라인과 검수 게이트는 9절 |
-| 외형 상태가 애니메이션 수를 곱절로 늘림 | 높음 | 상태별 스프라이트를 그리지 않고 레이어 합성(8.1.1). 아트는 종당 젖은 스킨 1벌 + 데칼 몇 장으로 제한 |
-| 발자국·얼룩이 '화면이 더러워졌다'는 불쾌감 유발 | 중간 | 흔적은 항상 자연 소멸(10~20초/10분), 텍스트 영역 회피, 설정에서 흔적 끄기. 베타에서 흔적 켜기/끄기 유지율 비교 |
+| Disruptive behaviour causes annoyance → uninstall | Critical | Default "Gentle", caps, shooing, automatic DND. Compare retention by disruption level in the beta |
+| The WorkerW approach breaks with a Windows update | High | Track the Lively and WE communities. On failure, give up on "behind icons" and fall back to a bottom-most normal window |
+| Private virtual desktop APIs (Windows notification interface, macOS CGS) break with an OS update | Medium | Wrap private APIs in a version table and always keep a public API fallback (Windows: marker window polling, macOS: identification by wallpaper hash). Even in fallback mode the core of "the pet roams around" works |
+| MVP delayed by developing for two platforms at once | High | Finish Core first and develop platform layers in parallel against the `IPlatform` contract. Pull technical risk forward with window layer spikes on both in the first 2 weeks |
+| macOS Accessibility permission denied | Medium | Backyard life and virtual desktop travel work without permission. Explain in onboarding that only window peeking and pranks are missing |
+| Users "think the pet disappeared" because it's on another desktop | Medium | Always show the current location in the tray, the call feature, and demonstrate desktop travel in the first-run tutorial |
+| Apps where the caret position can't be obtained (some Electron apps, games) | Medium | If the caret isn't detected, fall back to window-edge behaviour. Publish a list of supported apps |
+| False positives in automatic habitat detection (floor detected as water) | Medium | Confirmation popup, manual correction, "flat ground" fallback when confidence is low |
+| Bond decay works as guilt | Reputation | Logging in stops the decay, no notifications, easy to come back |
+| Performance (an always-on app) | High | Measure the performance budget in CI, stop rendering when covered |
+| Unsigned distribution triggers "unknown developer" warnings → install drop-off | High | Obtain EV code signing (Windows) and Developer ID + notarization (macOS) before launch. Certificates take 2–4 weeks to issue, so start mid-MVP |
+| Art production cost (30+ animations per species) | High | Skeletal animation + shared quadruped rig (shared by cat and dog). Focus on the first 2 species. Pipeline and review gates in section 9 |
+| Appearance states multiply the number of animations | High | Don't draw per-state sprites; composite layers instead (8.1.1). Limit art to 1 wet skin + a few decals per species |
+| Footprints and stains cause discomfort that "my screen got dirty" | Medium | Traces always disappear naturally (10–20 seconds / 10 minutes), avoid text areas, can be turned off in settings. Compare retention with traces on/off in the beta |
 
 ---
 
-## 15. 성공 지표
-- D14 활성 유지율(앱이 실행 중) ≥ 40%
-- 하루 평균 상호작용(먹이·쓰다듬기·장난 반응) ≥ 3회
-- 방해 레벨을 '끔'으로 바꾼 비율 ≤ 15%
-- 서식지 월페이퍼 변경 횟수 (사용자가 서식지를 '고른다'는 신호)
-- 2주 내 유대 '친숙' 이상 도달 비율
+## 15. Success metrics
+- D14 active retention (app running) ≥ 40%
+- Average daily interactions (feeding, petting, reacting to pranks) ≥ 3
+- Share of users who set the disruption level to "Off" ≤ 15%
+- Number of habitat wallpaper changes (a signal that users are "choosing" habitats)
+- Share of users reaching bond "Familiar" or higher within 2 weeks
 
 ---
 
-## 16. 결정 사항
+## 16. Decisions
 
-### 확정
-- 플랫폼: Windows + macOS 동시 출시 (MVP부터)
-- MVP 펫 2종: 고양이·강아지. 금붕어는 v0.5
-- 펫은 가상 데스크톱·다중 모니터를 자유롭게 이동. 이동 모드(자유/따라다니기/집 고정)는 펫별 설정
+### Decided
+- Platforms: Windows + macOS launched together (from the MVP)
+- 2 MVP pets: cat and dog. Goldfish in v0.5
+- Pets move freely across virtual desktops and multiple monitors. Travel mode (Free/Follow/Stay home) is a per-pet setting
 
-### 결정 필요
-1. 아트 스타일: 픽셀(제작 쉬움, 레트로) vs 벡터·스켈레탈(부드러움, 4K 유리). 4K 서식지와 2종 × 30+ 애니메이션 + 외형 상태 레이어를 고려하면 스켈레탈 추천
-2. 펫 이름 확정 (모모·콩이 제안)
-3. 방해 3단계(글자 밟기)를 MVP에 넣을지: 재미 검증 vs 리스크
-4. 비공개 OS API 허용 범위: 가상 데스크톱 순서·전환 감지에 비공개 API를 쓸지(정확), 공개 API 폴백만 쓸지(안전하지만 macOS에서 같은 월페이퍼의 Space를 구분 못 함)
-5. 자동 서식지 인식: 온디바이스 모델 vs 클라우드 VLM (비용·프라이버시)
-6. 가상 데스크톱 간 이동 시 "비어 있는 1~3초"를 둘지, 즉시 나타나게 할지 (공간감 vs 반응성)
-7. 창가 발자국(오버레이에 진흙·물 자국 남기기)을 MVP에 넣을지: 실감 효과가 큰 만큼 "화면을 더럽힌다"는 반발도 큼. 기본 끔으로 넣는 안 추천
+### To be decided
+1. Art style: pixel (easy to produce, retro) vs. vector/skeletal (smooth, better for 4K). Given 4K habitats, 2 species × 30+ animations, and appearance-state layers, skeletal is recommended
+2. Final pet names (Momo and Kongi proposed)
+3. Whether to include disruption level 3 (stepping on letters) in the MVP: validating fun vs. risk
+4. How far to allow private OS APIs: whether to use private APIs for virtual desktop order and switch detection (accurate), or only public API fallbacks (safe, but on macOS can't tell apart Spaces with the same wallpaper)
+5. Automatic habitat detection: on-device model vs. cloud VLM (cost, privacy)
+6. Whether to keep the "empty 1–3 seconds" when travelling between virtual desktops, or appear instantly (sense of space vs. responsiveness)
+7. Whether to include window-edge footprints (leaving mud and water marks on the overlay) in the MVP: the realism payoff is big, but so is the backlash that "it dirties my screen". Recommended: include it, off by default

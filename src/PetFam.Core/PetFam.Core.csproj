@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>PetFam platform-independent core: pets, needs, bond, appearance, habitat, behavior engine.</Description>
+  </PropertyGroup>
+</Project>

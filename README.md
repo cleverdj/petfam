@@ -1,115 +1,147 @@
-# ZooZoo (주주)
+한국어: [README.ko.md](README.ko.md)
 
-바탕화면이 서식지가 되고, 창 뒤에서 살며, 주인과 유대를 쌓는 OS 반려동물.
-기획서: [docs/PLANNING.md](docs/PLANNING.md)
+# PetFam
 
-## 현재 단계: 기술 스파이크 (기획서 §9.8, 0~2주)
+**Your pet family, living on your desktop.**
 
-아트 없이 코드로 그린 더미 펫으로 아래를 검증한다.
+PetFam is a desktop pet for Windows. Adopt a puppy or a kitten, and it moves in *behind your windows*: it walks around on your wallpaper, treats the scenery as its home, naps in a little house you build for it, peeks out from the edge of the window you are working in, and grows up with you day by day.
 
-- [x] 뒷마당 레이어: 월페이퍼 위, 모든 창 뒤 (Windows: WorkerW, 11 24H2 방식까지 대응)
-- [x] 앞 레이어: 최상단, 클릭 통과 오버레이 (필요할 때만 표시)
-- [x] 창가 빼꼼: 포그라운드 창 가장자리에서 머리 내밀기, 눈이 커서를 따라감, 창이 움직이면 숨음
-- [x] 욕구·유대·외형(젖음·진흙) 시뮬레이션과 저장
-- [x] 성능: 펫마다 작은 스프라이트 컨트롤로 더티 영역 최소화, 유휴 시 12fps
-- [x] 바탕화면 전체 배회 (위쪽 = 멀리, 원근 스케일)
-- [x] 자동 서식지 인식 (기획서 §6.2 ③ 기본판): 월페이퍼를 화면 배치대로 128칸 격자로 읽어, 화면 아래 바닥 색과 이어지는 영역만 걸을 수 있는 땅으로 인식. 하늘·큰 물체(동물, 건물)·물체 위에 뜬 비슷한 색 조각은 제외. 땅의 윗선을 지평선으로 원근 계산. 바닥 색이 일정하지 않은 사진은 평평한 바닥으로 대체. 월페이퍼가 바뀌면 5초 안에 다시 인식
-- [x] 장소 인식과 장소별 행동: 물(지평선 아래 땅·물가에 붙은 파란 영역) → 강아지가 뛰어들어 헤엄(몸은 수면 아래로, 물결)치고 나와서 몸 털기, 고양이는 피함. 진흙(땅 위 납작한 어두운 갈색) → 강아지가 달려가 파고 뒹굴어 진흙투성이, 고양이는 피함. 양지(땅보다 밝은 곳) → 고양이가 찾아가 눕고 잠, 털이 2배 빨리 마름. 그늘·쉼터(큰 물체 바로 아래) → 강아지가 찾아가 쉼. 모래(물가)
-- [x] 집 인식: 바닥에 평평하게 서 있고 고른 색의 벽이 수직 모서리로 끝나는 넓은 물체 = 집, 밑면 가운데 문 앞 = 집 입구. 졸린 펫은 집으로 들어가 안에서 자고(모습이 사라지고 문 위에 z z) 깨면 나옴
-- [x] 고양이 사냥 본능: 바탕화면 위에서 움직이는 마우스 포인터를 먹잇감으로 보고 몸을 낮춰 살금살금 → 엉덩이 씰룩 → 덮치기 → 냥펀치. 포인터가 멈추면 흥미를 잃음
-- [x] 펫끼리 놀이와 서열: 쌍마다 친밀도·서열 기억(저장됨). 강아지→고양이: 플레이 바우 → 고양이가 도망·냥펀치 또는 하악 → 강아지 물러남. 고양이→강아지: 살금살금 덮치기 → 강아지 깜짝 → 반대로 쫓기. 고양이끼리: 덮치기 → 레슬링 → 쫓기, 친하면 핥아주기. 강아지끼리: 서로 플레이 바우 → 술래잡기 → 복싱 → 이긴 쪽이 올라서고 진 쪽은 엎드려 굴복. 서열 낮은 펫은 밥그릇에서 기다림. 패널에 서열·단짝 표시. 트레이 "펫 추가하기"로 최대 6마리
-- [x] 절차적 사족 리그: 걷기(측대보)·달리기(속보)·앉기·엎드리기·잠(고양이 웅크림/강아지 옆으로)·먹기·기지개·털기·그루밍·땅파기·쓰다듬기·안기기
-- [x] 의사 3D: 리그가 3차원 좌표(앞·위·옆)로 정의되고 진행 방향(Heading)으로 회전해 카메라(24° 위에서)로 투영. 아래로 걸으면 정면, 위로 걸으면 뒷모습, 커서 쪽으로 고개·몸을 돌림
-- [x] 카툰(2D 느낌 3D) 스타일 기본값: 셀 셰이딩(평면 색 단계와 따뜻한 그림자색), 갈색 외곽선과 안쪽 윤곽선, 진갈색 큰 눈과 흰 반짝임 두 개. 고양이는 치즈 태비 아기 고양이(이마 줄무늬, 볼·머리 털뭉치, 분홍 귀 안쪽, w 입과 수염 점, 하트 펜던트 목걸이, 줄무늬 꼬리). `ZOOZOO_STYLE=fur`로 이전의 털 질감 스타일
-- [x] 스타일: 픽사풍 아기 동물. 큰 머리, 짧고 통통한 몸과 다리, 큰 발. 셰이더가 그리는 큰 눈(홍채 그라데이션·테두리·동공·반짝임 두 개), 보송한 털 윤곽, 털결 음영
-- [x] 품종: 페르시안 아기 고양이(크림 태비, 흰 주둥이·가슴, 분홍 귀 안쪽·코, 호박색 눈, 길게 선 꼬리), 포메라니안(오렌지 세이블, 크림색 가슴·다리, 여우 귀, 등 위로 말린 깃털 꼬리)
-- [x] 털 질감(셰이더에서 표면을 노이즈로 부풀린 털 뭉치와 결 음영), 몸에 붙은 무늬(등 새들, 가슴 갈기, 얼굴), 수염. 펫 크기 1.6배 (`HabitatMap.PetScale`)
-- [x] GPU 3D 렌더링: 리그 부위를 SDF 라운드 콘으로 매끄럽게 융합하고 SkSL 셰이더에서 픽셀 단위 레이마칭. 확산·하늘·림·스페큘러 조명, 앰비언트 오클루전, 바닥에 드리우는 소프트 섀도. GPU가 없으면 벡터 렌더러로 자동 전환 (`ZOOZOO_RENDERER=vector`로 강제)
-- [x] 마우스 상호작용: 호버 시 펫이 앞으로 나와 커서를 봄, 꾹 누르면 쓰다듬기, 끌면 안아 옮기기, 오른쪽 클릭 메뉴
-- [x] 밥그릇: 놓아두면 배고플 때 걸어가서 먹음
-- [x] 심즈식 상호작용: 펫 클릭 → 머리 주위 파이 메뉴(쓰다듬기, 턱 긁어주기, 안아주기, 공놀이, 간식, 밥, 수건, 앉아!, 쉬게 하기). 유대감·상태에 따라 잠김(이유 표시)/숨김. 고른 행동은 할 일 큐(최대 5개)에 쌓여 차례로 실행되고 자율 행동보다 우선. 유대감이 낮거나 기분이 나쁘면 거절("흥!"). 선택한 펫 머리 위 플럼밥(기분 색), 오른쪽 아래 패널(기분, 욕구 5종, 유대감, 할 일 큐 — 눌러서 취소)
-- [ ] 서식지 수동 편집기 (자동 인식이 틀린 곳 고치기)
-- [ ] 가상 데스크톱 이동
-- [ ] 다중 모니터
-- [ ] macOS 레이어 (현재 스텁)
+PetFam is not a screensaver and does not get in your way. Your pets live on the desktop layer, under every app window, and only come to the front when you reach for them.
 
-## 구조
+> Status: early development (technical spike). Windows 10 21H2+ / Windows 11. A macOS version is planned.
 
-```
-src/ZooZoo.Core              플랫폼 독립. 펫·욕구·유대·외형·서식지·행동 엔진·저장
-src/ZooZoo.Platform.Windows  Win32: WorkerW, 클릭 통과, 포그라운드 창, 커서, idle, DND, 월페이퍼
-src/ZooZoo.Platform.MacOS    스텁 (NSWindow 레벨·AX·Spaces는 TODO)
-src/ZooZoo.App               Avalonia 앱. 뒷마당 창, 오버레이 창, 트레이, 더미 렌더러
-tests/ZooZoo.Core.Tests      xunit
-```
+## Why PetFam
 
-## 빌드·실행
+- **They live in your wallpaper.** PetFam reads your wallpaper and finds the floor, water, sunny spots, shade, mud and even houses in the picture. Dogs jump into a lake and shake off, cats sunbathe and avoid puddles. Change the wallpaper and they adapt within seconds.
+- **Real breeds with real personalities.** 7 dogs and 7 cats, each with its own look, temperament, habits and way of talking: a Shiba that screams when picked up, a Ragdoll that goes limp in your arms, a Corgi who only talks about food, a Russian Blue who is shy at first.
+- **They grow up with you.** Every pet arrives as a two-month-old baby and grows a day older on each day you spend together, through junior and adult to a dignified senior. Body, energy and behaviour change with age.
+- **A home of their own.** Build and decorate houses, decide whose house is whose, and watch your pets walk in through the door to sleep or to get out of the rain.
+- **The real weather.** When it rains where you live, it rains on your desktop. Cats run for cover, dogs play in the puddles, snow piles up on the roofs.
+- **All of your desktops.** Pets travel between Windows virtual desktops, follow you when you switch, or stay home.
+- **Gentle by design.** No chores, no guilt trips: pets never die, and simply being at your computer keeps your bond from fading. Full-screen apps and presentations put them on quiet mode.
 
-.NET 8 SDK 필요.
+## Features
+
+### Life on the desktop
+- Pets live between the wallpaper and your windows; when a window covers them, they are simply behind it.
+- Hover over a pet and it comes to the front, looks at you and can be petted, picked up and carried.
+- **Window peek:** a curious pet walks behind the window you are using and pokes its head out of an edge to look at you.
+- Cats hunt a moving mouse pointer: crouch, stalk, wiggle, pounce.
+- Pets play with each other and remember who their friends are and who is boss.
+
+### Breeds and personas
+| Dogs | | Cats | |
+|---|---|---|---|
+| Pomeranian | Fluffy chatterbox | Korean Shorthair | Tabby street boss |
+| Maltese | Clingy little princess | Russian Blue | Shy silver gentleman |
+| Toy Poodle | Clever trickster | British Shorthair | Laid-back teddy bear |
+| Bichon Frisé | Smiling cotton candy | Scottish Fold | Folded-ear sweetheart |
+| Shiba Inu | Proud and stubborn | Persian | Elegant aristocrat |
+| Welsh Corgi | Short-legged foodie boss | Ragdoll | Melts when held |
+| Jindo | Loyal Korean native | Munchkin | Short-legged troublemaker |
+
+Each breed has its own coat and build, temperament (playfulness, shyness, energy, homebody), habits (appetite, sleep, jumping, love of water and snow, dislike of rain), how quickly it warms up to you, and its own voice for greetings, hunger, sleepiness, petting, weather and more.
+
+### Care and bond
+- Sims-style pie menu on every pet: pet, scratch chin, hug, play ball, treat, feed, towel dry, sit, rest. Actions queue up and the pet does them in order.
+- Needs (hunger, energy, fun, affection, cleanliness), mood and a bond that unlocks more as you get closer.
+- Throw the ball yourself: grab it with the mouse and flick it; dogs fetch it back.
+- Pets get wet and muddy, shake off and dry in the sun.
+
+### Growing up
+Baby (days 0–14) → Junior (15–45) → Adult (46–365) → Senior (366+). A day counts when you have been at the computer for ten minutes, so pets do not age while the computer is off. Milestones are celebrated with confetti and a party hat.
+
+### Houses
+Build up to three houses with a choice of shapes, colours and decorations. Give each one an owner or make it everybody's. Pets walk in through the door, lie in the doorway looking out, and come back out when they wake.
+
+### Weather
+Optional real weather from [Open-Meteo](https://open-meteo.com) for a city you choose: rain with splashes, thunder and lightning, snow that settles and melts, cloud and fog. Pets react in character.
+
+### Virtual desktops
+Each desktop has its own habitat from its own wallpaper. Pets walk off one edge and arrive at the other, follow you when you switch desktops (or roam, or stay home), and can be called over from the tray.
+
+### Languages
+English by default, Korean optional (tray → Language / 언어). Everything switches, including breed personas and what the pets say.
+
+## Getting started
+
+Requirements: Windows 10 21H2 or later (Windows 11 recommended) and the [.NET 8 SDK](https://dotnet.microsoft.com/download).
 
 ```
 dotnet build
-dotnet test
-dotnet run --project src/ZooZoo.App
+dotnet run --project src/PetFam.App
 ```
 
-실행하면 창 없이 트레이 아이콘만 생긴다. 트레이 메뉴: 밥그릇 놓기, 쓰다듬기, 수건, 테스트용 젖음/진흙, 디버그 HUD, 뒷마당 스냅샷 저장, 종료.
+PetFam has no main window: it lives in the system tray. On the first run it opens the adoption window: choose dogs or cats, pick a breed, name your baby and adopt it.
 
-### 펫과 마우스로 놀기
+### Using PetFam
+- **Tray menu:** My pets (where they are, call them over, travel mode), Weather, put out a food bowl, build a house, add a pet, language, quit.
+- **Mouse:** hover a pet to bring it forward; click for its menu; press and rub to pet; drag to carry. Click a house to decorate it, drag it to move it.
+- **Panel:** clicking a pet opens its panel with mood, needs, bond, age and its to-do queue.
 
-펫이 보이는 바탕화면 위에 커서를 올리면 그 펫이 앞으로 나온다(앞마당 레이어, 창보다 위). 그 상태에서
+## Privacy
+- PetFam reads only window positions, the cursor position and idle time, never what is inside your windows.
+- The wallpaper is analysed on your computer. Nothing is uploaded.
+- The only network request is the optional weather lookup, which sends the coordinates of the city you picked (no IP lookup, no location permission). Turn it off in the tray.
 
-| 동작 | 결과 |
+## For developers
+
+```
+dotnet build PetFam.sln
+dotnet test
+```
+
+```
+src/PetFam.Core              Platform-independent: pets, breeds, needs, bond, growth, habitat, behaviour, weather, saving
+src/PetFam.Platform.Windows  Win32: WorkerW desktop layer, click-through, foreground window, virtual desktops
+src/PetFam.Platform.MacOS    Stub (planned)
+src/PetFam.App               Avalonia app: windows, tray, 3D (SkSL SDF) and vector renderers, weather service
+tests/PetFam.Core.Tests      xUnit
+docs/PLANNING.md             Product and technical plan
+```
+
+- Data: `%LOCALAPPDATA%\PetFam\save.json` (saved every minute and on exit), log `petfam.log`, snapshots and debug sheets. Data from the old `ZooZoo` folder is copied over on the first run.
+- Frame timing: if the animation ever stutters, `petfam.log` records a `Hitch:` line with what took the time.
+
+### Diagnostic environment variables
+
+| Variable | Effect |
 |---|---|
-| 커서를 근처에 두기 | 고개와 눈동자가 커서를 따라옴 |
-| 클릭 / 오른쪽 클릭 | 심즈식 파이 메뉴 열기. 펫이 멈춰서 나를 봄 |
-| 꾹 누르고 문지르기 | 쓰다듬기 모드. 눈 감고 좋아함, 하트. 0.5초마다 1회로 집계 |
-| 누른 채 끌기 | 안아 옮기기. 매달린 자세로 따라오고, 놓으면 그 자리에 내려놓음 |
+| `PETFAM_NO_PEEK=1` | Disables peeking (the bond stage gate applies) |
+| `PETFAM_CALM_FPS=<n>` | Idle frame rate (default 12) |
+| `PETFAM_PAINT_WALLPAPER=1` | Paints the wallpaper directly into the backyard window (fallback when transparency doesn't work) |
+| `PETFAM_NO_ATTACH=1` | Doesn't attach to WorkerW; uses a normal window |
+| `PETFAM_RENDER=software\|angle\|wgl` | Forces the Avalonia render backend |
+| `PETFAM_COMP=winui\|dcomp\|redirect` | Forces the Avalonia composition mode |
+| `PETFAM_UI_RENDER=1` | Renders on the UI thread |
+| `PETFAM_SNAPSHOT=1` | Automatically saves a backyard snapshot after startup (`PETFAM_SNAPSHOT_DELAY=<seconds>`, default 3) |
+| `PETFAM_STYLE=fur` | Draws in the fur-texture 3D style instead of cartoon |
+| `PETFAM_WALLPAPER=<image path>` | Leaves the real wallpaper alone and lays this image in the backyard to test habitat detection and behaviour |
+| `PETFAM_ADOPT=cat,dog,shiba,…` | Brings in more pets at startup: `cat`, `dog` or a breed id (`pomeranian` `maltese` `poodle` `bichon` `shiba` `corgi` `jindo` `korean-shorthair` `russian-blue` `british-shorthair` `scottish-fold` `persian` `ragdoll` `munchkin`); saved |
+| `PETFAM_SHOW_HABITAT=1` | Shows the detected floor in green and the horizon as a yellow line on screen (also toggled from the tray's "(Test) Show habitat detection") |
+| `PETFAM_BOND=<0~100>` | Sets every pet's bond to this value at startup (also adjustable from the tray menu "(Test) Bond") |
+| `PETFAM_DEMO_MENU=menu\|queue` | Automatically opens the first pet's pie menu 4 seconds after startup (queue: pre-fills the queue with a few actions) |
+| `PETFAM_POSE_SHEET=1` | Saves `pose-sheet.png` with every pose drawn on one sheet at startup (for checking the rig) |
+| `PETFAM_TURN_SHEET=cat\|dog` | Saves `turn-sheet.png` with poses × 10 facing directions on one sheet (for checking side and back views) |
+| `PETFAM_MOTION_SHEET=cat\|dog` | Saves `motion-sheet.png` with frames of turn around, start, walk, stop, sit, and get up and run, driven at 30fps and drawn in sequence (for checking transitions) |
+| `PETFAM_DEMO=ball` | Starts ball play with the first dog 3 seconds after launch (for checking throwing) |
+| `PETFAM_DEMO=house` | Opens the build-a-new-house window 3 seconds after launch |
+| `PETFAM_DEMO=travel` | 3 seconds after launch the first pet walks out to the neighbouring desktop, and is called back 14 seconds later |
+| `PETFAM_BREED_SHEET=1` | Saves `breed-sheet.png` with all 14 breeds drawn as adults, two directions each |
+| `PETFAM_ONBOARDING=1` / `cat` | Opens the adoption window at startup (`cat`: Cat tab) |
+| `PETFAM_LANG=en` / `ko` | Starts in that language (overrides the saved choice) |
+| `PETFAM_WEATHER=<weather>` | Instead of real weather: `clear`, `cloudy`, `fog`, `drizzle`, `rain`, `heavyrain`, `thunder`, `snow`, `heavysnow` (with snow already piled up) |
+| `PETFAM_DOOR_SHEET=1` | Saves `door-sheet.png` showing the stages of entering a house through the door, sleeping inside, and window-edge peeking (cat and dog, four directions) |
+| `PETFAM_DEMO=grow` | 4 seconds after launch, advances (the selected pet, or all pets if none) to the next growth stage |
+| `PETFAM_AGE_DAYS=<days>` | Sets every pet's days together to this value at startup |
+| `PETFAM_GROWTH_SHEET=1` | Saves `growth-sheet.png` with the cat and dog drawn at ages from 0 to 500 days |
+| `PETFAM_SAVE=<file>` | Uses a different save file (if the file doesn't exist, starts from first-run onboarding; your real pets are untouched) |
 
-밥그릇은 펫 앞에 놓인다. 배고픔이 85 아래인 펫이 걸어가서 먹고, 다 먹으면 그릇이 사라진다. 배부르면 그릇을 무시하고 나중에 먹는다.
+## Roadmap
+- macOS version (Spaces, menu bar)
+- Pets moving between multiple monitors
+- A habitat editor for fixing what the wallpaper analysis gets wrong
+- Official habitat wallpapers and more breeds
 
-- 저장 파일: `%LOCALAPPDATA%\ZooZoo\save.json` (60초마다, 종료 시)
-- 로그: `%LOCALAPPDATA%\ZooZoo\zoozoo.log` (WorkerW 모드, 창 핸들, 네이티브 크기가 기록됨)
-- 스냅샷: `%LOCALAPPDATA%\ZooZoo\snapshot-*.png`
-
-### 진단용 환경변수 (스파이크 전용)
-
-| 변수 | 효과 |
-|---|---|
-| `ZOOZOO_NO_PEEK=1` | 빼꼼 비활성 (유대 단계 게이트 적용) |
-| `ZOOZOO_CALM_FPS=<n>` | 유휴 프레임레이트 (기본 12) |
-| `ZOOZOO_PAINT_WALLPAPER=1` | 뒷마당 창에 월페이퍼를 직접 그림 (투명이 안 될 때 폴백) |
-| `ZOOZOO_NO_ATTACH=1` | WorkerW에 붙이지 않고 일반 창으로 |
-| `ZOOZOO_RENDER=software\|angle\|wgl` | Avalonia 렌더 백엔드 강제 |
-| `ZOOZOO_COMP=winui\|dcomp\|redirect` | Avalonia 컴포지션 모드 강제 |
-| `ZOOZOO_UI_RENDER=1` | UI 스레드에서 렌더 |
-| `ZOOZOO_SNAPSHOT=1` | 시작 후 뒷마당 스냅샷 자동 저장 (`ZOOZOO_SNAPSHOT_DELAY=<초>`, 기본 3) |
-| `ZOOZOO_STYLE=fur` | 카툰 대신 털 질감 3D 스타일로 그림 |
-| `ZOOZOO_WALLPAPER=<그림 경로>` | 실제 월페이퍼는 그대로 두고 이 그림을 뒷마당에 깔아 서식지 인식·행동을 시험 |
-| `ZOOZOO_ADOPT=cat,dog` | 시작할 때 펫을 더 데려옴 (트레이 "펫 추가하기"와 같음, 저장됨) |
-| `ZOOZOO_SHOW_HABITAT=1` | 인식된 바닥을 초록색, 지평선을 노란 선으로 화면에 표시 (트레이 "(테스트) 서식지 인식 결과 보기"로도 켜고 끔) |
-| `ZOOZOO_BOND=<0~100>` | 시작할 때 모든 펫의 유대감을 이 값으로 설정 (트레이 메뉴 "(테스트) 유대감"으로도 조절 가능) |
-| `ZOOZOO_DEMO_MENU=menu\|queue` | 시작 4초 뒤 첫 펫의 파이 메뉴를 자동으로 열기 (queue: 행동 몇 개를 미리 큐에 넣음) |
-| `ZOOZOO_POSE_SHEET=1` | 시작 시 모든 포즈를 한 장에 그린 `pose-sheet.png` 저장 (리그 확인용) |
-
-## 스파이크에서 확인할 것 (사람이 직접)
-
-1. 창을 모두 최소화(Win+D)하면 모모(고양이)와 콩이(강아지)가 바탕화면 아래쪽을 걸어다니는가. 검은 사각형이 보이면 `ZOOZOO_PAINT_WALLPAPER=1`로 실행해 비교
-2. 창을 띄우면 펫이 창 뒤로 가려지는가
-3. 1~2분 안에 포그라운드 창 가장자리에서 머리가 빼꼼 나오고, 마우스를 움직이면 눈동자가 따라오는가
-4. 빼꼼 중인 머리 위를 클릭해도 뒤의 창에 클릭이 전달되는가
-5. 전체화면 앱을 띄우면 빼꼼이 멈추는가
-
-## 측정 기록 (2026-11-07, 2560x1600 @150%, 펫 2마리)
-
-| 조건 | CPU (1코어 기준) | 메모리 |
-|---|---|---|
-| 최초 구현 (전체화면 컨트롤 + 월페이퍼 매 프레임) | 23.6% | 301MB |
-| 월페이퍼 제거 + 펫별 스프라이트 + 유휴 12fps | 7~8% | ~125MB |
-| 위 조건 + 의사 3D 벡터 렌더러 | ~10% | ~155MB |
-| GPU SDF 3D 렌더러 (현재 기본) | ~7% | ~155MB |
-| 위 조건, 프레임 없이 창만 존재 (GPU) | 4.5% | 114MB |
-| 위 조건, 프레임 없이 창만 존재 (소프트웨어 렌더) | 1.4% | 94MB |
-| 소프트웨어 렌더로 실제 동작 | 20~23% | 112MB |
-
-알려진 이슈: GPU 경로는 아무것도 그리지 않아도 약 3%를 쓴다(Avalonia 렌더 루프 추정). 소프트웨어 경로는 유휴는 싸지만 전체 창을 매 프레임 블릿해 동작 시 비싸다. 다음 후보는 펫마다 작은 창을 쓰는 방식(소프트웨어 렌더 + 작은 블릿)이다. 기획서 §8.4 예산(유휴 1%, 동작 3%)은 아직 미달.
+## Documentation
+- [Product and technical plan](docs/PLANNING.md) ([한국어](docs/PLANNING.ko.md))
