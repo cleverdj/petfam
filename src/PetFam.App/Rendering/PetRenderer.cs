@@ -23,8 +23,8 @@ public static class PetRenderer
     /// <summary>Cat = Persian (stocky, flat face, long coat). Dog = Pomeranian (small, round, very fluffy).</summary>
     public static Dims DimsOf(PetSpecies s) => s switch
     {
-        PetSpecies.Cat => new Dims(40, 13, 22, 23, 11, 10, 19, 5, 2),
-        _ => new Dims(38, 14, 21, 21, 10, 9, 19, 5, 4),
+        PetSpecies.Cat => new Dims(40, 13, 22, 23, 11, 10, 17.5f, 5, 2),
+        _ => new Dims(38, 14, 21, 21, 10, 9, 17, 5, 4),
     };
 
     /// <summary>
@@ -273,6 +273,26 @@ public static class PetRenderer
                 (float)wb.xr, (float)wb.y, (float)wb.zr, (float)r2,
                 c.R / 255f, c.G / 255f, c.B / 255f, (float)(k ?? K), g, a1, a2, a3));
         }
+
+        /// <summary>
+        /// An ellipsoid: radius <paramref name="rx"/> along <paramref name="ax"/>, <paramref name="ry"/> along
+        /// <paramref name="ay"/> (perpendicular to ax) and <paramref name="rz"/> across both. For shapes a sphere or a
+        /// round cone can't make: a wide flat muzzle, a barrel chest, a broad skull.
+        /// </summary>
+        public void Ellipsoid(V3 c, V3 ax, V3 ay, double rx, double ry, double rz, Color color, double? k = null)
+        {
+            var x = ax.Normalized;
+            var y = (ay - x * Dot(ay, x)).Normalized;
+            Prims.Add(new SpherePrim { C = Cam.Project(c), R = Math.Max(rx, Math.Max(ry, rz)) * Cam.Scale(c), Color = color, Edge = true, Depth = Cam.Depth(c) });
+            var wc = Cam.World(c);
+            var wx = Cam.World(x);
+            var wy = Cam.World(y);
+            Sdf.Add(new SdfPrim((float)wc.xr, (float)wc.y, (float)wc.zr, (float)rx,
+                (float)wx.xr, (float)wx.y, (float)wx.zr, (float)ry,
+                color.R / 255f, color.G / 255f, color.B / 255f, (float)(k ?? K), (float)(-2 - rz), (float)wy.xr, (float)wy.y, (float)wy.zr));
+        }
+
+        private static double Dot(V3 a, V3 b) => a.X * b.X + a.Y * b.Y + a.Z * b.Z;
 
         public void Sphere(V3 c, double r, Color color, bool edge = true, double? k = null, double? gloss = null)
         {
@@ -2144,10 +2164,10 @@ public static class PetRenderer
             var joint = LegJoint(p, d, i);
             var knee = p.Knees[i] ?? SolveKnee(joint, foot, d.L1, d.L2);
             var upperR = d.BodyR * (i < 2 ? 0.3 : 0.34);
-            var lowerR = d.BodyR * 0.24;
+            var lowerR = d.BodyR * 0.21;
             s.Capsule(joint, knee, upperR, style.Leg, k: 2.5);
             s.Capsule(knee, foot + new V3(0, d.BodyR * 0.2, 0), lowerR, lowerLeg, k: 1.2);
-            s.Sphere(foot + new V3(1.5, d.BodyR * 0.28, 0), d.BodyR * 0.42, pawColor, k: 1.2);
+            s.Sphere(foot + new V3(1.5, d.BodyR * 0.24, 0), d.BodyR * 0.34, pawColor, k: 1.2);
         }
 
         // Folded haunches.
@@ -2179,7 +2199,9 @@ public static class PetRenderer
         // Coat pattern: darker saddle along the back (sable / tabby), pale chest and neck ruff.
         var pom = pet.Species == PetSpecies.Dog;
         s.Stripe = striped ? 1 : 0;
-        s.Capsule(trunkA + new V3(0, d.BodyR * 0.55, 0), trunkB + new V3(-d.BodyR * 0.4, d.BodyR * 0.5, 0), d.BodyR * 0.62, style.Saddle, k: 2.5);
+        var bold = Lum(style.Fur) - Lum(style.Saddle) > 90;
+        s.Capsule(trunkA + new V3(0, d.BodyR * (bold ? 0.35 : 0.55), 0), trunkB + new V3(-d.BodyR * 0.4, d.BodyR * (bold ? 0.3 : 0.5), 0),
+            d.BodyR * (bold ? 0.85 : 0.62), style.Saddle, k: bold ? 1.2 : 2.5);
         s.Stripe = 0;
         s.Sphere(trunkB + new V3(d.BodyR * 0.55, -d.BodyR * 0.2, 0), d.BodyR * (pom ? 0.95 : 0.95), style.Chest, k: 4);
         s.Sphere(V3.Lerp(trunkB, p.Head, 0.4) + new V3(d.BodyR * 0.2, -d.BodyR * 0.25, 0), d.BodyR * (pom ? 0.85 : 0.8), style.Chest, k: 4);
@@ -2491,7 +2513,12 @@ public static class PetRenderer
 
         // Colourpoint (Ragdoll): a darker mask around the eyes and nose.
         if (point is { } mask)
-            s.Sphere(At(0.5, 0.14, 0), r * 0.52, Mix(style.Fur, mask, 0.55), edge: false, k: 2.5);
+        {
+            // The mask spreads over the middle of the face and up round the eyes, darkest on the nose (Siamese);
+            // a Ragdoll's is paler.
+            var deep = look.PointLegs && look.Size < 1f;
+            s.Sphere(At(0.4, 0.04, 0), r * 0.58, Mix(style.Fur, mask, deep ? 0.85 : 0.72), edge: false, k: 2.6);
+        }
 
         // A Husky's dark cap over the crown and down the back of the head, the white face mask below it.
         if (look.Cap)
@@ -2510,15 +2537,40 @@ public static class PetRenderer
         if (look.Blaze)
             s.AddSdf(At(0.78, 0.0, 0), At(0.2, 0.92, 0), r * 0.13, r * 0.2, style.Belly, k: 1.5);
 
+        // A topknot tied with a bow (Maltese).
+        if (look.Bow is { } bowRgb)
+        {
+            var bow = BreedLook.C(bowRgb);
+            var knot = At(-0.12, 1.2, 0);                  // on top of the head fluff
+            s.Sphere(knot, r * 0.2, style.Fur, k: 2);
+            foreach (var sign in new[] { -1, 1 })
+                s.Ellipsoid(knot + up * (r * 0.2) + side * (sign * r * 0.22), side, up, r * 0.22, r * 0.15, r * 0.1, bow, k: 0);
+            s.Sphere(knot + up * (r * 0.2), r * 0.08, Darken(bow, 0.12), edge: false, k: 0);
+        }
+
+        // Pale eyebrow spots (Shiba, Jindo, Husky).
+        if (look.Brows)
+            foreach (var sign in new[] { -1, 1 })
+                s.Sphere(At(0.7, 0.6, sign * 0.38), r * 0.1, style.Chest, edge: false, k: 0, gloss: 0);
+
         // Muzzle and nose: Persian face is flat with the nose high between the eyes; Pomeranian has a short fox muzzle.
+        var mouthF = 0.95;
         if (persian)
         {
             // A Persian's flat face: muzzle and nose pulled in toward the eyes.
             var flat = look.Face == FaceKind.Flat ? 0.12 : 0;
-            s.Sphere(At(0.74 - flat, -0.3, 0.22), r * 0.3, style.Belly, edge: false, k: 1.5);
-            s.Sphere(At(0.74 - flat, -0.3, -0.22), r * 0.3, style.Belly, edge: false, k: 1.5);
-            s.Sphere(At(0.6 - flat, -0.52, 0), r * 0.24, style.Belly, edge: false, k: 1.5);
-            s.Sphere(At(0.97 - flat, -0.08 + flat * 0.4, 0), r * 0.1, style.Nose, edge: false, k: 0, gloss: 0.9);
+            // The whole muzzle moves forward on a long, wedge-shaped face (Siamese, Abyssinian) and back on a flat one.
+            var co = 0.42 * (look.Snout - 1) - flat;
+            V3 AtM(double f, double u, double sd) => At(f + co, u, sd);
+            mouthF = 0.95 + co;
+            if (co > 0.02)
+                s.AddSdf(At(0.45, -0.02, 0), AtM(0.7, -0.2, 0), r * 0.46, r * 0.32, style.Fur, k: 2.5);
+            var pad = look.MuzzleW;
+            var padCol = point is { } pm ? Mix(style.Belly, pm, look.PointLegs && look.Size < 1f ? 0.7 : 0.5) : style.Belly;
+            s.Sphere(AtM(0.74, -0.3, 0.22 * pad), r * 0.3 * pad, padCol, edge: false, k: 1.5);
+            s.Sphere(AtM(0.74, -0.3, -0.22 * pad), r * 0.3 * pad, padCol, edge: false, k: 1.5);
+            s.Sphere(AtM(0.6, -0.52, 0), r * 0.24 * look.MuzzleH, padCol, edge: false, k: 1.5);
+            s.Sphere(AtM(0.97, -0.08 + flat * 0.4, 0), r * 0.1, style.Nose, edge: false, k: 0, gloss: 0.9);
 
             if (Toon)
             {
@@ -2550,43 +2602,59 @@ public static class PetRenderer
                 var line = style.Dark;
                 foreach (var sign in new[] { -1, 1 })
                 {
-                    var corner = At(1.0, -0.4, sign * 0.12);
-                    s.AddSdf(At(0.96, -0.3, 0), corner, r * 0.028, r * 0.028, line, k: 0, gloss: 0);
-                    s.AddSdf(corner, At(1.02, -0.34, sign * 0.22), r * 0.028, r * 0.028, line, k: 0, gloss: 0);
-                    s.Sphere(At(1.02, -0.22, sign * 0.3), r * 0.035, line, edge: false, k: 0, gloss: 0);
-                    s.Sphere(At(1.0, -0.3, sign * 0.34), r * 0.035, line, edge: false, k: 0, gloss: 0);
+                    var corner = AtM(1.0, -0.4, sign * 0.12);
+                    s.AddSdf(AtM(0.96, -0.3, 0), corner, r * 0.028, r * 0.028, line, k: 0, gloss: 0);
+                    s.AddSdf(corner, AtM(1.02, -0.34, sign * 0.22 * pad), r * 0.028, r * 0.028, line, k: 0, gloss: 0);
+                    s.Sphere(AtM(1.02, -0.22, sign * 0.3 * pad), r * 0.035, line, edge: false, k: 0, gloss: 0);
+                    s.Sphere(AtM(1.0, -0.3, sign * 0.34 * pad), r * 0.035, line, edge: false, k: 0, gloss: 0);
                 }
             }
         }
-        else if (look.Face == FaceKind.Flat)
-        {
-            // French Bulldog: a short, wide, pushed-in muzzle with a big dark nose.
-            s.Sphere(At(0.66, -0.26, 0.2), r * 0.32, style.Chest, edge: false, k: 2);
-            s.Sphere(At(0.66, -0.26, -0.2), r * 0.32, style.Chest, edge: false, k: 2);
-            s.Sphere(At(0.92, -0.08, 0), r * 0.18, style.Nose, edge: false, k: 0, gloss: 0.9);
-        }
-        else if (look.Face == FaceKind.Fox)
-        {
-            // Shiba, Jindo, Corgi: a longer fox-like snout in the pale "urajiro" colour, nose at the tip. Hounds and
-            // retrievers have longer, broader ones in the coat colour (a Dachshund's long nose, a Golden's broad muzzle).
-            var snoutLen = look.Snout;
-            var broad = look.Size > 1.2f ? 1.15 : 1.0;
-            var snout = look.PaleSnout ? style.Chest : Mix(style.Fur, style.Chest, 0.3);
-            var end = 0.55 + 0.75 * snoutLen;
-            s.AddSdf(At(0.55, -0.2, 0), At(end, -0.3 - 0.06 * (snoutLen - 1), 0), r * 0.4 * broad, r * 0.27 * broad, snout, k: 2);
-            s.Sphere(At(end + 0.25, -0.22 - 0.06 * (snoutLen - 1), 0), r * 0.16 * broad, style.Nose, edge: false, k: 0, gloss: 0.9);
-        }
         else
         {
-            // A button face: a short round muzzle (shorter still on a Pomeranian, a little longer on a Poodle).
-            var snoutLen = look.Snout;
-            s.Sphere(At(0.62 + 0.16 * snoutLen, -0.22, 0), r * 0.42, style.Chest, edge: false, k: 2);
-            s.Sphere(At(0.95 + 0.22 * snoutLen, -0.14, 0), r * 0.17, style.Nose, edge: false, k: 0, gloss: 0.9);
+            // Dogs: a muzzle built from the breed's measurements. Length (a Dachshund's long nose, a Frenchie's
+            // pushed-in one), width and depth (a Golden's broad muzzle, a Poodle's fine one), hanging lips, colour.
+            var muzLen = look.Snout;
+            var mw = look.MuzzleW;
+            var mh = look.MuzzleH;
+            var snoutCol = look.MuzzleColor is { } mcol ? BreedLook.C(mcol)
+                : look.PaleSnout ? style.Chest : Mix(style.Fur, style.Chest, 0.3);
+            var tip = 0.95 + 0.62 * muzLen;
+            var down = (fwd - up * 0.15).Normalized;
+            // Bridge of the nose, tapering from the stop to the nose.
+            s.AddSdf(At(0.5, -0.1, 0), At(tip - 0.1, -0.2 - 0.04 * muzLen, 0), r * 0.34 * mw, r * 0.2 * Math.Min(1.0, mw), snoutCol, k: 2);
+            // Upper lip and the front of the muzzle: wide and flat in front, broad on broad-faced breeds.
+            var lipC = At((0.45 + tip) / 2, -0.36, 0);
+            var (la, lb, lc) = (r * Math.Max(0.2, (tip - 0.45) / 2), r * 0.24 * mh, r * 0.34 * mw);
+            s.Ellipsoid(lipC, down, up, la, lb, lc, snoutCol, k: 2);
+            var upO = (up - down * (up.X * down.X + up.Y * down.Y + up.Z * down.Z)).Normalized;
+            // A point on the muzzle's surface, given as a direction from its centre (x forward, y up, z across).
+            V3 Lip(double x, double y, double z)
+            {
+                var n = Math.Sqrt(x * x + y * y + z * z) / 1.02;
+                return lipC + down * (la * x / n) + upO * (lb * y / n) + side * (lc * z / n);
+            }
+            // Hanging lips (flews) on retrievers, hounds and bulldogs.
+            if (look.Jowls > 0)
+                foreach (var sign in new[] { -1, 1 })
+                    s.Ellipsoid(At(tip - 0.3, -0.5, sign * 0.2 * mw), down, up, r * 0.2, r * (0.1 + 0.14 * look.Jowls), r * 0.14, snoutCol, k: 1.5);
+            s.Sphere(At(tip, -0.2 - 0.04 * muzLen, 0), r * (0.12 + 0.05 * mw), style.Nose, edge: false, k: 0, gloss: 0.9);
+            mouthF = tip - 0.3;
+            if (Toon && p.Mouth < 0.05)
+            {
+                // The drawn dog mouth: a short line down from the nose, curving out to each side.
+                var lineCol = Mix(style.Dark, style.Nose, 0.5);
+                var lw = r * 0.026;
+                var mid = Lip(0.82, -0.56, 0);
+                s.AddSdf(Lip(0.97, 0.22, 0), mid, lw, lw, lineCol, k: 0, gloss: 0);
+                foreach (var sign in new[] { -1, 1 })
+                    s.AddSdf(mid, Lip(0.42, -0.58, sign * 0.7), lw, lw * 0.8, lineCol, k: 0, gloss: 0);
+            }
         }
         if (p.Mouth > 0.05)
-            s.Sphere(At(0.95, -0.52, 0), r * 0.22 * p.Mouth + r * 0.08, Color.FromRgb(0x4A, 0x2A, 0x2A), edge: false, k: 0);
+            s.Sphere(At(mouthF, -0.52, 0), r * 0.22 * p.Mouth + r * 0.08, Color.FromRgb(0x4A, 0x2A, 0x2A), edge: false, k: 0);
         if (p.Tongue)
-            s.Sphere(At(0.95, -0.68, 0), r * 0.2, Color.FromRgb(0xE8, 0x70, 0x7F), edge: false, k: 0, gloss: 0.5);
+            s.Sphere(At(mouthF, -0.68, 0), r * 0.2, Color.FromRgb(0xE8, 0x70, 0x7F), edge: false, k: 0, gloss: 0.5);
         s.K = 1.5;
 
         // Ears.
@@ -2646,10 +2714,10 @@ public static class PetRenderer
                 // Maltese and Poodle: long ears covered in hair that hang lower and fuller.
                 var longEar = look.Ears == EarKind.DogLongFloppy;
                 var drop = longEar ? 0.45 : 0;
-                var earRoot = At(-0.08, 0.74, sign * 0.5);
-                var fold = At(-0.06 - tilt * 0.4, 0.98 + tilt * 0.15, sign * (0.86 * size));
-                var hang = At(0.0 - tilt * 0.6, 0.6 - drop * 0.5 + tilt * 0.35, sign * (1.1 * size + swing));
-                var tip = At(0.06 - tilt * 0.7, 0.16 - drop + tilt * 0.5, sign * (1.06 * size + swing * 1.4));
+                var earRoot = At(-0.14, 0.64, sign * 0.6);
+                var fold = At(-0.12 - tilt * 0.4, 0.8 + tilt * 0.15, sign * (0.84 * size));
+                var hang = At(-0.06 - tilt * 0.6, 0.32 - drop * 0.5 + tilt * 0.35, sign * (0.98 * size + swing));
+                var tip = At(-0.02 - tilt * 0.7, -0.14 - drop + tilt * 0.5, sign * (0.94 * size + swing * 1.4));
                 // Pale coats get ears in the coat colour (a white Maltese has white ears), others a shade darker.
                 var pale = style.Fur.R + style.Fur.G + style.Fur.B > 690;
                 var ear = pale ? style.Fur : Mix(style.Fur, style.Dark, 0.22);
@@ -2693,7 +2761,7 @@ public static class PetRenderer
                 default:
                 {
                     var wide = p.Eyes == Eye.Wide;
-                    var er = r * (persian ? (Toon ? (wide ? 0.41 : 0.38) : (wide ? 0.42 : 0.38)) : (wide ? 0.34 : 0.31))
+                    var er = r * (persian ? (Toon ? (wide ? 0.41 : 0.38) : (wide ? 0.42 : 0.38)) : (wide ? 0.28 : 0.25)) * look.EyeSize
                              * (1 + 0.12 * (1 - pet.Growth.BodyGrowth));   // baby eyes are bigger for the head
                     var gaze = (fwd * 0.9 + outward * 0.3 + up * 0.05).Normalized;
                     // Clip to the head surface so the eye sits flush in the face like a drawn-on eye, not a bulging ball.
@@ -2868,6 +2936,8 @@ public static class PetRenderer
     }
 
     private static Color MudColor(Pet pet) => pet.Appearance.MudDried ? Color.FromRgb(0x8A, 0x6A, 0x4E) : Color.FromRgb(0x5B, 0x3A, 0x1E);
+
+    private static double Lum(Color c) => 0.3 * c.R + 0.59 * c.G + 0.11 * c.B;
 
     private static Color Darken(Color c, double amount) => Color.FromRgb(
         (byte)(c.R * (1 - amount)), (byte)(c.G * (1 - amount)), (byte)(c.B * (1 - amount)));

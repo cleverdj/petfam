@@ -103,29 +103,38 @@ public static class PoseSheet
     /// </summary>
     public static void QueueCloseUpSheet(string path)
     {
-        var ids = Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_BREEDS") is { Length: > 0 } list
+        // "all" (or nothing): every breed. Four breeds to a row, each three-quarter view and facing you.
+        var list = Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_BREEDS");
+        var ids = list is { Length: > 0 } && list != "all"
             ? list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            : new[] { "poodle", "bichon", "korean-shorthair", "british-shorthair", "ragdoll", "siamese" };
+            : Breed.All.Select(b => b.Id).ToArray();
         var now = DateTime.UtcNow;
-        const float S = 4f;
+        var s = float.TryParse(Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_ZOOM"), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var z) ? z : 3f;
+        const int perRow = 4;
+        const float cw = CellW, ch = CellH - 40;
         var cells = new List<(float X, float Y, SdfPetRenderer.Frame Frame)>();
-        var col = 0;
+        var n = 0;
         foreach (var id in ids)
         {
             if (Breed.All.FirstOrDefault(b => b.Id == id) is not { } breed) continue;
+            var (row, slot) = (n / perRow, n % perRow);
+            var col = 0;
             foreach (var heading in new[] { 40f, 90f })
             {
                 var pet = new Pet(breed.Species, breed.Name, now, new Random(1), breed) { Position = Vec2.Zero, Heading = heading, TargetHeading = heading };
                 pet.Growth = new Growth(now, Growth.AdultAt);
                 pet.SetAnimation("idle");
-                pet.AnimationTime = 0.37f;
-                var frame = SdfPetRenderer.Build(pet, 1f, CellW / 2f, CellH - 50, CellW, CellH - 40);
-                frame.Zoom = S;
-                cells.Add((col * CellW * S, 0, frame));
+                pet.AnimationTime = 0.9f;                       // eyes open (0.37 catches some breeds mid-blink)
+                var frame = SdfPetRenderer.Build(pet, 1f, cw / 2f, ch - 10, cw, ch);
+                frame.Zoom = s;
+                cells.Add(((slot * 2 + col) * cw * s, row * ch * s, frame));
                 col++;
             }
+            n++;
         }
-        SdfPetRenderer.QueueSheet(cells, (int)(CellW * S * col), (int)((CellH - 40) * S), path);
+        var rows = (n + perRow - 1) / perRow;
+        SdfPetRenderer.QueueSheet(cells, (int)(cw * s * Math.Min(n, perRow) * 2), (int)(ch * s * rows), path);
     }
 
     /// <summary>Every breed as an adult (rows: dogs, then cats), three-quarter view and facing you.</summary>

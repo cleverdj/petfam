@@ -17,7 +17,7 @@ namespace PetFam.Desktop.Rendering;
 /// </summary>
 public static class SdfPetRenderer
 {
-    public const int MaxPrims = 96;
+    public const int MaxPrims = 160;
 
     private static volatile bool _enabled = Environment.GetEnvironmentVariable("PETFAM_RENDERER") != "vector";
     private static SKRuntimeEffect? _effect;
@@ -334,10 +334,10 @@ uniform float2 uFoot;
 uniform float2 uCam;
 uniform float2 uYaw;
 uniform float3 uSq;
-uniform float4 uP[96];
-uniform float4 uQ[96];
-uniform float4 uM[96];
-uniform float4 uX[96];
+uniform float4 uP[160];
+uniform float4 uQ[160];
+uniform float4 uM[160];
+uniform float4 uX[160];
 
 float sdRoundCone(float3 p, float3 a, float3 b, float r1, float r2) {
     float3 ba = b - a;
@@ -366,7 +366,18 @@ float sstep(float a, float b, float x) {
 }
 
 // Eyes are spheres clipped to the head sphere, so they sit flush in the face instead of bulging out.
+// Ellipsoids (x.x < -1.5): centre a.xyz, radii a.w (along b.xyz), b.w (along x.yzw) and -x.x - 2 (across both).
 float primDist(float3 p, float4 a, float4 b, float4 x) {
+    if (x.x < -1.5) {
+        float3 ay = x.yzw;
+        float3 az = cross(b.xyz, ay);
+        float3 d = p - a.xyz;
+        float3 q = float3(dot(d, b.xyz), dot(d, ay), dot(d, az));
+        float3 r = float3(a.w, b.w, -x.x - 2.0);
+        float k0 = length(q / r);
+        float k1 = length(q / (r * r));
+        return k0 * (k0 - 1.0) / max(k1, 0.0001);
+    }
     if (x.x < -0.5) {
         return max(length(p - a.xyz) - a.w, length(p - b.xyz) - b.w);
     }
@@ -471,7 +482,7 @@ float map(float3 p0) {
     float sq = min(min(uSq.x, uSq.y), uSq.z);
     float ds = 100000.0;
     float dh = 100000.0;
-    for (int i = 0; i < 96; i++) {
+    for (int i = 0; i < 160; i++) {
         if (float(i) >= uCount) { break; }
         float di = primDist(p, uP[i], uQ[i], uX[i]);
         float k = uM[i].w;
@@ -498,7 +509,7 @@ float4 material(float3 p0) {
     float3 hc = float3(0.0);
     float hr = 0.0;
     float4 hq = float4(0.0);
-    for (int i = 0; i < 96; i++) {
+    for (int i = 0; i < 160; i++) {
         if (float(i) >= uCount) { break; }
         float di = primDist(p, uP[i], uQ[i], uX[i]);
         float k = uM[i].w;
@@ -506,8 +517,9 @@ float4 material(float3 p0) {
             float h = clamp(0.5 + 0.5 * (di - ds) / k, 0.0, 1.0);
             ds = mix(di, ds, h) - k * h * (1.0 - h);
             col = mix(uM[i].rgb, col, h);
-            gl = mix(uX[i].x, gl, h);
-            st = mix(uX[i].y, st, h);
+            bool ell = uX[i].x < -1.5;
+            gl = mix(ell ? 0.04 : uX[i].x, gl, h);
+            st = mix(ell ? 0.0 : uX[i].y, st, h);
         } else if (di < dh) {
             dh = di;
             hcol = uM[i].rgb;
