@@ -2693,7 +2693,7 @@ public static class PetRenderer
                 default:
                 {
                     var wide = p.Eyes == Eye.Wide;
-                    var er = r * (persian ? (Toon ? (wide ? 0.51 : 0.47) : (wide ? 0.42 : 0.38)) : (wide ? 0.34 : 0.31))
+                    var er = r * (persian ? (Toon ? (wide ? 0.41 : 0.38) : (wide ? 0.42 : 0.38)) : (wide ? 0.34 : 0.31))
                              * (1 + 0.12 * (1 - pet.Growth.BodyGrowth));   // baby eyes are bigger for the head
                     var gaze = (fwd * 0.9 + outward * 0.3 + up * 0.05).Normalized;
                     // Clip to the head surface so the eye sits flush in the face like a drawn-on eye, not a bulging ball.
