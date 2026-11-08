@@ -2740,6 +2740,10 @@ public static class PetRenderer
 
             // 3D eye: a glossy white ball set into the head, a dark pupil ball in front of it.
             var ec = persian ? (Toon ? At(0.6, 0.13, sign * 0.43) : At(0.66, 0.12, sign * 0.38)) : At(0.68, 0.16, sign * 0.38);
+            // A dog's eye ball sits as deep as its size: a small eye (Shiba, Husky) nearer the surface, so the same
+            // share of it shows as of a big one. Sunk at the big eye's depth it vanished into the head.
+            if (!persian)
+                ec = h + (ec - h).Normalized * (r * (1 - 0.66 * 0.25 * look.EyeSize));
             var outward = (ec - h).Normalized;
             // The cartoon eye pokes out past the head outline, so an eye on the far side of a face turned
             // away from the viewer would show as a dark notch on the back of the head. Leave it out.

@@ -111,6 +111,8 @@ public static class PoseSheet
         var now = DateTime.UtcNow;
         var s = float.TryParse(Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_ZOOM"), System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out var z) ? z : 3f;
+        // PETFAM_CLOSEUP_POSE=walk, lie, sit, ... (default idle).
+        var pose = Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_POSE") is { Length: > 0 } ps ? ps : "idle";
         const int perRow = 4;
         const float cw = CellW, ch = CellH - 40;
         var cells = new List<(float X, float Y, SdfPetRenderer.Frame Frame)>();
@@ -124,7 +126,7 @@ public static class PoseSheet
             {
                 var pet = new Pet(breed.Species, breed.Name, now, new Random(1), breed) { Position = Vec2.Zero, Heading = heading, TargetHeading = heading };
                 pet.Growth = new Growth(now, Growth.AdultAt);
-                pet.SetAnimation("idle");
+                pet.SetAnimation(pose);
                 pet.AnimationTime = 0.9f;                       // eyes open (0.37 catches some breeds mid-blink)
                 var frame = SdfPetRenderer.Build(pet, 1f, cw / 2f, ch - 10, cw, ch);
                 frame.Zoom = s;
