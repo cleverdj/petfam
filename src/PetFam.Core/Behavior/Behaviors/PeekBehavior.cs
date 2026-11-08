@@ -171,7 +171,7 @@ public sealed class PeekBehavior : Behavior
     }
 
     /// <summary>The nearest floor spot where the pet is fully out from behind the window again. Null if the window covers the whole floor.</summary>
-    private static Vec2? WayOut(BehaviorContext ctx, RectI win)
+    public static Vec2? WayOut(BehaviorContext ctx, RectI win)
     {
         var map = ctx.Cell.Map;
         var r = map.RoamArea;

@@ -90,7 +90,7 @@ public sealed class OverlayWindow : Window
                 _canvas.Children.Add(sprite);
             }
 
-            var visible = pet.CellId == _cell.Id && pet.Layer == PetLayer.WindowEdge && pet.Peek is not null;
+            var visible = pet.CellId == _cell.Id && pet.Layer == PetLayer.WindowEdge && (pet.Peek is not null || pet.Perch is not null);
             if (sprite.IsVisible != visible) sprite.IsVisible = visible;
             if (!visible) continue;
 

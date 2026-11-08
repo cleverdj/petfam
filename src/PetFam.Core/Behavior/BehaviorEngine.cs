@@ -44,12 +44,17 @@ public sealed class BehaviorEngine
             new ShelterBehavior(),
             new ZoomiesBehavior(),
             new YawnBehavior(),
+            new ButterflyBehavior(),
         };
         if (species == PetSpecies.Cat)
         {
             list.Add(new GroomBehavior());
             list.Add(new HuntCursorBehavior());
             list.Add(new WatchBehavior());
+            list.Add(new KnockBowlBehavior());
+            list.Add(new WindowPerchBehavior());
+            list.Add(new RoofPerchBehavior());
+            list.Add(new KneadBehavior());
         }
         if (species == PetSpecies.Dog)
         {
@@ -59,6 +64,9 @@ public sealed class BehaviorEngine
             list.Add(new SniffBehavior());
             list.Add(new BegBehavior());
             list.Add(new FollowCursorBehavior());
+            list.Add(new InvitePlayBehavior());
+            list.Add(new AlertBehavior());
+            list.Add(new ScratchBehavior());
         }
         return new BehaviorEngine(list);
     }

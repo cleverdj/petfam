@@ -223,10 +223,10 @@ public class BehaviorVarietyTests
             if (i % 9000 == 0) { dog.Needs.Hunger = 40f; }   // peckish now and then
         }
 
-        foreach (var expected in new[] { "Dog:ZoomiesBehavior", "Dog:ChaseTailBehavior", "Dog:SniffBehavior", "Cat:WatchBehavior", "Cat:ZoomiesBehavior" })
+        foreach (var expected in new[] { "Dog:ZoomiesBehavior", "Dog:ChaseTailBehavior", "Dog:SniffBehavior", "Cat:WatchBehavior", "Cat:ZoomiesBehavior", "Cat:KneadBehavior", "Dog:ScratchBehavior", "Cat:ButterflyBehavior" })
             Assert.Contains(expected, seen);
         var total = time.Values.Sum();
-        foreach (var name in new[] { "ZoomiesBehavior", "ChaseTailBehavior", "SniffBehavior", "WatchBehavior", "BegBehavior", "YawnBehavior" })
+        foreach (var name in new[] { "ZoomiesBehavior", "ChaseTailBehavior", "SniffBehavior", "WatchBehavior", "BegBehavior", "YawnBehavior", "ButterflyBehavior", "KneadBehavior", "ScratchBehavior", "WindowPerchBehavior", "RoofPerchBehavior", "KnockBowlBehavior", "InvitePlayBehavior" })
             Assert.True(time.GetValueOrDefault(name) / total < 0.2f, $"{name} took {100 * time.GetValueOrDefault(name) / total:F0}% of the time");
     }
 }

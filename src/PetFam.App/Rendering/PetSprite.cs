@@ -58,7 +58,7 @@ public sealed class PetSprite : Control
         Canvas.SetLeft(this, (Pet.Position.X - FootX * Depth - cell.Bounds.X) / Scale);
         Canvas.SetTop(this, (Pet.Position.Y - FootY * Depth - cell.Bounds.Y) / Scale);
         // Going in or out of a house: drawn over the house, cut to the doorway.
-        ZIndex = Pet.Doorway is { } dw ? (int)dw.Door.Y + 1 : (int)Pet.Position.Y;
+        ZIndex = Pet.Doorway is { } dw ? (int)dw.Door.Y + 1 : (int)(Pet.Position.Y + Pet.ZBoost);
     }
 
     public override void Render(DrawingContext context)
@@ -76,6 +76,8 @@ public sealed class PetSprite : Control
             return;
         }
         Paint(context, Pet, Depth);
+        if (Pet.Butterfly is { } b)
+            PetRenderer.DrawButterfly(context, new Point(FootX + (b.X - Pet.Position.X) / Depth, FootY + (b.Y - Pet.Position.Y) / Depth), Pet.AnimationTime);
     }
 
     /// <summary>How far behind the threshold the lying pet's feet are (house units).</summary>

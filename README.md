@@ -26,6 +26,7 @@ PetFam is not a screensaver and does not get in your way. Your pets live on the 
 - **Window peek:** a curious pet walks behind the window you are using and pokes its head out of an edge to look at you.
 - Cats hunt a moving mouse pointer: crouch, stalk, wiggle, pounce.
 - A life of their own: sudden zoomies across the floor and panting afterwards (young and lively breeds most; cats after dark), dogs chasing their tails until dizzy, nose-down sniffing trails (hounds and foodies love it), cats watching something up in the sky and chattering at it, begging under your pointer when peckish, trotting after your pointer once they trust you, and big yawns when tired.
+- Mischief: cats stare you in the eye and knock the food bowl away, climb up and sit on top of the window you are using, and lounge on a house roof; dogs trot up to your pointer and play bow to ask for a game, and bark at a newly opened window (wary breeds most). Both chase butterflies on sunny days, pouncing again and again; it always gets away. Cats knead with purring paws, and dogs give their ears a good scratch with a hind foot.
 - Pets play with each other and remember who their friends are and who is boss.
 
 ### Breeds and personas

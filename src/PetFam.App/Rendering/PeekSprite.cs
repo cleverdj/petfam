@@ -30,8 +30,25 @@ public sealed class PeekSprite : Control
         IsHitTestVisible = false;
     }
 
+    /// <summary>Feet of a pet sitting on a window: on the top edge once up, below it (behind the window) while climbing.</summary>
+    public static Vec2 PerchFeet(PerchState s) =>
+        new(s.AnchorX, s.WindowRect.Top + (1f - s.Rise) * PerchClimb);
+
+    /// <summary>How far below the top edge the pet starts its climb (fully hidden behind the window).</summary>
+    public const float PerchClimb = 110f;
+
     public void Place(RectI cellBounds)
     {
+        if (Pet.Perch is { } perch)
+        {
+            var feet = PerchFeet(perch);
+            _origin = new Point(feet.X - Half, feet.Y - Box * 0.75);
+            Width = Box / Scale;
+            Height = Box / Scale;
+            Canvas.SetLeft(this, (_origin.X - cellBounds.X) / Scale);
+            Canvas.SetTop(this, (_origin.Y - cellBounds.Y) / Scale);
+            return;
+        }
         if (Pet.Peek is null) return;
         var (center, _) = PetRenderer.PeekHeadPose(Pet.Peek);
         _origin = new Point(center.X - Half, center.Y - Half);
@@ -56,6 +73,11 @@ public sealed class PeekSprite : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
+        if (Pet.Perch is { } perch)
+        {
+            RenderPerch(context, perch);
+            return;
+        }
         var s = Pet.Peek;
         if (s is null) return;
         using var toBox = context.PushTransform(Matrix.CreateTranslation(-_origin.X, -_origin.Y) * Matrix.CreateScale(1 / Scale, 1 / Scale));
@@ -80,6 +102,23 @@ public sealed class PeekSprite : Control
 
         // It peeks out to look at you: facing front, head turned to the viewer (the renderer's FaceViewer).
         using var placed = context.PushTransform(m);
+        PetSprite.Paint(context, Pet, 1f);
+    }
+
+    /// <summary>Sitting on the window's top edge, tail hanging down over it; while climbing, the window hides the rest.</summary>
+    private void RenderPerch(DrawingContext context, PerchState s)
+    {
+        using var toBox = context.PushTransform(Matrix.CreateTranslation(-_origin.X, -_origin.Y) * Matrix.CreateScale(1 / Scale, 1 / Scale));
+        var r = s.WindowRect;
+        var climbing = s.Rise < 0.999f;
+        // Up on top the window's own top line is the floor; while climbing everything over the window is hidden.
+        using var clipped = climbing
+            ? context.PushGeometryClip(new CombinedGeometry(GeometryCombineMode.Exclude,
+                new RectangleGeometry(new Rect(-100000, -100000, 200000, 200000)),
+                new RectangleGeometry(new Rect(r.X, r.Y, r.Width, r.Height))))
+            : (IDisposable?)null;
+        var feet = PerchFeet(s);
+        using var placed = context.PushTransform(Matrix.CreateTranslation(feet.X - PetSprite.FootX, feet.Y - PetSprite.FootY));
         PetSprite.Paint(context, Pet, 1f);
     }
 }

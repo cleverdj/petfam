@@ -763,7 +763,9 @@ public static class PetRenderer
             "sit" or "peek" => SitPose(d, t),
             "pant" => PantPose(d, t),
             "yawn" => YawnPose(d, t),
-            "sniff" => SniffPose(d, t),   // peeking: sitting behind the window, tail tucked out of sight
+            "sniff" => SniffPose(d, t),
+            "knead" => KneadPose(d, t),
+            "scratch" => ScratchPose(d, t),   // peeking: sitting behind the window, tail tucked out of sight
             "groom" => GroomPose(d, t),
             "petted" => PettedPose(pet, d, t),
             "lie" => LiePose(d, t),
@@ -1088,6 +1090,60 @@ public static class PetRenderer
         if (open > 0.35) p.Eyes = Eye.Closed;
         p.EarBack = 0.3 * open;
         return p;
+    }
+
+    /// <summary>Kneading ("making biscuits"): front paws pressing down in turn, chest low, eyes shut in bliss.</summary>
+    private static Pose KneadPose(Dims d, float t)
+    {
+        var p = SitPose(d, t);
+        p.Shoulder = p.Shoulder + new V3(2, -d.ShoulderH * 0.12, 0);
+        var zs = d.BodyR * 0.55;
+        var beat = t * 5.0;
+        var right = Math.Max(0, Math.Sin(beat)) * d.L1 * 0.32;
+        var left = Math.Max(0, -Math.Sin(beat)) * d.L1 * 0.32;
+        p.Feet[0] = new V3(p.Shoulder.X + 5 + right * 0.4, right, zs);
+        p.Feet[1] = new V3(p.Shoulder.X + 5 + left * 0.4, left, -zs);
+        p.Head = p.Head + new V3(0, -d.ShoulderH * 0.08 + Math.Sin(beat * 2) * 0.4, 0);
+        p.HeadPitch = 6;
+        p.Eyes = Eye.Happy;
+        p.TailWag = 0.5;
+        return p;
+    }
+
+    /// <summary>Sitting and scratching behind the ear with a hind foot, fast, head tipped into it, eyes shut.</summary>
+    private static Pose ScratchPose(Dims d, float t)
+    {
+        var p = SitPose(d, t);
+        var zh = d.BodyR * 0.75;
+        var rub = Math.Sin(t * 22) * 2.5;
+        // Out to the side, so the leg reads past the round body: knee forward, paw up at the ear.
+        p.Knees[2] = new V3(p.Hip.X + d.L1 * 0.9, p.Hip.Y + d.L1 * 0.35, zh * 1.9);
+        p.Feet[2] = new V3(p.Shoulder.X + rub * 0.4, p.Head.Y - d.HeadR * 0.15 + rub, zh * 1.7);
+        p.Head = p.Head + new V3(-1, -2, 0);
+        p.HeadYaw = 18;
+        p.HeadPitch = 10;
+        p.Eyes = Eye.Closed;
+        p.Mouth = 0.35;
+        p.Tongue = true;
+        p.EarBack = 0.25;
+        p.TailWag = 2.5;
+        return p;
+    }
+
+    /// <summary>A butterfly fluttering at <paramref name="at"/>: two pairs of wings flapping, a little body.</summary>
+    public static void DrawButterfly(DrawingContext ctx, Point at, double time, double size = 1.0)
+    {
+        var flap = Math.Abs(Math.Sin(time * 16));
+        var w = (3 + 7 * flap) * size;
+        var h = 7 * size;
+        var wing = new SolidColorBrush(Color.FromRgb(0xFF, 0xC4, 0x3A));
+        var edge = new Pen(new SolidColorBrush(Color.FromRgb(0x6A, 0x3A, 0x10)), 1);
+        var low = new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x3A));
+        ctx.DrawEllipse(low, edge, new Point(at.X - w * 0.55, at.Y + h * 0.45), w * 0.5, h * 0.4);
+        ctx.DrawEllipse(low, edge, new Point(at.X + w * 0.55, at.Y + h * 0.45), w * 0.5, h * 0.4);
+        ctx.DrawEllipse(wing, edge, new Point(at.X - w * 0.6, at.Y - h * 0.25), w * 0.6, h * 0.55);
+        ctx.DrawEllipse(wing, edge, new Point(at.X + w * 0.6, at.Y - h * 0.25), w * 0.6, h * 0.55);
+        ctx.DrawRectangle(new SolidColorBrush(Color.FromRgb(0x3A, 0x26, 0x14)), null, new Rect(at.X - 1, at.Y - h * 0.7, 2, h * 1.4), 1, 1);
     }
 
     /// <summary>Nose to the ground, working along the scent from side to side.</summary>

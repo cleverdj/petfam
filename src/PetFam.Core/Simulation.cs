@@ -597,11 +597,36 @@ public sealed class Simulation
         }
     }
 
+    private readonly HashSet<IntPtr> _seenWindows = new();
+    private bool _seenAny;
+
     private void PollUser()
     {
         User.Foreground = _platform.GetForegroundWindow();
+        NoticeNewWindow(User.Foreground);
         User.Idle = _platform.GetIdleTime();
         User.DoNotDisturb = _platform.IsDoNotDisturb();
         User.CursorOnDesktop = _platform.IsDesktopAt(User.Cursor);
+    }
+
+    /// <summary>
+    /// A window the pets have not seen before came to the front: watchful dogs nearby may bark at it
+    /// (the shy and wary ones more often). Windows that were already open when the app started do not count.
+    /// </summary>
+    private void NoticeNewWindow(Platform.ForegroundWindowInfo? fg)
+    {
+        if (fg is null || fg.Handle == IntPtr.Zero) return;
+        var isNew = _seenWindows.Add(fg.Handle);
+        if (_seenWindows.Count > 512) { _seenWindows.Clear(); _seenWindows.Add(fg.Handle); }
+        if (!_seenAny) { _seenAny = true; return; }
+        if (!isNew || fg.IsFullscreen || User.DoNotDisturb) return;
+        var where = new Vec2(fg.Bounds.X + fg.Bounds.Width / 2f, fg.Bounds.Y + fg.Bounds.Height / 2f);
+        foreach (var pet in Pets)
+        {
+            if (pet.Species != PetSpecies.Dog || pet.Hidden || !IsVisible(pet)) continue;
+            var cell = World.Find(pet.CellId);
+            if (cell is null || !cell.Bounds.Contains(where)) continue;
+            if (_rng.NextDouble() < 0.25 + pet.Personality.Shyness * 0.5) pet.Alert = where;
+        }
     }
 }

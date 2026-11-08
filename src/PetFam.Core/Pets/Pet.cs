@@ -54,6 +54,18 @@ public sealed class Pet
 
     public PeekState? Peek { get; set; }
 
+    /// <summary>Sitting on top of a window (drawn on the window-edge layer), or null.</summary>
+    public PerchState? Perch { get; set; }
+
+    /// <summary>A butterfly the pet is chasing (screen point), drawn by the renderer; null when none.</summary>
+    public Vec2? Butterfly { get; set; }
+
+    /// <summary>Something startling happened here (a new window popped up); a watchful dog may bark at it.</summary>
+    public Vec2? Alert { get; set; }
+
+    /// <summary>Extra draw depth (pixels of Y) so a pet up on a roof is drawn in front of the house.</summary>
+    public float ZBoost { get; set; }
+
     /// <summary>Set by the host while the user holds the pet with the mouse (plan §7.1 petting / carrying).</summary>
     public HoldState Hold { get; set; }
 
@@ -222,6 +234,15 @@ public enum PeekEdge
     Bottom,
     Left,
     Right,
+}
+
+/// <summary>Sitting on a window's top edge. AnchorX is where along the edge; Rise goes 0 (behind) to 1 (up on top).</summary>
+public sealed class PerchState
+{
+    public RectI WindowRect { get; init; }
+    public IntPtr WindowHandle { get; init; }
+    public float AnchorX { get; init; }
+    public float Rise { get; set; }
 }
 
 /// <summary>State of a window-edge peek. Anchor is the point on the window edge the head emerges from.</summary>

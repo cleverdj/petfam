@@ -974,7 +974,7 @@ public sealed class AppHost
     {
         if (_timer is null) return;
         var active = _sim.Debug.ShowHud || (_cell?.Ball is not null) || _sim.Weather.Raining || _sim.Weather.Snowing || _sim.SinceLightning < 0.6f || _sim.Director.Active.Count > 0 || _sim.Pets.Any(p =>
-            p.Selected || p.Bubble is not null || p.Queue.Count > 0 || p.Lift > 0f || p.Animation is "stalk" or "wiggle" or "bat" ||
+            p.Selected || p.Bubble is not null || p.Queue.Count > 0 || p.Lift > 0f || p.Animation is "stalk" or "wiggle" or "bat" or "knead" or "scratch" or "playbow" or "hiss" || p.Butterfly is not null || p.ZBoost != 0f ||
             p.Layer != PetLayer.Backyard || p.Trip is not null || p.Doorway is not null || p.Celebration != Growth.Event.None ||
             Math.Abs(p.Heading - p.TargetHeading) > 0.5f || p.AnimationTime < 1.2f ||
             p.Animation is "walk" or "run" or "shake" or "stretch" or "eat" or "dig" or "groom" or "approach-food");
