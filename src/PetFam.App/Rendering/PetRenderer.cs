@@ -36,8 +36,12 @@ public static class PetRenderer
         var a0 = DimsOf(pet.Species);
         var look = BreedLook.Of(pet);
         // The breed's build: a Corgi's long body on short legs, a British Shorthair's round head, ...
-        var a = new Dims(a0.BodyLen * look.BodyLen, a0.BodyR * look.BodyR, a0.ShoulderH * look.Legs, a0.HipH * look.Legs,
-            a0.L1 * look.Legs, a0.L2 * look.Legs, a0.HeadR * look.Head, a0.Neck, a0.Muzzle * (look.Face == FaceKind.Fox ? 1.6f : 1f));
+        // Size: a Golden Retriever or a Maine Coon stands a head taller than a Chihuahua. Heads grow less than bodies
+        // (a big dog has a relatively smaller head), so the big breeds don't just look like a zoomed-in puppy.
+        var z = look.Size;
+        var a = new Dims(a0.BodyLen * look.BodyLen * z, a0.BodyR * look.BodyR * z, a0.ShoulderH * look.Legs * z, a0.HipH * look.Legs * z,
+            a0.L1 * look.Legs * z, a0.L2 * look.Legs * z, a0.HeadR * look.Head * (0.35f + 0.65f * z), a0.Neck * z,
+            a0.Muzzle * (look.Face == FaceKind.Fox ? 1.6f : 1f) * look.Snout);
         var g = pet.Growth.BodyGrowth;
         const float j = Growth.JuniorAt / (float)Growth.AdultAt;
         // Body length, body radius, legs, head, neck, muzzle, relative to the adult.
@@ -2122,6 +2126,8 @@ public static class PetRenderer
         var fur = style.Fur;
         var mud = pet.Appearance.Mud;
         var pawColor = mud > 0.01f ? Mix(style.Paw, MudColor(pet), Math.Min(1, mud + 0.3)) : style.Paw;
+        var breedLook = BreedLook.Of(pet);
+        var lowerLeg = breedLook.PointLegs && breedLook.Point is { } legPoint ? Mix(style.Leg, BreedLook.C(legPoint), 0.75) : style.Leg;
 
         // Legs: upper (joint → knee) and lower (knee → foot) tubes, paw spheres.
         s.K = 1.2;
@@ -2133,7 +2139,7 @@ public static class PetRenderer
             var upperR = d.BodyR * (i < 2 ? 0.3 : 0.34);
             var lowerR = d.BodyR * 0.24;
             s.Capsule(joint, knee, upperR, style.Leg, k: 2.5);
-            s.Capsule(knee, foot + new V3(0, d.BodyR * 0.2, 0), lowerR, style.Leg, k: 1.2);
+            s.Capsule(knee, foot + new V3(0, d.BodyR * 0.2, 0), lowerR, lowerLeg, k: 1.2);
             s.Sphere(foot + new V3(1.5, d.BodyR * 0.28, 0), d.BodyR * 0.42, pawColor, k: 1.2);
         }
 
@@ -2172,6 +2178,7 @@ public static class PetRenderer
         s.Sphere(V3.Lerp(trunkB, p.Head, 0.4) + new V3(d.BodyR * 0.2, -d.BodyR * 0.25, 0), d.BodyR * (pom ? 0.85 : 0.8), style.Chest, k: 4);
         if (mud >= 0.7f)
             s.Capsule(trunkA + new V3(6, d.BodyR * 0.6, 0), trunkB + new V3(-6, d.BodyR * 0.6, 0), d.BodyR * 0.35, MudColor(pet), k: 1);
+        BuildCoat(s, d, style, p, look, trunkA, trunkB);
 
         // Tail.
         s.Stripe = striped ? 1 : 0;
@@ -2187,6 +2194,85 @@ public static class PetRenderer
         if (cat && Toon) BuildCollar(s, d, V3.Lerp(neckFrom, neckTo, 0.42), (neckTo - neckFrom).Normalized);
 
         BuildHead(s, pet, d, style, p, t);
+    }
+
+    /// <summary>
+    /// The breed's coat beyond its colour (see <see cref="CoatKind"/>): ruffs, curls, long silky hair, britches,
+    /// feathering, and a Bengal's rosettes.
+    /// </summary>
+    private static void BuildCoat(Scene s, Dims d, Style style, Pose p, BreedLook look, V3 trunkA, V3 trunkB)
+    {
+        var r = d.BodyR;
+        var keepK = s.K;
+        var keepStripe = s.Stripe;
+        s.Stripe = 0;
+        var neck = V3.Lerp(trunkB, p.Head, 0.3);
+        switch (look.Coat)
+        {
+            case CoatKind.Fluffy:
+                // A big ruff of fur round the neck and chest (Pomeranian, Husky, Shiba, Jindo) and a fluffy rump.
+                s.K = 4;
+                s.Sphere(neck + new V3(r * 0.15, -r * 0.1, 0), r * 1.12, Mix(style.Fur, style.Chest, 0.5));
+                s.Sphere(trunkA + new V3(-r * 0.2, r * 0.1, 0), r * 1.1, style.Fur);
+                break;
+            case CoatKind.Long:
+                // A long-haired cat: a mane round the neck, "britches" on the hind legs, a fringe under the belly.
+                s.K = 4;
+                s.Sphere(neck + new V3(r * 0.1, -r * 0.15, 0), r * 1.2, style.Chest);
+                foreach (var z in new[] { -1, 1 })
+                    s.Sphere(new V3(p.Hip.X - r * 0.1, Math.Max(r * 0.7, p.Hip.Y - r * 0.35), z * r * 0.55), r * 0.75, style.Fur);
+                s.Capsule(trunkA + new V3(4, -r * 0.7, 0), trunkB + new V3(-4, -r * 0.7, 0), r * 0.5, Mix(style.Fur, style.Belly, 0.5), k: 3);
+                break;
+            case CoatKind.Feathered:
+                // A retriever: a full pale chest and feathering hanging under the belly.
+                s.K = 3;
+                s.Sphere(neck + new V3(r * 0.3, -r * 0.35, 0), r * 0.9, Mix(style.Fur, style.Chest, 0.5));
+                s.Capsule(trunkA + new V3(r * 0.6, -r * 0.75, 0), trunkB + new V3(-r * 0.2, -r * 0.85, 0), r * 0.42, Mix(style.Fur, style.Chest, 0.4), k: 2.5);
+                break;
+            case CoatKind.Silky:
+                // A Maltese: long silky hair parted along the back, falling almost to the floor over the legs.
+                if (p.Fold < 0.5)
+                {
+                    s.K = 3;
+                    foreach (var z in new[] { -1, 1 })
+                        s.Capsule(new V3(trunkA.X - r * 0.2, r * 0.65, z * r * 0.5), new V3(trunkB.X + r * 0.1, r * 0.65, z * r * 0.5), r * 0.62, style.Fur);
+                }
+                break;
+            case CoatKind.Curly:
+                // Tight curls (Poodle, Bichon): a bumpy outline of little puffs over the back and sides, puffs on the legs.
+                s.K = 1.2;
+                for (var i = 0; i < 4; i++)
+                {
+                    var c = V3.Lerp(trunkA, trunkB, (i + 0.5) / 4);
+                    s.Sphere(c + new V3(0, r * 0.85, 0), r * 0.42, style.Fur);
+                    s.Sphere(c + new V3(0, r * 0.25, r * 0.85), r * 0.38, style.Fur);
+                    s.Sphere(c + new V3(0, r * 0.25, -r * 0.85), r * 0.38, style.Fur);
+                }
+                for (var i = 0; i < 4; i++)
+                    if (p.Feet[i] is { } f)
+                        s.Sphere(f + new V3(0, d.L2 * 0.55, 0), r * 0.4, style.Fur);
+                break;
+        }
+        if (look.Spots)
+        {
+            // Bengal rosettes: dark spots scattered along both flanks (in place of tabby stripes).
+            var spot = Mix(style.Saddle, style.Dark, 0.35);
+            for (var i = 0; i < 5; i++)
+            {
+                // From the haunch to the shoulder; the round rump and chest stick out further than the middle.
+                var f = -0.15 + 0.3 * i;
+                var c = V3.Lerp(trunkA, trunkB, f);
+                var bulge = i is 0 or 4 ? 1.12 : i is 1 or 3 ? 1.0 : 0.94;
+                foreach (var z in new[] { -1, 1 })
+                {
+                    var high = (i + (z > 0 ? 1 : 0)) % 2 == 0;
+                    s.Sphere(c + new V3(z * (i % 2 == 0 ? 1.5 : -1.5), r * (high ? 0.55 : 0.15), z * r * bulge * (high ? 0.84 : 0.97)),
+                        r * 0.26, spot, edge: false, k: 0, gloss: 0);
+                }
+            }
+        }
+        s.K = keepK;
+        s.Stripe = keepStripe;
     }
 
     /// <summary>A brown collar ring around the neck with a little heart tag hanging at the front.</summary>
@@ -2297,11 +2383,11 @@ public static class PetRenderer
         var taper = fluffy ? 0.025 : Toon ? 0.04 : 0.05;
         for (var i = 0; i < pts.Count - 1; i++)
         {
-            var c = point ?? (look.Stripes ? (i % 2 == 0 ? style.Fur : style.Saddle) : style.Fur);
+            var c = point ?? (look.Stripes || look.Spots ? (i % 2 == 0 ? style.Fur : style.Saddle) : style.Fur);
             s.Capsule(pts[i], pts[i + 1], d.BodyR * (thick - taper * i), c);
         }
         if (Toon)
-            s.Sphere(pts[^1], d.BodyR * (thick - taper * (pts.Count - 1)) * 1.05, point ?? (look.Stripes ? style.Saddle : style.Fur));
+            s.Sphere(pts[^1], d.BodyR * (thick - taper * (pts.Count - 1)) * 1.05, point ?? (look.Stripes || look.Spots ? style.Saddle : style.Fur));
     }
 
     /// <summary>A long dog tail carried out behind and a little up (down and hanging when carried).</summary>
@@ -2400,10 +2486,16 @@ public static class PetRenderer
         if (point is { } mask)
             s.Sphere(At(0.5, 0.14, 0), r * 0.52, Mix(style.Fur, mask, 0.55), edge: false, k: 2.5);
 
+        // A Husky's dark cap over the crown and down the back of the head, the white face mask below it.
+        if (look.Cap)
+            s.Sphere(At(-0.35, 0.5, 0), r * 0.6, style.Saddle, edge: false, k: 2.5);
+
         // Fluffy cheeks in the chest colour; a Shiba's or Jindo's pale "urajiro" cheeks.
         var cheek = persian || look.Face == FaceKind.Fox ? style.Chest : Mix(style.Fur, style.Chest, 0.35);
-        s.Sphere(At(0.3, -0.3, 0.55), r * 0.5, cheek, edge: false, k: 2.5);
-        s.Sphere(At(0.3, -0.3, -0.55), r * 0.5, cheek, edge: false, k: 2.5);
+        // Chubby breeds (British Shorthair) get big round jowls.
+        var jowl = look.Cheeks;
+        s.Sphere(At(0.3, -0.3 - 0.08 * (jowl - 1), 0.55 + 0.12 * (jowl - 1)), r * 0.5 * jowl, cheek, edge: false, k: 2.5);
+        s.Sphere(At(0.3, -0.3 - 0.08 * (jowl - 1), -0.55 - 0.12 * (jowl - 1)), r * 0.5 * jowl, cheek, edge: false, k: 2.5);
 
         // A Corgi's white blaze up the forehead.
         if (look.Blaze)
@@ -2466,14 +2558,21 @@ public static class PetRenderer
         }
         else if (look.Face == FaceKind.Fox)
         {
-            // Shiba, Jindo, Corgi: a longer fox-like snout in the pale "urajiro" colour, nose at the tip.
-            s.AddSdf(At(0.55, -0.2, 0), At(1.3, -0.3, 0), r * 0.4, r * 0.27, style.Chest, k: 2);
-            s.Sphere(At(1.55, -0.22, 0), r * 0.16, style.Nose, edge: false, k: 0, gloss: 0.9);
+            // Shiba, Jindo, Corgi: a longer fox-like snout in the pale "urajiro" colour, nose at the tip. Hounds and
+            // retrievers have longer, broader ones in the coat colour (a Dachshund's long nose, a Golden's broad muzzle).
+            var snoutLen = look.Snout;
+            var broad = look.Size > 1.2f ? 1.15 : 1.0;
+            var snout = look.PaleSnout ? style.Chest : Mix(style.Fur, style.Chest, 0.3);
+            var end = 0.55 + 0.75 * snoutLen;
+            s.AddSdf(At(0.55, -0.2, 0), At(end, -0.3 - 0.06 * (snoutLen - 1), 0), r * 0.4 * broad, r * 0.27 * broad, snout, k: 2);
+            s.Sphere(At(end + 0.25, -0.22 - 0.06 * (snoutLen - 1), 0), r * 0.16 * broad, style.Nose, edge: false, k: 0, gloss: 0.9);
         }
         else
         {
-            s.Sphere(At(0.78, -0.22, 0), r * 0.42, style.Chest, edge: false, k: 2);
-            s.Sphere(At(1.17, -0.14, 0), r * 0.17, style.Nose, edge: false, k: 0, gloss: 0.9);
+            // A button face: a short round muzzle (shorter still on a Pomeranian, a little longer on a Poodle).
+            var snoutLen = look.Snout;
+            s.Sphere(At(0.62 + 0.16 * snoutLen, -0.22, 0), r * 0.42, style.Chest, edge: false, k: 2);
+            s.Sphere(At(0.95 + 0.22 * snoutLen, -0.14, 0), r * 0.17, style.Nose, edge: false, k: 0, gloss: 0.9);
         }
         if (p.Mouth > 0.05)
             s.Sphere(At(0.95, -0.52, 0), r * 0.22 * p.Mouth + r * 0.08, Color.FromRgb(0x4A, 0x2A, 0x2A), edge: false, k: 0);
