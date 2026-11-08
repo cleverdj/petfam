@@ -56,7 +56,10 @@ public static class PoseSheet
     /// <summary>Turntable sheet: rows = poses, columns = headings. For judging how a pet looks from every side.</summary>
     public static void QueueTurnSheet(string path, PetSpecies species)
     {
-        string[] poses = { "idle", "walk", "sit", "lie", "sleep" };
+        // PETFAM_TURN_POSES=pant,yawn,sniff picks other poses to check.
+        var poses = Environment.GetEnvironmentVariable("PETFAM_TURN_POSES") is { Length: > 0 } list
+            ? list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : new[] { "idle", "walk", "sit", "lie", "sleep" };
         float[] headings = { 0f, 30f, 60f, 90f, 120f, 150f, 180f, 225f, 270f, 315f };
         var now = DateTime.UtcNow;
         var rng = new Random(1);

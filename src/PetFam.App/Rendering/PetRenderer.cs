@@ -760,7 +760,10 @@ public static class PetRenderer
         {
             "walk" => GaitPose(d, t, run: false, Cycles(false)),
             "run" => GaitPose(d, t, run: true, Cycles(true)),
-            "sit" or "peek" => SitPose(d, t),   // peeking: sitting behind the window, tail tucked out of sight
+            "sit" or "peek" => SitPose(d, t),
+            "pant" => PantPose(d, t),
+            "yawn" => YawnPose(d, t),
+            "sniff" => SniffPose(d, t),   // peeking: sitting behind the window, tail tucked out of sight
             "groom" => GroomPose(d, t),
             "petted" => PettedPose(pet, d, t),
             "lie" => LiePose(d, t),
@@ -786,7 +789,7 @@ public static class PetRenderer
             _ => IdlePose(d, t),
         };
 
-        if (pet.Animation is not ("eat" or "dig" or "stretch" or "sleep" or "groom"))
+        if (pet.Animation is not ("eat" or "dig" or "stretch" or "sleep" or "groom" or "sniff"))
             pose.Head = pose.Head + new V3(d.HeadR * 0.25, d.HeadR * 0.4, 0);
 
 
@@ -1061,6 +1064,42 @@ public static class PetRenderer
         return p;
     }
 
+    /// <summary>Sitting after a sprint: mouth open, tongue out, quick shallow breaths.</summary>
+    private static Pose PantPose(Dims d, float t)
+    {
+        var p = SitPose(d, t);
+        var breath = Math.Sin(t * 14) * 0.6;
+        p.Shoulder = p.Shoulder + new V3(0, breath, 0);
+        p.Head = p.Head + new V3(0, breath * 0.5, 0);
+        p.Mouth = 0.55;
+        p.Tongue = true;
+        p.TailWag = 2.2;
+        return p;
+    }
+
+    /// <summary>A big yawn: head tipped up, mouth opening wide and closing again, eyes shut at the peak.</summary>
+    private static Pose YawnPose(Dims d, float t)
+    {
+        var p = SitPose(d, t);
+        var k = Math.Clamp(t / 1.6, 0, 1);
+        var open = Math.Sin(k * Math.PI);                       // 0 → 1 → 0 over the yawn
+        p.Mouth = open;
+        p.HeadPitch = -18 * open;
+        if (open > 0.35) p.Eyes = Eye.Closed;
+        p.EarBack = 0.3 * open;
+        return p;
+    }
+
+    /// <summary>Nose to the ground, working along the scent from side to side.</summary>
+    private static Pose SniffPose(Dims d, float t)
+    {
+        var p = EatPose(d, t);
+        p.HeadYaw = Math.Sin(t * 3.2) * 18;
+        p.Mouth = 0;
+        p.TailWag = 1.6;
+        return p;
+    }
+
     private static Pose SitPose(Dims d, float t)
     {
         var p = new Pose
@@ -1298,7 +1337,7 @@ public static class PetRenderer
             return;
         }
 
-        if (look is not { } l || anim is not ("idle" or "walk" or "sit" or "lie" or "petted" or "run"))
+        if (look is not { } l || anim is not ("idle" or "walk" or "sit" or "lie" or "petted" or "run" or "pant"))
         {
             if (Toon) FaceViewer(pose, cam, anim);
             return;
@@ -2004,7 +2043,7 @@ public static class PetRenderer
     /// </summary>
     private static void FaceViewer(Pose pose, Camera cam, string anim)
     {
-        if (anim is not ("idle" or "walk" or "sit" or "lie" or "petted" or "run" or "stretch")) return;
+        if (anim is not ("idle" or "walk" or "sit" or "lie" or "petted" or "run" or "stretch" or "pant")) return;
         var dir = cam.ScreenDirToModel(0, 1);
         var camYaw = Math.Atan2(dir.Z, dir.X) * 180 / Math.PI;   // 0 = the viewer is straight ahead of the nose
         var away = Math.Abs(camYaw);

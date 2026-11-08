@@ -277,6 +277,7 @@ public sealed class Simulation
                 if (b is SwimBehavior swim) swim.TickCooldown(dt);
                 if (b is HuntCursorBehavior hunt) hunt.TickCooldown(dt);
                 if (b is ShelterBehavior shelter) shelter.TickCooldown(dt);
+                if (b is CooldownBehavior cooling) cooling.TickCooldown(dt);
             }
 
             pet.Engine.Update(ctx, dt);
@@ -572,14 +573,19 @@ public sealed class Simulation
 
     private void UpdateLook(Pet pet, bool sleeping)
     {
-        if (sleeping || pet.Hold == HoldState.Carried || !User.CursorOnDesktop)
+        if (sleeping || pet.Hold == HoldState.Carried)
         {
             pet.LookAt = null;
             return;
         }
+        if (!User.CursorOnDesktop)
+        {
+            pet.LookAt = pet.Gaze;
+            return;
+        }
 
         var near = Vec2.Distance(User.Cursor, pet.Position) <= LookDistance;
-        pet.LookAt = near ? User.Cursor : null;
+        pet.LookAt = near ? User.Cursor : pet.Gaze;
 
         // If the cursor is behind the pet (beyond what the neck can reach), turn the body toward it while idle.
         if (near && pet.Engine.Current is IdleBehavior or SitBehavior or LieBehavior)

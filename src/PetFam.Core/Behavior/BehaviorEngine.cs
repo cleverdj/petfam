@@ -42,16 +42,23 @@ public sealed class BehaviorEngine
             new PeekBehavior(),
             new TravelBehavior(),
             new ShelterBehavior(),
+            new ZoomiesBehavior(),
+            new YawnBehavior(),
         };
         if (species == PetSpecies.Cat)
         {
             list.Add(new GroomBehavior());
             list.Add(new HuntCursorBehavior());
+            list.Add(new WatchBehavior());
         }
         if (species == PetSpecies.Dog)
         {
             list.Add(new DigBehavior());
             list.Add(new SwimBehavior());
+            list.Add(new ChaseTailBehavior());
+            list.Add(new SniffBehavior());
+            list.Add(new BegBehavior());
+            list.Add(new FollowCursorBehavior());
         }
         return new BehaviorEngine(list);
     }

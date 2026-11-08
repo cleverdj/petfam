@@ -156,6 +156,9 @@ public sealed class Pet
     /// <summary>Screen point the pet is looking at (cursor nearby), or null.</summary>
     public Vec2? LookAt { get; set; }
 
+    /// <summary>Something a behavior wants the pet to look at (a bird up in the sky, the owner it begs from) when the pointer is not nearby.</summary>
+    public Vec2? Gaze { get; set; }
+
     /// <summary>Raised when a sleep ends so the stretch behavior runs next.</summary>
     public bool JustWokeUp { get; set; }
 

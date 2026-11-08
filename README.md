@@ -25,6 +25,7 @@ PetFam is not a screensaver and does not get in your way. Your pets live on the 
 - Hover over a pet and it comes to the front, looks at you and can be petted, picked up and carried.
 - **Window peek:** a curious pet walks behind the window you are using and pokes its head out of an edge to look at you.
 - Cats hunt a moving mouse pointer: crouch, stalk, wiggle, pounce.
+- A life of their own: sudden zoomies across the floor and panting afterwards (young and lively breeds most; cats after dark), dogs chasing their tails until dizzy, nose-down sniffing trails (hounds and foodies love it), cats watching something up in the sky and chattering at it, begging under your pointer when peckish, trotting after your pointer once they trust you, and big yawns when tired.
 - Pets play with each other and remember who their friends are and who is boss.
 
 ### Breeds and personas
@@ -137,6 +138,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_BREED_SHEET=1` | Saves `breed-sheet.png` with every breed drawn as an adult, two directions each |
 | `PETFAM_ONBOARDING=1` / `cat` | Opens the adoption window at startup (`cat`: Cat tab) |
 | `PETFAM_TIME=HH:mm` | Pretends it is that time of day (also in the tray: Weather → (Test) Try a time of day) |
+| `PETFAM_TURN_POSES=pant,yawn,…` | Poses for `PETFAM_TURN_SHEET` instead of the default set |
 | `PETFAM_LANG=en` / `ko` | Starts in that language (overrides the saved choice) |
 | `PETFAM_WEATHER=<weather>` | Instead of real weather: `clear`, `cloudy`, `fog`, `drizzle`, `rain`, `heavyrain`, `thunder`, `snow`, `heavysnow` (with snow already piled up) |
 | `PETFAM_DOOR_SHEET=1` | Saves `door-sheet.png` showing the stages of entering a house through the door, sleeping inside, and window-edge peeking (cat and dog, four directions) |
