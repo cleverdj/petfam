@@ -10,16 +10,19 @@ public class BreedTests
     private static readonly DateTime T0 = new(2026, 11, 8, 12, 0, 0, DateTimeKind.Utc);
 
     [Fact]
-    public void There_are_seven_dog_and_seven_cat_breeds_each_with_a_full_voice()
+    public void Every_breed_has_a_full_voice_in_both_languages()
     {
-        Assert.Equal(7, Breed.Of(PetSpecies.Dog).Count());
-        Assert.Equal(7, Breed.Of(PetSpecies.Cat).Count());
+        Assert.Equal(13, Breed.Of(PetSpecies.Dog).Count());
+        Assert.Equal(12, Breed.Of(PetSpecies.Cat).Count());
         Assert.Equal(Breed.All.Count, Breed.All.Select(b => b.Id).Distinct().Count());
         foreach (var b in Breed.All)
         {
             var v = b.Voice;
             foreach (var lines in new[] { v.Greeting, v.Idle, v.Happy, v.Petted, v.Hungry, v.Sleepy, v.Held, v.Rain, v.Snow, v.Called })
+            {
                 Assert.NotEmpty(lines);
+                Assert.All(lines, l => { Assert.False(string.IsNullOrWhiteSpace(l.En)); Assert.False(string.IsNullOrWhiteSpace(l.Ko)); });
+            }
             Assert.NotEmpty(b.Names);
             Assert.False(string.IsNullOrWhiteSpace(b.Persona));
         }

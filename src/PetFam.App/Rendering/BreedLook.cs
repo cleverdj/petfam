@@ -5,7 +5,7 @@ namespace PetFam.Desktop.Rendering;
 
 public enum EarKind { CatPointed, CatSmall, CatFolded, DogFloppy, DogLongFloppy, DogErect }
 
-public enum TailKind { CatLong, CatPlume, DogCurl, DogPlume, DogPompom, DogStub }
+public enum TailKind { CatLong, CatPlume, DogCurl, DogPlume, DogPompom, DogStub, DogThin, DogFeather }
 
 public enum FaceKind { Kitten, Flat, Button, Fox }
 
@@ -18,7 +18,8 @@ public sealed record BreedLook(
     (float R, float G, float B) Shade, (float R, float G, float B) StripeTint, uint Line,
     bool Stripes, EarKind Ears, TailKind Tail, FaceKind Face,
     float BodyLen = 1f, float BodyR = 1f, float Legs = 1f, float Head = 1f, float EarSize = 1f,
-    uint? Point = null, bool Blaze = false, float HeadFluff = 0f)
+    uint? Point = null, bool Blaze = false, float HeadFluff = 0f,
+    bool EarTufts = false, uint? TailTip = null, bool Hairless = false)
 {
     public static Color C(uint rgb) => Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
 
@@ -45,6 +46,24 @@ public sealed record BreedLook(
         ["corgi"] = new(0xDD8B3E, 0xFFFDF8, 0x4E2A12, 0x1E1612, 0xF0C0A0, 0xFFFFFF, 0xC9752C, 0xFFFFFF, 0xFFFDF8, 0x3A2010,
             Warm, Plain, 0x6A3410, Stripes: false, EarKind.DogErect, TailKind.DogStub, FaceKind.Fox,
             BodyLen: 1.3f, BodyR: 1.05f, Legs: 0.55f, EarSize: 1.35f, Blaze: true),
+        ["golden-retriever"] = new(0xE0A85A, 0xF6DCAE, 0x5A3618, 0x2A1C14, 0xE8BC88, 0xF0CC94, 0xC98E44, 0xF4D8A8, 0xE6B470, 0x3A2412,
+            Warm, Plain, 0x6E4418, Stripes: false, EarKind.DogFloppy, TailKind.DogFeather, FaceKind.Fox,
+            BodyLen: 1.15f, BodyR: 1.1f, Legs: 1.15f, Head: 1.05f, EarSize: 1.1f),
+        ["french-bulldog"] = new(0x5E4E44, 0xEDE6DE, 0x2A2220, 0x1E1A18, 0xC89A90, 0x6A5A50, 0x4A3C34, 0xF2EEE8, 0x5E4E44, 0x2E1E14,
+            Cool, Plain, 0x2E2420, Stripes: false, EarKind.DogErect, TailKind.DogStub, FaceKind.Flat,
+            BodyLen: 0.9f, BodyR: 1.15f, Legs: 0.8f, Head: 1.1f, EarSize: 1.5f),
+        ["dachshund"] = new(0xC8622A, 0xD98A50, 0x4A2410, 0x2A1810, 0xD9906A, 0xC8622A, 0xA84E20, 0xD27A42, 0xC8622A, 0x3A1C0E,
+            Warm, Plain, 0x5A2C10, Stripes: false, EarKind.DogLongFloppy, TailKind.DogThin, FaceKind.Fox,
+            BodyLen: 1.45f, Legs: 0.5f, Head: 0.95f),
+        ["siberian-husky"] = new(0x8E949E, 0xF6F6F4, 0x2E3238, 0x1E1E20, 0xE2C8C4, 0xF6F6F4, 0x4E545E, 0xFAFAF8, 0xF2F2F0, 0x5AA2E8,
+            Cool, Plain, 0x3A3E46, Stripes: false, EarKind.DogErect, TailKind.DogCurl, FaceKind.Fox,
+            BodyLen: 1.1f, Legs: 1.15f, EarSize: 1.1f, Blaze: true),
+        ["chihuahua"] = new(0xE8C28E, 0xF6E2C4, 0x4A3220, 0x3A2A22, 0xF0B8A8, 0xF2D6AE, 0xD8A86C, 0xF6E0C0, 0xE8C28E, 0x2A1A10,
+            Warm, Plain, 0x6A4A2A, Stripes: false, EarKind.DogErect, TailKind.DogThin, FaceKind.Button,
+            BodyLen: 0.8f, BodyR: 0.85f, Legs: 0.95f, Head: 1.15f, EarSize: 1.6f),
+        ["beagle"] = new(0xD29550, 0xFFFDF8, 0x3A2414, 0x1E1612, 0xE0A880, 0xFFFFFF, 0x2E2622, 0xFFFFFF, 0xFFFDF8, 0x3A2010,
+            Warm, Plain, 0x4A2C14, Stripes: false, EarKind.DogLongFloppy, TailKind.DogThin, FaceKind.Fox,
+            BodyLen: 1.05f, Legs: 0.95f, Blaze: true, TailTip: 0xFFFFFF),
         ["jindo"] = new(0xD9A55E, 0xF5E6CA, 0x4E3218, 0x241A14, 0xE8C8A0, 0xF2E2C4, 0xC89048, 0xF5E8D0, 0xE4BC80, 0x2E1C10,
             Warm, Plain, 0x6A4418, Stripes: false, EarKind.DogErect, TailKind.DogCurl, FaceKind.Fox,
             BodyLen: 1.05f, Legs: 1.15f),
@@ -67,6 +86,21 @@ public sealed record BreedLook(
         ["ragdoll"] = new(0xF1E9DA, 0xFFFDF8, 0x4E3A30, 0xD9A0A0, 0xE2B8B0, 0xFFFFFF, 0xE4D6C0, 0xFFFFFF, 0xF1E9DA, 0x4C8FE0,
             Warm, Plain, 0x5E4638, Stripes: false, EarKind.CatPointed, TailKind.CatPlume, FaceKind.Kitten,
             BodyLen: 1.1f, BodyR: 1.1f, Head: 1.05f, Point: 0x7A5A48),
+        ["siamese"] = new(0xF2E6D2, 0xFBF5EA, 0x3A2A22, 0x6A4A42, 0xD8A8A0, 0xF6EEDF, 0xE6D6BC, 0xFBF5EA, 0xF2E6D2, 0x3E7FD8,
+            Warm, Plain, 0x5A4034, Stripes: false, EarKind.CatPointed, TailKind.CatLong, FaceKind.Kitten,
+            BodyR: 0.9f, Legs: 1.1f, EarSize: 1.25f, Point: 0x5A4034),
+        ["maine-coon"] = new(0xB08454, 0xF2E6D6, 0x3E2A18, 0xC88078, 0xE8B8A0, 0xF2E6D6, 0x6E4A2C, 0xF4EADC, 0xB08454, 0xD9A23A,
+            Warm, (0.62f, 0.5f, 0.4f), 0x4E3420, Stripes: true, EarKind.CatPointed, TailKind.CatPlume, FaceKind.Kitten,
+            BodyLen: 1.2f, BodyR: 1.15f, Head: 1.1f, EarSize: 1.2f, HeadFluff: 0.3f, EarTufts: true),
+        ["bengal"] = new(0xE2A85A, 0xF8E8C8, 0x3A2412, 0xC88070, 0xE8B090, 0xF6E4C4, 0x5A3A1E, 0xFAEED6, 0xE2A85A, 0x6DAA3A,
+            Warm, (0.55f, 0.4f, 0.28f), 0x5A3418, Stripes: true, EarKind.CatPointed, TailKind.CatLong, FaceKind.Kitten,
+            Legs: 1.1f, EarSize: 0.95f),
+        ["sphynx"] = new(0xE8C2B0, 0xF2D2C4, 0x5A3A34, 0xD98A8A, 0xE9A9A0, 0xEECAB8, 0xDDB2A0, 0xF0CEC0, 0xE8C2B0, 0x4FA36A,
+            Warm, Plain, 0x7A4E44, Stripes: false, EarKind.CatPointed, TailKind.CatLong, FaceKind.Kitten,
+            BodyR: 0.9f, Legs: 1.05f, EarSize: 1.5f, Hairless: true),
+        ["abyssinian"] = new(0xC9874A, 0xE8C49A, 0x4A2A14, 0xC87870, 0xE0A890, 0xE6BC90, 0xA86A34, 0xEACCA4, 0xC9874A, 0xC9A030,
+            Warm, Plain, 0x5A3418, Stripes: false, EarKind.CatPointed, TailKind.CatLong, FaceKind.Kitten,
+            BodyR: 0.9f, Legs: 1.1f, EarSize: 1.3f),
         ["munchkin"] = new(0xF0B46A, 0xFFF4E2, 0x7A4A1E, 0xE8939A, 0xF4BCA8, 0xFFF4E2, 0xDB8A3E, 0xFFF6E8, 0xF0B46A, 0xD8A030,
             (0.98f, 0.88f, 0.82f), (0.85f, 0.66f, 0.48f), 0x7A4A20, Stripes: true, EarKind.CatPointed, TailKind.CatLong, FaceKind.Kitten,
             Legs: 0.55f),

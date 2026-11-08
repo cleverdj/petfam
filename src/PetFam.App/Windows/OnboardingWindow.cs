@@ -186,7 +186,7 @@ public sealed class OnboardingWindow : Window
                 Children =
                 {
                     view,
-                    new TextBlock { Text = breed.Name, FontSize = 13, FontWeight = FontWeight.Bold, Foreground = Ink, HorizontalAlignment = HorizontalAlignment.Center },
+                    new TextBlock { Text = breed.Name, FontSize = 13, FontWeight = FontWeight.Bold, Foreground = Ink, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center },
                     new TextBlock { Text = breed.Tagline, FontSize = 10.5, Foreground = Muted, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center },
                 },
             },

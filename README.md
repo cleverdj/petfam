@@ -11,7 +11,7 @@ PetFam is not a screensaver and does not get in your way. Your pets live on the 
 ## Why PetFam
 
 - **They live in your wallpaper.** PetFam reads your wallpaper and finds the floor, water, sunny spots, shade, mud and even houses in the picture. Dogs jump into a lake and shake off, cats sunbathe and avoid puddles. Change the wallpaper and they adapt within seconds.
-- **Real breeds with real personalities.** 7 dogs and 7 cats, each with its own look, temperament, habits and way of talking: a Shiba that screams when picked up, a Ragdoll that goes limp in your arms, a Corgi who only talks about food, a Russian Blue who is shy at first.
+- **Real breeds with real personalities.** 13 dogs and 12 cats, each with its own look, temperament, habits and way of talking: a Shiba that screams when picked up, a Ragdoll that goes limp in your arms, a Corgi who only talks about food, a Husky who talks back, a Siamese who never stops chatting.
 - **They grow up with you.** Every pet arrives as a two-month-old baby and grows a day older on each day you spend together, through junior and adult to a dignified senior. Body, energy and behaviour change with age.
 - **A home of their own.** Build and decorate houses, decide whose house is whose, and watch your pets walk in through the door to sleep or to get out of the rain.
 - **The real weather.** When it rains where you live, it rains on your desktop. Cats run for cover, dogs play in the puddles, snow piles up on the roofs.
@@ -37,6 +37,12 @@ PetFam is not a screensaver and does not get in your way. Your pets live on the 
 | Shiba Inu | Proud and stubborn | Persian | Elegant aristocrat |
 | Welsh Corgi | Short-legged foodie boss | Ragdoll | Melts when held |
 | Jindo | Loyal Korean native | Munchkin | Short-legged troublemaker |
+| Golden Retriever | Sunny best friend | Siamese | Chatty shadow |
+| French Bulldog | Snoring comedian | Maine Coon | Gentle giant |
+| Dachshund | Brave little sausage | Bengal | Mini leopard |
+| Siberian Husky | Dramatic snow runner | Sphynx | Warm velvet cuddler |
+| Chihuahua | Tiny bodyguard | Abyssinian | Curious explorer |
+| Beagle | Nose-first adventurer | | |
 
 Each breed has its own coat and build, temperament (playfulness, shyness, energy, homebody), habits (appetite, sleep, jumping, love of water and snow, dislike of rain), how quickly it warms up to you, and its own voice for greetings, hunger, sleepiness, petting, weather and more.
 
@@ -115,7 +121,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_SNAPSHOT=1` | Automatically saves a backyard snapshot after startup (`PETFAM_SNAPSHOT_DELAY=<seconds>`, default 3) |
 | `PETFAM_STYLE=fur` | Draws in the fur-texture 3D style instead of cartoon |
 | `PETFAM_WALLPAPER=<image path>` | Leaves the real wallpaper alone and lays this image in the backyard to test habitat detection and behaviour |
-| `PETFAM_ADOPT=cat,dog,shiba,…` | Brings in more pets at startup: `cat`, `dog` or a breed id (`pomeranian` `maltese` `poodle` `bichon` `shiba` `corgi` `jindo` `korean-shorthair` `russian-blue` `british-shorthair` `scottish-fold` `persian` `ragdoll` `munchkin`); saved |
+| `PETFAM_ADOPT=cat,dog,shiba,…` | Brings in more pets at startup: `cat`, `dog` or a breed id (`pomeranian` `maltese` `poodle` `bichon` `shiba` `corgi` `jindo` `korean-shorthair` `russian-blue` `british-shorthair` `scottish-fold` `persian` `ragdoll` `munchkin` `golden-retriever` `french-bulldog` `dachshund` `siberian-husky` `chihuahua` `beagle` `siamese` `maine-coon` `bengal` `sphynx` `abyssinian`); saved |
 | `PETFAM_SHOW_HABITAT=1` | Shows the detected floor in green and the horizon as a yellow line on screen (also toggled from the tray's "(Test) Show habitat detection") |
 | `PETFAM_BOND=<0~100>` | Sets every pet's bond to this value at startup (also adjustable from the tray menu "(Test) Bond") |
 | `PETFAM_DEMO_MENU=menu\|queue` | Automatically opens the first pet's pie menu 4 seconds after startup (queue: pre-fills the queue with a few actions) |
@@ -125,7 +131,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_DEMO=ball` | Starts ball play with the first dog 3 seconds after launch (for checking throwing) |
 | `PETFAM_DEMO=house` | Opens the build-a-new-house window 3 seconds after launch |
 | `PETFAM_DEMO=travel` | 3 seconds after launch the first pet walks out to the neighbouring desktop, and is called back 14 seconds later |
-| `PETFAM_BREED_SHEET=1` | Saves `breed-sheet.png` with all 14 breeds drawn as adults, two directions each |
+| `PETFAM_BREED_SHEET=1` | Saves `breed-sheet.png` with every breed drawn as an adult, two directions each |
 | `PETFAM_ONBOARDING=1` / `cat` | Opens the adoption window at startup (`cat`: Cat tab) |
 | `PETFAM_LANG=en` / `ko` | Starts in that language (overrides the saved choice) |
 | `PETFAM_WEATHER=<weather>` | Instead of real weather: `clear`, `cloudy`, `fog`, `drizzle`, `rain`, `heavyrain`, `thunder`, `snow`, `heavysnow` (with snow already piled up) |

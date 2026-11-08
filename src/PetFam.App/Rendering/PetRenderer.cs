@@ -2156,6 +2156,23 @@ public static class PetRenderer
         {
             switch (look.Tail)
             {
+                case TailKind.DogThin:
+                case TailKind.DogFeather:
+                {
+                    // A long tail carried out behind: a thin whip (Dachshund, Chihuahua, Beagle) or a heavy feathered
+                    // one (Golden Retriever). Hangs when carried, wags side to side.
+                    var feather = look.Tail == TailKind.DogFeather;
+                    var line = p.Tail.Count >= 2 ? p.Tail : LongDogTail(d, p, t, feather);
+                    for (var i = 0; i < line.Count - 1; i++)
+                    {
+                        var f = (double)i / (line.Count - 1);
+                        var radius = d.BodyR * (feather ? 0.42 - 0.18 * f : 0.2 - 0.08 * f);
+                        var c = i == line.Count - 2 && look.TailTip is { } tip ? BreedLook.C(tip)
+                            : feather && i > 0 ? Mix(style.Fur, style.Chest, 0.35) : style.Fur;
+                        s.Capsule(line[i], line[i + 1], radius, c);
+                    }
+                    return;
+                }
                 case TailKind.DogStub:
                     // A Corgi's little bob: just a tuft on the rump.
                     s.Sphere(pts[0] + new V3(-d.BodyR * 0.1, d.BodyR * 0.05, 0), d.BodyR * 0.36, style.Fur);
@@ -2190,6 +2207,19 @@ public static class PetRenderer
         }
         if (Toon)
             s.Sphere(pts[^1], d.BodyR * (thick - taper * (pts.Count - 1)) * 1.05, point ?? (look.Stripes ? style.Saddle : style.Fur));
+    }
+
+    /// <summary>A long dog tail carried out behind and a little up (down and hanging when carried).</summary>
+    private static List<V3> LongDogTail(Dims d, Pose p, float t, bool feather)
+    {
+        var root = new V3(p.Hip.X - d.BodyR * 0.55, p.Hip.Y + d.BodyR * 0.45, 0);
+        var sway = Math.Sin(t * 2.5 * p.TailWag) * (0.3 + 0.15 * Math.Min(3, p.TailWag));
+        var seg = d.BodyLen * (feather ? 0.24 : 0.2);
+        var rise = p.TailLift < -0.5 ? -0.9 : feather ? 0.25 : 0.55;
+        var pts = new List<V3> { root };
+        for (var i = 1; i <= 3; i++)
+            pts.Add(root + new V3(-seg * i, seg * rise * i * (feather ? 0.6 : 0.8), seg * 0.35 * sway * i));
+        return pts;
     }
 
     /// <summary>Tail centre line (root first) for the pose: a dog's curled plume or a kitten's upright tail.</summary>
@@ -2296,14 +2326,14 @@ public static class PetRenderer
 
             if (Toon)
             {
-                // Pointy fur tufts on the cheeks and the crown, like a drawn kitten.
-                foreach (var sign in new[] { -1, 1 })
+                // Pointy fur tufts on the cheeks and the crown, like a drawn kitten (not on a hairless Sphynx).
+                foreach (var sign in look.Hairless ? Array.Empty<int>() : new[] { -1, 1 })
                 {
                     s.AddSdf(At(0.15, -0.25, sign * 0.8), At(-0.05, -0.52, sign * 1.17), r * 0.2, r * 0.03, style.Fur, k: 1.2);
                     s.AddSdf(At(0.3, -0.45, sign * 0.66), At(0.2, -0.72, sign * 1.02), r * 0.18, r * 0.02, style.Fur, k: 1.2);
                     s.AddSdf(At(-0.05, 0.0, sign * 0.88), At(-0.3, -0.16, sign * 1.15), r * 0.15, r * 0.03, style.Fur, k: 1.2);
                 }
-                s.AddSdf(At(-0.15, 0.85, 0.0), At(0.05, 1.15, 0.06), r * 0.14, r * 0.02, style.Fur, k: 1.2);
+                if (!look.Hairless) s.AddSdf(At(-0.15, 0.85, 0.0), At(0.05, 1.15, 0.06), r * 0.14, r * 0.02, style.Fur, k: 1.2);
 
                 // Tabby marks on the forehead: a middle stripe and one on each side.
                 // They carry on over the crown to the back of the head so every view shows clean tabby lines.
@@ -2331,6 +2361,13 @@ public static class PetRenderer
                     s.Sphere(At(1.0, -0.3, sign * 0.34), r * 0.035, line, edge: false, k: 0, gloss: 0);
                 }
             }
+        }
+        else if (look.Face == FaceKind.Flat)
+        {
+            // French Bulldog: a short, wide, pushed-in muzzle with a big dark nose.
+            s.Sphere(At(0.66, -0.26, 0.2), r * 0.32, style.Chest, edge: false, k: 2);
+            s.Sphere(At(0.66, -0.26, -0.2), r * 0.32, style.Chest, edge: false, k: 2);
+            s.Sphere(At(0.92, -0.08, 0), r * 0.18, style.Nose, edge: false, k: 0, gloss: 0.9);
         }
         else if (look.Face == FaceKind.Fox)
         {
@@ -2374,11 +2411,23 @@ public static class PetRenderer
                 var b2 = At(-0.42, 0.6, sign * 0.32);
                 var tip = At(-0.15 - tilt, 0.55 + 0.87 * size - tilt * 0.4, sign * (0.8 + (small ? 0.1 : 0)));
                 s.Tri(b1, tip, b2, earColor, style.EarInner, fwd * (r * 0.2), tipRound: small ? 0.3 : Toon ? 0.12 : 0.3);
+                if (look.EarTufts)
+                    s.AddSdf(tip, tip + up * (r * 0.32) + side * (sign * r * 0.04), r * 0.07, r * 0.012, style.Saddle, k: 0.5);
             }
             else if (look.Ears == EarKind.DogErect)
             {
                 // Shiba, Jindo, Corgi: upright triangle ears, wide at the base with rounded tips, set apart on the head.
                 var size = look.EarSize;
+                if (size >= 1.4)
+                {
+                    // Bat ears (French Bulldog, Chihuahua): big and broad, set wide and flaring out to the sides,
+                    // with round tips. Not tall: tall ears read as a rabbit's.
+                    var bb1 = At(0.12, 0.5, sign * 0.98);
+                    var bb2 = At(-0.48, 0.62, sign * 0.28);
+                    var btip = At(-0.2 - tilt, 1.2 + 0.12 * size - tilt * 0.4, sign * (0.95 + 0.3 * (size - 1)));
+                    s.Tri(bb1, btip, bb2, earColor, style.EarInner, fwd * (r * 0.2), tipRound: 0.62);
+                    continue;
+                }
                 var b1 = At(0.08, 0.6, sign * 0.88);
                 var b2 = At(-0.45, 0.66, sign * 0.3);
                 var tip = At(-0.18 - tilt, 0.95 + 0.5 * size - tilt * 0.4, sign * (0.62 + 0.18 * size));
