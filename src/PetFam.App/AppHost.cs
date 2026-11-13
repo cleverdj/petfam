@@ -199,6 +199,22 @@ public sealed class AppHost
                 PetFam.Core.World.TravelPlanner.Go(_sim, pet, to, TripReason.Visit, run: false, new Random());
                 AppLog.Write($"Demo monitor: {pet.Name} -> {_sim.World.DescribeCell(to)}");
             }, TimeSpan.FromSeconds(3));
+        // Dev: opens the habitat editor and saves what it shows (its own window only) to habitat-editor.png.
+        if (Environment.GetEnvironmentVariable("PETFAM_DEMO") is { } hd && hd.StartsWith("habitat"))
+            DispatcherTimer.RunOnce(() =>
+            {
+                OpenHabitatEditor(hd.EndsWith("2") ? 1 : 0);
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (_habitatEditor?.Content is not Visual v) return;
+                    var px = new PixelSize((int)(_habitatEditor.Bounds.Width * _habitatEditor.RenderScaling), (int)(_habitatEditor.Bounds.Height * _habitatEditor.RenderScaling));
+                    using var rtb = new RenderTargetBitmap(px, new Vector(96 * _habitatEditor.RenderScaling, 96 * _habitatEditor.RenderScaling));
+                    rtb.Render(v);
+                    var path = Path.Combine(AppLog.DataDirectory, "habitat-editor.png");
+                    rtb.Save(path);
+                    AppLog.Write("Habitat editor picture saved: " + path);
+                }, TimeSpan.FromSeconds(3));
+            }, TimeSpan.FromSeconds(4));
         if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "house")
             DispatcherTimer.RunOnce(BuildHouse, TimeSpan.FromSeconds(3));
         if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "ball")
@@ -666,8 +682,69 @@ public sealed class AppHost
 
     private string? WallpaperPath() => WallpaperOverride ?? _platform.GetWallpaperPath();
 
+    // ---------------------------------------------------------------- habitat editor
+
+    private static string EditsPath => Path.Combine(AppLog.DataDirectory, "habitat-edits.json");
+    private HabitatEdits? _edits;
+    private HabitatEdits Edits => _edits ??= HabitatEdits.Read(EditsPath);
+
+    /// <summary>What the analysis found for each cell, before the user's fixes (null: no analysis, flat floor).</summary>
+    private readonly Dictionary<string, WalkMask?> _autoMasks = new();
+
+    private string EditKey(Cell cell) => HabitatEdits.KeyFor(_analyzedKeys.GetValueOrDefault(cell.Id) ?? "none", cell.Bounds);
+
+    /// <summary>Monitors for the tray's habitat editor: (index, "main monitor" / "monitor 2").</summary>
+    public IReadOnlyList<(int Index, string Name)> Monitors =>
+        _views.Select((v, i) => (i, _sim.World.DescribeMonitor(v.Cell) is { Length: > 0 } n ? n : L.S("this screen", "이 화면"))).ToList();
+
+    private HabitatEditorWindow? _habitatEditor;
+
+    /// <summary>Tray: opens the habitat editor over one monitor (its cell of the current desktop).</summary>
+    public void OpenHabitatEditor(int monitor = 0)
+    {
+        if (_views.Count == 0) return;
+        _habitatEditor?.Close();
+        var view = _views[Math.Clamp(monitor, 0, _views.Count - 1)];
+        var cell = view.Cell;
+        var auto = _autoMasks.GetValueOrDefault(cell.Id) ?? HabitatEdits.FlatMask(HabitatMap.Flat(cell.Bounds, cell.WorkingArea));
+        var key = EditKey(cell);
+        Bitmap? picture = null;
+        try
+        {
+            if (WallpaperPath() is { } path)
+            {
+                using var full = new Bitmap(path);
+                var k = Math.Min(1.0, Math.Max(cell.Bounds.Width / (double)full.PixelSize.Width, cell.Bounds.Height / (double)full.PixelSize.Height));
+                picture = full.CreateScaledBitmap(new PixelSize(Math.Max(1, (int)(full.PixelSize.Width * k)), Math.Max(1, (int)(full.PixelSize.Height * k))));
+            }
+        }
+        catch (Exception ex) { AppLog.Write("Habitat editor: wallpaper not shown: " + ex.Message); }
+
+        var where = _sim.World.DescribeCell(cell) is { Length: > 0 } d ? d : L.S("This screen", "이 화면");
+        var fit = WallpaperOverride is null ? _platform.GetWallpaperFit() : WallpaperFit.Fill;
+        _habitatEditor = new HabitatEditorWindow(view.Screen, cell.Bounds, auto, Edits.For(key), picture, fit, where, strokes =>
+        {
+            Edits.Set(key, strokes);
+            try { Edits.Write(EditsPath); }
+            catch (Exception ex) { AppLog.Write("Habitat edits not saved: " + ex.Message); }
+            ApplyHabitat(cell, _autoMasks.GetValueOrDefault(cell.Id), $"hand fixes saved ({strokes.Count} dabs)");
+        });
+        _habitatEditor.Closed += (_, _) => { _habitatEditor = null; picture?.Dispose(); };
+        _habitatEditor.Show();
+        _habitatEditor.Activate();
+        AppLog.Write($"Habitat editor opened on {where} ({Edits.For(key).Count} dabs so far)");
+    }
+
     private void ApplyHabitat(Cell cell, WalkMask? mask, string report)
     {
+        // The user's fixes from the habitat editor go on top of what the analysis found.
+        _autoMasks[cell.Id] = mask;
+        var strokes = Edits.For(EditKey(cell));
+        if (strokes.Count > 0)
+        {
+            mask = HabitatEdits.Apply(mask ?? HabitatEdits.FlatMask(HabitatMap.Flat(cell.Bounds, cell.WorkingArea)), strokes);
+            report += $"; with {strokes.Count} hand fixes";
+        }
         cell.Map = mask is null ? HabitatMap.Flat(cell.Bounds, cell.WorkingArea) : HabitatMap.FromMask(cell.Bounds, cell.WorkingArea, mask);
         foreach (var pet in _sim.Pets.Where(p => p.CellId == cell.Id))
         {

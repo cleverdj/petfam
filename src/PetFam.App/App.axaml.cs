@@ -70,6 +70,11 @@ public partial class App : Application
 
         _menu.Items.Add(Item(L.S("Put out a food bowl", "밥그릇 놓기"), h.FeedAll));
         _menu.Items.Add(Item(L.S("Build a new house (click a house to decorate)", "새 집 짓기 (집을 누르면 꾸미기)"), h.BuildHouse));
+        var fixLabel = L.S("Fix the habitat (floor, water, …)", "서식지 고치기 (바닥, 물, …)");
+        if (h.Monitors.Count > 1)
+            _menu.Items.Add(Sub(fixLabel, h.Monitors.Select(m => Item(m.Name, () => h.OpenHabitatEditor(m.Index))).ToArray()));
+        else
+            _menu.Items.Add(Item(fixLabel, () => h.OpenHabitatEditor(0)));
         _menu.Items.Add(Item(L.S("Pet everyone", "쓰다듬기"), h.StrokeAll));
         _menu.Items.Add(Item(L.S("Towel dry", "수건으로 닦아주기"), h.TowelAll));
         _menu.Items.Add(Sub(L.S("Add a pet", "펫 추가하기"),

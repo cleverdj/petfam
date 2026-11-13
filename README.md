@@ -71,6 +71,13 @@ Day and night follow your computer's clock and the real sunrise and sunset where
 ### Virtual desktops
 Each desktop has its own habitat from its own wallpaper. Pets walk off one edge and arrive at the other, follow you when you switch desktops (Follow me), wander on their own (Roam freely) or Stay home, and can be called over from the tray.
 
+### Habitat editor
+The wallpaper analysis gets most pictures right, but not all: a lake read as a beach, a hill pets should be able to
+climb. **Tray → Fix the habitat** covers the screen with your wallpaper and colours what PetFam thinks each part is.
+Paint over it with a round brush: floor, water, mud, sand, sunny spot, shade, or not floor; "Undo (back to automatic)"
+rubs a fix out again. The mouse wheel changes the brush size, Ctrl+Z undoes the last stroke. Save, and the pets use the
+new floor straight away. Fixes are kept per wallpaper and screen size, so they come back every time that wallpaper does.
+
 ### Multiple monitors
 Every monitor is part of the pets' world, each with its own habitat read from the wallpaper on that screen. Now and then a pet walks off the edge of one screen and comes in from the facing edge of the next, at the same height on the floor (Stay home pets keep to their own screen). After a desktop switch, following pets come in on the monitor they were on. Plug in or unplug a monitor and PetFam rebuilds itself to match; pets on a screen that goes away move to the main monitor. Food, houses and new pets go on the main monitor.
 
@@ -125,7 +132,7 @@ folder: press **Win + R**, type `%LOCALAPPDATA%\PetFam`, press Enter, and delete
 folder and double-click **PetFam.exe**. It doesn't start with Windows by itself and doesn't add a Start menu entry.
 
 ### Using PetFam
-- **Tray menu:** My pets (where they are, call them over, travel mode), Weather, put out a food bowl, build a house, add a pet, language, quit.
+- **Tray menu:** My pets (where they are, call them over, travel mode), Weather, put out a food bowl, build a house, fix the habitat, add a pet, language, quit.
 - **Mouse:** hover a pet to bring it forward; click for its menu; press and rub to pet; drag to carry. Click a house to decorate it, drag it to move it.
 - **Panel:** clicking a pet opens its panel with mood, needs, bond, age and its to-do queue.
 
@@ -176,7 +183,7 @@ tests/PetFam.Core.Tests      xUnit
 docs/PLANNING.md             Product and technical plan
 ```
 
-- Data: `%LOCALAPPDATA%\PetFam\save.json` (saved every minute and on exit), log `petfam.log`, snapshots and debug sheets. Data from the old `ZooZoo` folder is copied over on the first run.
+- Data: `%LOCALAPPDATA%\PetFam\save.json` (saved every minute and on exit), habitat fixes `habitat-edits.json`, log `petfam.log`, snapshots and debug sheets. Data from the old `ZooZoo` folder is copied over on the first run.
 - Frame timing: if the animation ever stutters, `petfam.log` records a `Hitch:` line with what took the time.
 
 ### Diagnostic environment variables
@@ -202,6 +209,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_MOTION_SHEET=cat\|dog` | Saves `motion-sheet.png` with frames of turn around, start, walk, stop, sit, and get up and run, driven at 30fps and drawn in sequence (for checking transitions) |
 | `PETFAM_DEMO=ball` | Starts ball play with the first dog 3 seconds after launch (for checking throwing) |
 | `PETFAM_DEMO=house` | Opens the build-a-new-house window 3 seconds after launch |
+| `PETFAM_DEMO=habitat` / `habitat2` | Opens the habitat editor on the main (or second) monitor 4 seconds after launch and saves a picture of it to `habitat-editor.png` |
 | `PETFAM_DEMO=monitor` | 3 seconds after launch the first pet walks over to the next monitor |
 | `PETFAM_DEMO=travel` | 3 seconds after launch the first pet walks out to the neighbouring desktop, and is called back 14 seconds later |
 | `PETFAM_BREED_SHEET=1` | Saves `breed-sheet.png` with every breed drawn as an adult, two directions each |
@@ -219,7 +227,6 @@ docs/PLANNING.md             Product and technical plan
 
 ## Roadmap
 - macOS version (Spaces, menu bar)
-- A habitat editor for fixing what the wallpaper analysis gets wrong
 - Official habitat wallpapers and more breeds
 
 ## Documentation
