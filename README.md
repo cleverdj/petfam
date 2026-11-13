@@ -4,11 +4,11 @@
 
 **Your pet family, living on your desktop.**
 
-PetFam is a desktop pet for Windows. Adopt a puppy or a kitten, and it moves in *behind your windows*: it walks around on your wallpaper, treats the scenery as its home, naps in a little house you build for it, peeks out from the edge of the window you are working in, and grows up with you day by day.
+PetFam is a desktop pet for Windows and macOS. Adopt a puppy or a kitten, and it moves in *behind your windows*: it walks around on your wallpaper, treats the scenery as its home, naps in a little house you build for it, peeks out from the edge of the window you are working in, and grows up with you day by day.
 
 PetFam is not a screensaver and does not get in your way. Your pets live on the desktop layer, under every app window, and only come to the front when you reach for them.
 
-> Status: early development (technical spike). Windows 10 21H2+ / Windows 11. A macOS version is planned.
+> Status: early development. Windows 10 21H2+ / Windows 11, and macOS 11+ (new: built and packaged, but not yet tried on a real Mac).
 
 ## Why PetFam
 
@@ -142,6 +142,23 @@ folder: press **Win + R**, type `%LOCALAPPDATA%\PetFam`, press Enter, and delete
 `PetFam-1.0.0-portable.zip` holds the same app without an installer. Right-click the zip → **Extract All**, open the
 folder and double-click **PetFam.exe**. It doesn't start with Windows by itself and doesn't add a Start menu entry.
 
+## Install PetFam (macOS)
+
+You need a Mac with macOS 11 (Big Sur) or later.
+
+1. Get **`PetFam-1.0.0-macos-arm64.zip`** for a Mac with Apple silicon (M1, M2, M3, M4) or
+   **`PetFam-1.0.0-macos-x64.zip`** for an older Intel Mac ( → About This Mac tells you which).
+2. Double-click the zip to unpack it and drag **PetFam** into your **Applications** folder.
+3. The first time, **right-click PetFam → Open**, then **Open** again. (macOS asks this once for apps that are not
+   from the App Store yet. If it only offers to cancel, open **System Settings → Privacy & Security** and click
+   **Open Anyway**.)
+4. Adopt your first pet. PetFam lives in the **menu bar** at the top right of the screen (no Dock icon); click the
+   puppy-and-kitten icon for the menu.
+
+To start PetFam when you log in: **System Settings → General → Login Items → +** and pick PetFam.
+Pets are on every Space (desktop), and follow you when you switch. Your pets are kept in
+`~/Library/Application Support/PetFam`.
+
 ### Using PetFam
 - **Tray menu:** My pets (where they are, call them over, travel mode), Weather, put out a food bowl, build a house, PetFam wallpapers, fix the habitat, add a pet, language, quit.
 - **Mouse:** hover a pet to bring it forward; click for its menu; press and rub to pet; drag to carry. Click a house to decorate it, drag it to move it.
@@ -178,8 +195,14 @@ The installer installs per user into `%LOCALAPPDATA%\Programs\PetFam` (no admini
 optionally a desktop shortcut and start-at-sign-in, and never touches the pets in `%LOCALAPPDATA%\PetFam`.
 PetFam runs only once at a time: a second copy exits (`PETFAM_MULTI=1` allows more, for developer sheets).
 
+**macOS:** `bash build/build-macos.sh` (on a Mac) publishes PetFam for Apple silicon and Intel, wraps each in a
+`PetFam.app` (menu-bar app, no Dock icon, `installer/macos/Info.plist`), signs it ad hoc and zips it. The macOS layer
+(`src/PetFam.Platform.MacOS`) talks to the system directly: the backyard is a window just above the desktop picture on
+every Space, the foreground window comes from CGWindowList (rectangles only, no Accessibility permission), Spaces
+from the window server.
+
 **Automatic builds:** pushing a tag such as `v1.0.0` runs `.github/workflows/release.yml` on GitHub Actions: tests,
-installer and portable zip, attached to a draft release. It can also be started by hand from the Actions tab; the files
+the Windows installer and portable zip, and the two macOS zips, attached to a draft release. It can also be started by hand from the Actions tab; the files
 are then under the run's artifacts.
 
 The app is not code-signed yet, so Windows SmartScreen warns on first run (see the install steps above). Signing the
@@ -238,7 +261,8 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_SAVE=<file>` | Uses a different save file (if the file doesn't exist, starts from first-run onboarding; your real pets are untouched) |
 
 ## Roadmap
-- macOS version (Spaces, menu bar)
+- Try the macOS version on real Macs and polish it (Retina scaling across mixed displays, separate Spaces per display)
+- Signed and notarised downloads (no first-run warnings on Windows and macOS)
 
 ## Documentation
 - [Product and technical plan](docs/PLANNING.md)

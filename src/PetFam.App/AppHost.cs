@@ -83,6 +83,7 @@ public sealed class AppHost
         else
         {
             var mac = new MacPlatform();
+            mac.Log += AppLog.Write;
             _platform = mac;
             _layering = mac;
         }

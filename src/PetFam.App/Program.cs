@@ -34,6 +34,10 @@ internal static class Program
             .UsePlatformDetect()
             .LogToTrace();
 
+        // macOS: a menu-bar app (the tray icon is the menu-bar item), no Dock icon.
+        if (OperatingSystem.IsMacOS())
+            builder = builder.With(new MacOSPlatformOptions { ShowInDock = false });
+
         // Spike diagnostics: PETFAM_RENDER=software|angle|wgl forces a Win32 rendering backend,
         // PETFAM_COMP=winui|dcomp|redirect forces a composition mode.
         if (OperatingSystem.IsWindows())

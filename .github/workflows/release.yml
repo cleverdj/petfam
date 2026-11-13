@@ -1,6 +1,6 @@
-name: Build installer
+name: Build downloads
 
-# Push a tag like v1.0.0 to build PetFam-Setup and the portable zip and attach them to a GitHub release
+# Push a tag like v1.0.0 to build the Windows installer and portable zip and the macOS apps, and attach them to a GitHub release
 # (a draft, so you can check it before publishing). Run it by hand from the Actions tab for a test build.
 on:
   push:
@@ -49,3 +49,33 @@ jobs:
           files: |
             artifacts/PetFam-Setup-*.exe
             artifacts/PetFam-*-portable.zip
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test tests/PetFam.Core.Tests -c Release
+
+      - name: Build PetFam.app (Apple silicon and Intel)
+        run: |
+          v=""
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then v="${GITHUB_REF_NAME#v}"; fi
+          bash build/build-macos.sh "$v"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PetFam-macos
+          path: artifacts/PetFam-*-macos-*.zip
+
+      - name: Draft release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: artifacts/PetFam-*-macos-*.zip
