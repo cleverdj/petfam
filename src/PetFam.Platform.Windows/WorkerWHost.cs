@@ -13,7 +13,20 @@ public static class WorkerWHost
 
     private const uint SpawnWorkerWMessage = 0x052C;
 
+    private static Result? _last;
+
+    /// <summary>
+    /// The WorkerW to put backyard windows in. Asked for once and then reused while it exists: asking Progman again
+    /// (for a second monitor's window) can make Explorer build a new WorkerW and destroy the old one, taking the
+    /// first window with it.
+    /// </summary>
     public static Result Acquire()
+    {
+        if (_last is { } last && User32.IsWindow(last.Handle)) return last;
+        return _last = Spawn();
+    }
+
+    private static Result Spawn()
     {
         var progman = User32.FindWindow("Progman", null);
         if (progman == IntPtr.Zero)

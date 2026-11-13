@@ -228,15 +228,66 @@ public sealed class World
     /// <summary>0-based position of the cell's desktop, or -1.</summary>
     public int DesktopIndex(Cell cell) => DesktopOrder.IndexOf(cell.DesktopId);
 
-    public Cell? CellForDesktop(string desktopId) => _cells.Values.FirstOrDefault(c => c.DesktopId == desktopId);
+    /// <summary>The desktop's cell on the main monitor (the first one listed in <see cref="MonitorOrder"/>), or any of its cells.</summary>
+    public Cell? CellForDesktop(string desktopId) =>
+        (MonitorOrder.Count > 0 ? CellFor(desktopId, MonitorOrder[0]) : null) ?? _cells.Values.FirstOrDefault(c => c.DesktopId == desktopId);
 
-    /// <summary>The cell on the next (+1) or previous (-1) desktop: where a pet walking off that edge comes in.</summary>
+    /// <summary>The cell of that desktop on that monitor.</summary>
+    public Cell? CellFor(string desktopId, string monitorId) =>
+        _cells.GetValueOrDefault(Cell.MakeId(desktopId, monitorId)) ??
+        _cells.Values.FirstOrDefault(c => c.DesktopId == desktopId && c.MonitorId == monitorId);
+
+    /// <summary>All cells of one desktop (one per monitor), main monitor first.</summary>
+    public IEnumerable<Cell> CellsOfDesktop(string desktopId) =>
+        _cells.Values.Where(c => c.DesktopId == desktopId).OrderBy(c => MonitorIndex(c) is var i && i < 0 ? int.MaxValue : i);
+
+    /// <summary>The cell on the next (+1) or previous (-1) desktop, on the same monitor: where a pet walking off that edge comes in.</summary>
     public Cell? Neighbor(Cell cell, int direction)
     {
         var i = DesktopIndex(cell);
         if (i < 0) return null;
         var j = i + System.Math.Sign(direction);
-        return j >= 0 && j < DesktopOrder.Count ? CellForDesktop(DesktopOrder[j]) : null;
+        if (j < 0 || j >= DesktopOrder.Count) return null;
+        return CellFor(DesktopOrder[j], cell.MonitorId) ?? CellForDesktop(DesktopOrder[j]);
+    }
+
+    // ---------------------------------------------------------------- monitors
+
+    /// <summary>Monitor ids, main monitor first, then left to right.</summary>
+    public List<string> MonitorOrder { get; } = new();
+
+    public int MonitorIndex(Cell cell) => MonitorOrder.IndexOf(cell.MonitorId);
+
+    /// <summary>
+    /// The monitor next to this one on the same desktop, to the right (+1) or left (-1): the one whose screen sits
+    /// beside this one and overlaps it vertically, nearest first. Null when there is none on that side.
+    /// </summary>
+    public Cell? MonitorNeighbor(Cell cell, int direction)
+    {
+        var b = cell.Bounds;
+        var cx = b.X + b.Width / 2f;
+        return _cells.Values
+            .Where(c => c.DesktopId == cell.DesktopId && c.MonitorId != cell.MonitorId)
+            .Where(c => System.Math.Min(c.Bounds.Bottom, b.Bottom) - System.Math.Max(c.Bounds.Top, b.Top) > 0)
+            .Where(c => direction > 0 ? c.Bounds.X + c.Bounds.Width / 2f > cx : c.Bounds.X + c.Bounds.Width / 2f < cx)
+            .OrderBy(c => System.Math.Abs(c.Bounds.X + c.Bounds.Width / 2f - cx))
+            .FirstOrDefault();
+    }
+
+    /// <summary>"Monitor 2" (or "" with one monitor).</summary>
+    public string DescribeMonitor(Cell cell)
+    {
+        if (MonitorOrder.Count < 2) return "";
+        var i = MonitorIndex(cell);
+        return i == 0 ? L.S("main monitor", "주 모니터") : L.S($"monitor {i + 1}", $"모니터 {i + 1}");
+    }
+
+    /// <summary>"Desktop 2", "monitor 2", or "Desktop 2 · monitor 2", depending on how many there are.</summary>
+    public string DescribeCell(Cell cell)
+    {
+        var desk = DesktopOrder.Count > 1 ? DescribeDesktop(cell) : "";
+        var mon = DescribeMonitor(cell);
+        return desk.Length == 0 ? mon : mon.Length == 0 ? desk : $"{desk} · {mon}";
     }
 
     /// <summary>"Desktop 2" or "Desktop 2 (Beach)" for the tray.</summary>

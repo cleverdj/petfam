@@ -22,6 +22,9 @@ public sealed class TravelPlanner
     /// <summary>A pet that left the user's desktop on its own does not come back for at least this long.</summary>
     public const float ComeBackAfter = 90f;
 
+    /// <summary>With more than one monitor, a free or following pet strolls over to the next screen about this often (seconds, average).</summary>
+    public const float CrossMonitorEvery = 6f * 60f;
+
     private float _since;
     private float _onDesktop;
 
@@ -66,7 +69,7 @@ public sealed class TravelPlanner
     public void Tick(Simulation sim, float dt, Random rng)
     {
         var world = sim.World;
-        if (sim.VisibleCellId is null || world.DesktopOrder.Count < 2) return;
+        if (sim.VisibleCellId is null || world.Cells.Count < 2) return;
         _onDesktop += dt;
         _since += dt;
         if (_since < CheckInterval) return;
@@ -82,7 +85,8 @@ public sealed class TravelPlanner
             // Home-mode pets live on their home desktop.
             var home = pet.Travel == TravelMode.Home && pet.HomeCellId is { } h && h != here.Id ? world.Find(h) : null;
 
-            if (ReferenceEquals(here, visible))
+            // Any monitor of the desktop the user is on counts as being with the user.
+            if (here.DesktopId == visible.DesktopId)
             {
                 if (home is not null)
                 {
@@ -103,8 +107,21 @@ public sealed class TravelPlanner
                     continue;
                 }
 
+                // Now and then a pet strolls over to the screen next to this one (free and following pets; one
+                // that stays home keeps to its own screen).
+                if (pet.Travel != TravelMode.Home && world.MonitorOrder.Count > 1 &&
+                    rng.NextDouble() < step / CrossMonitorEvery * (0.5f + pet.Needs.Curiosity / 100f))
+                {
+                    var side = rng.Next(2) == 0 ? -1 : 1;
+                    if ((world.MonitorNeighbor(here, side) ?? world.MonitorNeighbor(here, -side)) is { } screen)
+                    {
+                        Go(sim, pet, screen, TripReason.Visit, run: false, rng);
+                        continue;
+                    }
+                }
+
                 // A free pet sometimes goes for a look at the next desktop.
-                if (pet.Travel == TravelMode.Free &&
+                if (pet.Travel == TravelMode.Free && world.DesktopOrder.Count > 1 &&
                     rng.NextDouble() < step / WanderOffEvery * (0.5f + pet.Needs.Curiosity / 100f))
                 {
                     var dir = rng.Next(2) == 0 ? -1 : 1;
@@ -125,11 +142,14 @@ public sealed class TravelPlanner
             }
             if (pet.Travel == TravelMode.Home) continue;
 
-            var hungryForVisible = NeedTrip(world, pet, here) is { } n && ReferenceEquals(n, visible);
+            var needed = NeedTrip(world, pet, here);
+            var hungryForVisible = needed is not null && needed.DesktopId == visible.DesktopId;
             if (hungryForVisible || _onDesktop >= _comeAt[pet.Id])
             {
                 var reason = hungryForVisible ? TripReason.Need : pet.Travel == TravelMode.Follow ? TripReason.Follow : TripReason.Visit;
-                Go(sim, pet, visible, reason, run: pet.Travel == TravelMode.Follow, rng);
+                // Comes in on its own monitor of the user's desktop (or to the food).
+                var to = hungryForVisible ? needed! : world.CellFor(visible.DesktopId, here.MonitorId) ?? visible;
+                Go(sim, pet, to, reason, run: pet.Travel == TravelMode.Follow, rng);
             }
         }
     }
@@ -159,7 +179,9 @@ public sealed class TravelPlanner
     public static Cell? NeedTrip(World world, Pet pet, Cell here)
     {
         static bool HasFood(Cell c) => c.Bowls.Any(b => b.Amount > 0f);
-        int Distance(Cell c) => System.Math.Abs(world.DesktopIndex(c) - world.DesktopIndex(here));
+        // Another screen of the same desktop is nearer than any other desktop.
+        int Distance(Cell c) => System.Math.Abs(world.DesktopIndex(c) - world.DesktopIndex(here)) * 10 +
+                                System.Math.Abs(world.MonitorIndex(c) - world.MonitorIndex(here));
 
         if (pet.Needs.Hunger < 25f && !HasFood(here))
             return world.Cells.Where(c => c != here && HasFood(c)).MinBy(Distance);
@@ -172,6 +194,20 @@ public sealed class TravelPlanner
     {
         var world = sim.World;
         var from = world.Find(pet.CellId);
+        if (from is not null && from.DesktopId == to.DesktopId)
+        {
+            // Over to another screen: off the edge that faces it, in from the facing edge a moment later.
+            var right = to.Bounds.X + to.Bounds.Width / 2f >= from.Bounds.X + from.Bounds.Width / 2f;
+            pet.Trip = new Trip
+            {
+                To = to,
+                Reason = reason,
+                Direction = right ? 1 : -1,
+                Run = run && pet.Needs.Energy > 20f,
+                Gap = gap ?? 0.3f + (float)rng.NextDouble() * 0.4f,
+            };
+            return;
+        }
         var delta = from is null ? 1 : world.DesktopIndex(to) - world.DesktopIndex(from);
         var hops = System.Math.Max(1, System.Math.Abs(delta));
         pet.Trip = new Trip

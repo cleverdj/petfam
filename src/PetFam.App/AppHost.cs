@@ -18,8 +18,9 @@ using PetFam.Platform.Windows;
 namespace PetFam.Desktop;
 
 /// <summary>
-/// Owns the simulation, the two layer windows and the frame timer. Spike scope: one cell
-/// (primary monitor, current desktop). Multi-monitor and virtual desktops come next.
+/// Owns the simulation, the layer windows and the frame timer. There is a cell per virtual desktop and monitor;
+/// each monitor has its own backyard and overlay window showing that monitor's cell of the current desktop.
+/// The main monitor's cell (<see cref="_cell"/>) is where tray actions (food, houses, new pets) happen.
 /// </summary>
 public sealed class AppHost
 {
@@ -40,8 +41,28 @@ public sealed class AppHost
     private OnboardingWindow? _onboarding;
     private readonly Stopwatch _clock = new();
 
-    private BackyardWindow? _backyard;
-    private OverlayWindow? _overlay;
+    private BackyardWindow? _backyard;   // main monitor
+    private OverlayWindow? _overlay;     // main monitor
+
+    /// <summary>One per monitor, the main monitor first: its windows and the cell they show.</summary>
+    private sealed class MonitorView
+    {
+        public required string MonitorId { get; init; }
+        public required Screen Screen { get; set; }
+        public required BackyardWindow Backyard { get; init; }
+        public required OverlayWindow Overlay { get; init; }
+        public required Cell Cell { get; set; }
+        public bool OverlayHadContent { get; set; }
+    }
+
+    private readonly List<MonitorView> _views = new();
+
+    private sealed record Monitor(string Id, RectI Bounds, RectI Working, Screen Screen);
+
+    private List<Monitor> _monitors = new();
+    private string _monitorKey = "";
+    private float _sinceMonitorPoll;
+    public const string MainMonitorId = "primary";
     private readonly Dictionary<Guid, FrontWindow> _fronts = new();
     private Cell? _cell;
     private FrameClock? _timer;
@@ -85,17 +106,11 @@ public sealed class AppHost
         _backyard = new BackyardWindow();
         _overlay = new OverlayWindow();
 
-        var screen = _backyard.Screens.Primary ?? _backyard.Screens.All[0];
-        var bounds = ToRectI(screen.Bounds);
-        var working = ToRectI(screen.WorkingArea);
-        AppLog.Write($"Primary screen bounds={bounds} working={working} scaling={screen.Scaling}");
-
-        _screenBounds = bounds;
-        _screenWorking = working;
+        ReadMonitors();
         var desktops = _platform.GetVirtualDesktops();
         var cell = SyncDesktops(desktops);
         _cell = cell;
-        _sim.ShowCell(cell, DateTime.UtcNow);
+        _sim.ShowCells(_monitors.Select(m => _sim.World.CellFor(cell.DesktopId, m.Id) ?? cell).ToList(), DateTime.UtcNow);
         AppLog.Write(desktops is null
             ? "Virtual desktops: none (one cell)"
             : $"Virtual desktops: {desktops.Desktops.Count}, on {_sim.World.DescribeDesktop(cell)} ({cell.DesktopId})");
@@ -131,16 +146,9 @@ public sealed class AppHost
             AppLog.Write($"PETFAM_BOND={bond}: bond set for all pets");
         }
 
-        var wallpaper = LoadWallpaper();
-        _backyard.Configure(screen, cell, _sim, _platform, _layering, wallpaper, _platform.GetWallpaperFit());
-        _overlay.Configure(screen, cell, _sim, _platform, _layering);
-
-        _backyard.Show();
-        // The overlay (window edges, HUD) stays up, empty and click-through, for the whole run: showing it when a pet
-        // first peeked set up its drawing surface on the spot and stalled the screen for about two seconds, and so
-        // did showing it again after hiding. An empty transparent window costs next to nothing to compose.
-        _overlay.Show();
-        _overlay.ApplyClickThrough();
+        _wallpaperBitmap = LoadWallpaper();
+        foreach (var m in _monitors)
+            AddView(m, m.Id == MainMonitorId ? _backyard : new BackyardWindow(), m.Id == MainMonitorId ? _overlay : new OverlayWindow());
 
         _clock.Start();
         _lastTime = 0;
@@ -180,6 +188,16 @@ public sealed class AppHost
                 PetFam.Core.World.TravelPlanner.Go(_sim, pet, to, TripReason.Visit, run: false, new Random());
                 AppLog.Write($"Demo travel: {pet.Name} -> {_sim.World.DescribeDesktop(to)}");
                 DispatcherTimer.RunOnce(() => CallPet(pet), TimeSpan.FromSeconds(14));
+            }, TimeSpan.FromSeconds(3));
+        // Dev: the first pet on the main monitor walks over to the next monitor (and the snapshots show both).
+        if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "monitor")
+            DispatcherTimer.RunOnce(() =>
+            {
+                if (_cell is null || _sim.Pets.FirstOrDefault(p => p.CellId == _cell.Id && !p.Hidden) is not { } pet) return;
+                var to = _sim.World.MonitorNeighbor(_cell, +1) ?? _sim.World.MonitorNeighbor(_cell, -1);
+                if (to is null) { AppLog.Write("Demo monitor: only one monitor"); return; }
+                PetFam.Core.World.TravelPlanner.Go(_sim, pet, to, TripReason.Visit, run: false, new Random());
+                AppLog.Write($"Demo monitor: {pet.Name} -> {_sim.World.DescribeCell(to)}");
             }, TimeSpan.FromSeconds(3));
         if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "house")
             DispatcherTimer.RunOnce(BuildHouse, TimeSpan.FromSeconds(3));
@@ -233,28 +251,36 @@ public sealed class AppHost
         }
     }
 
-    /// <summary>Renders the backyard scene to a PNG in the data folder, for checking what the layer draws.</summary>
+    /// <summary>
+    /// Renders each monitor's backyard scene (only what PetFam draws, never the screen) to a PNG in the data folder,
+    /// for checking what the layer draws. Returns the main monitor's file.
+    /// </summary>
     public string? SaveSnapshot()
     {
-        if (_backyard is null) return null;
-        try
+        string? first = null;
+        var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        foreach (var v in _views)
         {
-            var cell = _sim.World.AnyCell()!;
-            var dpi = 96 * (_backyard.Screens.Primary?.Scaling ?? 1.0);
-            using var rtb = new RenderTargetBitmap(new PixelSize(cell.Bounds.Width, cell.Bounds.Height), new Vector(dpi, dpi));
-            SdfPetRenderer.Suspended = true;
-            try { rtb.Render(_backyard.RootVisual); }
-            finally { SdfPetRenderer.Suspended = false; }
-            var path = Path.Combine(AppLog.DataDirectory, $"snapshot-{DateTime.Now:yyyyMMdd-HHmmss}.png");
-            rtb.Save(path);
-            AppLog.Write("Snapshot saved: " + path);
-            return path;
+            try
+            {
+                var cell = v.Cell;
+                var dpi = 96 * v.Screen.Scaling;
+                using var rtb = new RenderTargetBitmap(new PixelSize(cell.Bounds.Width, cell.Bounds.Height), new Vector(dpi, dpi));
+                SdfPetRenderer.Suspended = true;
+                try { rtb.Render(v.Backyard.RootVisual); }
+                finally { SdfPetRenderer.Suspended = false; }
+                var suffix = v.MonitorId == MainMonitorId ? "" : "-" + v.MonitorId;
+                var path = Path.Combine(AppLog.DataDirectory, $"snapshot-{stamp}{suffix}.png");
+                rtb.Save(path);
+                AppLog.Write("Snapshot saved: " + path);
+                first ??= path;
+            }
+            catch (Exception ex)
+            {
+                AppLog.Write("Snapshot failed: " + ex.Message);
+            }
         }
-        catch (Exception ex)
-        {
-            AppLog.Write("Snapshot failed: " + ex.Message);
-            return null;
-        }
+        return first;
     }
 
     public void Stop()
@@ -272,7 +298,7 @@ public sealed class AppHost
     {
         // The bowl goes on the desktop on screen; hungry pets on other desktops come over for it.
         var now = DateTime.UtcNow;
-        var here = _sim.Pets.Where(p => _cell is not null && p.CellId == _cell.Id).ToList();
+        var here = _sim.Pets.Where(_sim.IsVisible).ToList();
         foreach (var p in here) _sim.Feed(p, now);
         if (here.Count == 0 && _cell is not null)
         {
@@ -581,11 +607,13 @@ public sealed class AppHost
     public void AnalyzeHabitat(bool force = false)
     {
         if (_cell is null || _analyzing) return;
-        if (AnalyzeCell(_cell, WallpaperPath(), force)) return;
+        if (force) foreach (var v in _views) _analyzedKeys.Remove(v.Cell.Id);
+        foreach (var v in _views)
+            if (AnalyzeCell(v.Cell, WallpaperPath(), force: false)) return;
         if (WallpaperOverride is not null) return;
         foreach (var other in _sim.World.Cells)
         {
-            if (ReferenceEquals(other, _cell) || _analyzedKeys.ContainsKey(other.Id)) continue;
+            if (_views.Any(v => ReferenceEquals(v.Cell, other)) || _analyzedKeys.ContainsKey(other.Id)) continue;
             var path = _desktopWallpapers.GetValueOrDefault(other.DesktopId);
             if (path is null) { _analyzedKeys[other.Id] = "none"; continue; }
             if (AnalyzeCell(other, path, force: false)) return;
@@ -652,7 +680,7 @@ public sealed class AppHost
         }
         foreach (var bowl in cell.Bowls) bowl.Position = cell.Map.ClampToRoam(bowl.Position);
         foreach (var house in cell.Houses) house.Position = cell.Map.ClampToRoam(house.Position);
-        AppLog.Write($"Habitat ({_sim.World.DescribeDesktop(cell)}): {report}; roam={cell.Map.RoamArea} mask={(mask is null ? "none" : mask.Count + " cells")}");
+        AppLog.Write($"Habitat ({_sim.World.DescribeCell(cell)}): {report}; roam={cell.Map.RoamArea} mask={(mask is null ? "none" : mask.Count + " cells")}");
     }
 
     // ---------------------------------------------------------------- frame
@@ -688,6 +716,12 @@ public sealed class AppHost
             _sinceDesktopPoll = 0f;
             UpdateDesktops();
         }
+        _sinceMonitorPoll += dt;
+        if (_sinceMonitorPoll >= 2f)
+        {
+            _sinceMonitorPoll = 0f;
+            UpdateMonitors();
+        }
         Lap(0);
 
         _sim.Tick(dt, DateTime.UtcNow);
@@ -708,7 +742,7 @@ public sealed class AppHost
         UpdateHouseWindow();
         UpdateSelection(dt);
         Lap(3);
-        _backyard?.RenderFrame();
+        foreach (var v in _views) v.Backyard.RenderFrame();
         Lap(4);
         UpdateOverlayVisibility();
         UpdateFrameRate();
@@ -770,20 +804,20 @@ public sealed class AppHost
         }
     }
 
-    private bool _overlayHadContent;
-
-    /// <summary>The overlay is always up (see Start); it is redrawn while it has something to show, and once more after.</summary>
+    /// <summary>The overlays are always up (see AddView); each is redrawn while it has something to show, and once more after.</summary>
     private void UpdateOverlayVisibility()
     {
-        if (_overlay is null) return;
-        if (!_overlay.IsVisible)
+        foreach (var v in _views)
         {
-            _overlay.Show();
-            _overlay.ApplyClickThrough();
+            if (!v.Overlay.IsVisible)
+            {
+                v.Overlay.Show();
+                v.Overlay.ApplyClickThrough();
+            }
+            var has = v.Overlay.HasContent;
+            if (has || v.OverlayHadContent) v.Overlay.RenderFrame();
+            v.OverlayHadContent = has;
         }
-        var has = _overlay.HasContent;
-        if (has || _overlayHadContent) _overlay.RenderFrame();
-        _overlayHadContent = has;
     }
 
     /// <summary>
@@ -797,7 +831,8 @@ public sealed class AppHost
 
         foreach (var pet in _sim.Pets)
         {
-            if (pet.CellId != _cell.Id || pet.Layer == PetLayer.WindowEdge) continue;
+            if (!_sim.VisibleCellIds.Contains(pet.CellId) || pet.Layer == PetLayer.WindowEdge) continue;
+            if (_sim.World.Find(pet.CellId) is not { } petCell) continue;
 
             _fronts.TryGetValue(pet.Id, out var front);
             if (pet.Hidden)
@@ -807,7 +842,7 @@ public sealed class AppHost
                 continue;
             }
             var held = pet.Hold != HoldState.None || (front?.IsHolding ?? false);
-            var depth = _cell.Map.DepthScale(pet.Position.Y);
+            var depth = petCell.Map.DepthScale(pet.Position.Y);
             var box = Expand(PetRenderer.HitBox(pet, depth), 20);
             var hovering = _sim.User.CursorOnDesktop && box.Contains(cursor);
 
@@ -815,7 +850,7 @@ public sealed class AppHost
             {
                 if (front is null)
                 {
-                    front = new FrontWindow(pet, _sim, _cell, _platform, _layering, OpenMenu);
+                    front = new FrontWindow(pet, _sim, petCell, _platform, _layering, OpenMenu);
                     _fronts[pet.Id] = front;
                 }
                 if (!front.IsVisible) front.Show();
@@ -884,10 +919,11 @@ public sealed class AppHost
         Select(pet);
         _sim.BeginAttention(pet);
 
-        var depth = _cell.Map.DepthScale(pet.Position.Y);
+        var petCell = _sim.World.Find(pet.CellId) ?? _cell;
+        var depth = petCell.Map.DepthScale(pet.Position.Y);
         var box = PetRenderer.HitBox(pet, depth);
         var center = new PixelPoint(box.X + box.Width / 2, box.Y + (int)(box.Height * 0.3));
-        var scaling = _backyard?.Screens.Primary?.Scaling ?? 1.0;
+        var scaling = ScalingAt(center);
 
         var menu = new PieMenuWindow(pet, _sim.MenuFor(pet, DateTime.UtcNow), center, scaling, interaction =>
         {
@@ -1116,14 +1152,14 @@ public sealed class AppHost
 
     private const float DesktopPollSeconds = 0.25f;
     private float _sinceDesktopPoll;
-    private RectI _screenBounds;
-    private RectI _screenWorking;
+    private Bitmap? _wallpaperBitmap;
     private readonly Dictionary<string, string> _desktopWallpapers = new();
     private const string SingleDesktopId = "desktop-0";
 
     /// <summary>
-    /// Makes the world match the OS desktops: one cell per desktop (primary monitor), in OS order. Pets, houses and
-    /// bowls on a desktop that was closed move to the desktop on screen. Returns the cell on screen.
+    /// Makes the world match the OS desktops and monitors: one cell per desktop and monitor, desktops in OS order.
+    /// Pets, houses and bowls on a desktop that was closed move to the desktop on screen; those on a monitor that was
+    /// unplugged move to the main monitor of their desktop. Returns the main monitor's cell of the current desktop.
     /// </summary>
     private Cell SyncDesktops(VirtualDesktopState? state)
     {
@@ -1144,50 +1180,152 @@ public sealed class AppHost
             if (d.WallpaperPath is { } w) _desktopWallpapers[d.Id] = w;
         }
 
+        var monitorIds = _monitors.Select(m => m.Id).ToList();
         foreach (var id in ids)
+        foreach (var m in _monitors)
         {
-            if (world.CellForDesktop(id) is not null) continue;
-            world.Upsert(new Cell
+            var existing = world.CellFor(id, m.Id);
+            if (existing is not null && existing.Bounds == m.Bounds && existing.WorkingArea == m.Working) continue;
+            var cell = world.Upsert(new Cell
             {
-                Id = Cell.MakeId(id, "primary"),
+                Id = Cell.MakeId(id, m.Id),
                 DesktopId = id,
-                MonitorId = "primary",
-                Bounds = _screenBounds,
-                WorkingArea = _screenWorking,
-                Map = HabitatMap.Flat(_screenBounds, _screenWorking),
+                MonitorId = m.Id,
+                Bounds = m.Bounds,
+                WorkingArea = m.Working,
+                Map = HabitatMap.Flat(m.Bounds, m.Working),
             });
-            if (state is not null && _cell is not null) AppLog.Write($"Desktop added: {id}");
+            if (existing is not null)
+            {
+                // The screen changed size or place: same houses and bowls, kept on the new floor; analyse again.
+                foreach (var h in existing.Houses) { h.Position = cell.Map.ClampToRoam(h.Position + Shift(existing, cell)); cell.Houses.Add(h); }
+                foreach (var b in existing.Bowls) { b.Position = cell.Map.ClampToRoam(b.Position + Shift(existing, cell)); cell.Bowls.Add(b); }
+                foreach (var pet in _sim.Pets.Where(p => p.CellId == cell.Id)) pet.Position = cell.Map.ClampToRoam(pet.Position + Shift(existing, cell));
+                _analyzedKeys.Remove(cell.Id);
+                AppLog.Write($"Monitor changed: {m.Id} now {m.Bounds}");
+            }
+            else if (state is not null && _cell is not null) AppLog.Write($"Cell added: {id} on {m.Id}");
         }
 
-        var current = world.CellForDesktop(currentId)!;
+        var current = world.CellFor(currentId, MainMonitorId) ?? world.CellForDesktop(currentId)!;
 
-        // Desktops that were closed: everyone and everything on them comes to the desktop on screen.
-        foreach (var gone in world.Cells.Where(c => !ids.Contains(c.DesktopId)).ToList())
+        // Desktops that were closed, or monitors that were unplugged: everyone and everything on them comes to the
+        // main monitor of their desktop, or to the desktop on screen.
+        foreach (var gone in world.Cells.Where(c => !ids.Contains(c.DesktopId) || !monitorIds.Contains(c.MonitorId)).ToList())
         {
+            var to = ids.Contains(gone.DesktopId) ? world.CellFor(gone.DesktopId, MainMonitorId) ?? current : current;
             foreach (var pet in _sim.Pets.Where(p => p.CellId == gone.Id || p.Trip?.To == gone))
             {
                 if (pet.Trip is not null) pet.Trip = null;
                 pet.Hidden = false;
-                pet.CellId = current.Id;
-                pet.Position = current.Map.ClampToRoam(pet.Position);
+                pet.CellId = to.Id;
+                pet.Position = to.Map.ClampToRoam(pet.Position + Shift(gone, to));
                 pet.Engine.ForceStop(new PetFam.Core.Behavior.BehaviorContext
                 {
-                    Pet = pet, Cell = current, User = _sim.User, Rng = new Random(), Debug = _sim.Debug, NowUtc = DateTime.UtcNow,
+                    Pet = pet, Cell = to, User = _sim.User, Rng = new Random(), Debug = _sim.Debug, NowUtc = DateTime.UtcNow,
                 });
             }
-            foreach (var pet in _sim.Pets.Where(p => p.HomeCellId == gone.Id)) pet.HomeCellId = current.Id;
-            foreach (var house in gone.Houses.Where(_ => current.Houses.Count < Cell.MaxHouses))
+            foreach (var pet in _sim.Pets.Where(p => p.HomeCellId == gone.Id)) pet.HomeCellId = to.Id;
+            foreach (var house in gone.Houses.Where(_ => to.Houses.Count < Cell.MaxHouses))
             {
-                house.Position = current.Map.ClampToRoam(house.Position);
-                current.Houses.Add(house);
+                house.Position = to.Map.ClampToRoam(house.Position + Shift(gone, to));
+                to.Houses.Add(house);
+            }
+            foreach (var bowl in gone.Bowls)
+            {
+                bowl.Position = to.Map.ClampToRoam(bowl.Position + Shift(gone, to));
+                to.Bowls.Add(bowl);
             }
             world.Remove(gone.Id);
             _analyzedKeys.Remove(gone.Id);
-            AppLog.Write($"Desktop closed: {gone.DesktopId}; its pets and houses moved to {world.DescribeDesktop(current)}");
+            AppLog.Write(ids.Contains(gone.DesktopId)
+                ? $"Monitor gone: {gone.MonitorId}; its pets and houses moved to {world.DescribeCell(to)}"
+                : $"Desktop closed: {gone.DesktopId}; its pets and houses moved to {world.DescribeCell(to)}");
             Save();
         }
         return current;
     }
+
+    /// <summary>How far things move when they go from one screen to the matching spot on another.</summary>
+    private static Vec2 Shift(Cell from, Cell to) =>
+        new(to.Bounds.X + to.Bounds.Width / 2f - (from.Bounds.X + from.Bounds.Width / 2f), to.Bounds.Y + to.Bounds.Height / 2f - (from.Bounds.Y + from.Bounds.Height / 2f));
+
+    // ---------------------------------------------------------------- monitors
+
+    /// <summary>Reads the monitors: the main one first (id "primary", as before multi-monitor), then left to right.</summary>
+    private void ReadMonitors()
+    {
+        var screens = _backyard!.Screens;
+        var main = screens.Primary ?? screens.All[0];
+        _monitors = screens.All
+            .OrderBy(s => s == main ? 0 : 1).ThenBy(s => s.Bounds.X).ThenBy(s => s.Bounds.Y)
+            .Select(s => new Monitor(s == main ? MainMonitorId : $"mon-{s.Bounds.X}-{s.Bounds.Y}", ToRectI(s.Bounds), ToRectI(s.WorkingArea), s))
+            .ToList();
+        _monitorKey = string.Join(";", _monitors.Select(m => $"{m.Id}={m.Bounds}/{m.Working}"));
+        _sim.World.MonitorOrder.Clear();
+        _sim.World.MonitorOrder.AddRange(_monitors.Select(m => m.Id));
+        foreach (var m in _monitors)
+            AppLog.Write($"Monitor {m.Id}: bounds={m.Bounds} working={m.Working} scaling={m.Screen.Scaling}");
+    }
+
+    /// <summary>A monitor was plugged in or unplugged, or changed resolution: rebuild cells and windows to match.</summary>
+    private void UpdateMonitors()
+    {
+        if (_backyard is null) return;
+        var screens = _backyard.Screens.All;
+        var key = string.Join(";", screens
+            .OrderBy(s => s == (_backyard.Screens.Primary ?? screens[0]) ? 0 : 1).ThenBy(s => s.Bounds.X).ThenBy(s => s.Bounds.Y)
+            .Select(s => $"{(s == (_backyard.Screens.Primary ?? screens[0]) ? MainMonitorId : $"mon-{s.Bounds.X}-{s.Bounds.Y}")}={ToRectI(s.Bounds)}/{ToRectI(s.WorkingArea)}"));
+        if (key == _monitorKey) return;
+        AppLog.Write("Monitors changed: " + key);
+        ReadMonitors();
+        var current = SyncDesktops(Volatile.Read(ref _desktopState));
+
+        foreach (var v in _views.Where(v => _monitors.All(m => m.Id != v.MonitorId)).ToList())
+        {
+            v.Backyard.Close();
+            v.Overlay.Close();
+            _views.Remove(v);
+        }
+        foreach (var m in _monitors)
+        {
+            if (_views.FirstOrDefault(v => v.MonitorId == m.Id) is { } view)
+            {
+                view.Screen = m.Screen;
+                view.Cell = _sim.World.CellFor(current.DesktopId, m.Id) ?? current;
+                view.Backyard.ShowCell(view.Cell);
+                view.Overlay.ShowCell(view.Cell);
+                view.Backyard.ApplyBounds(m.Screen);
+            }
+            else
+            {
+                AddView(m, new BackyardWindow(), new OverlayWindow());
+            }
+        }
+        SwitchTo(current, Volatile.Read(ref _desktopState)?.CurrentId);
+        AnalyzeHabitat(force: true);
+    }
+
+    /// <summary>Opens the backyard and overlay windows for one monitor, showing its cell of the current desktop.</summary>
+    private void AddView(Monitor m, BackyardWindow backyard, OverlayWindow overlay)
+    {
+        var cell = _sim.World.CellFor((_cell ?? _sim.World.AnyCell()!).DesktopId, m.Id) ?? _cell!;
+        var view = new MonitorView { MonitorId = m.Id, Screen = m.Screen, Backyard = backyard, Overlay = overlay, Cell = cell };
+        _views.Add(view);
+        backyard.Configure(m.Screen, cell, _sim, _platform, _layering, _wallpaperBitmap, _platform.GetWallpaperFit());
+        overlay.Configure(m.Screen, cell, _sim, _platform, _layering);
+        backyard.Show();
+        // The overlay (window edges, HUD) stays up, empty and click-through, for the whole run: showing it when a pet
+        // first peeked set up its drawing surface on the spot and stalled the screen for about two seconds, and so
+        // did showing it again after hiding. An empty transparent window costs next to nothing to compose.
+        overlay.Show();
+        overlay.ApplyClickThrough();
+    }
+
+    /// <summary>Display scaling of the monitor under this screen point.</summary>
+    private double ScalingAt(PixelPoint p) =>
+        _monitors.FirstOrDefault(m => m.Bounds.Contains(new Vec2(p.X, p.Y)))?.Screen.Scaling
+        ?? _backyard?.Screens.Primary?.Scaling ?? 1.0;
 
     private readonly Dictionary<Guid, string> _lastCellOf = new();
 
@@ -1201,7 +1339,7 @@ public sealed class AppHost
                 var from = _sim.World.Find(was);
                 var to = _sim.World.Find(pet.CellId);
                 AppLog.Write($"Travel: {pet.Name} {(from is null ? was : _sim.World.DescribeDesktop(from))} -> " +
-                             $"{(to is null ? pet.CellId : _sim.World.DescribeDesktop(to))} ({pet.Trip?.Reason.ToString() ?? "moved"}, mode {pet.Travel})");
+                             $"{(to is null ? pet.CellId : _sim.World.DescribeCell(to))} ({pet.Trip?.Reason.ToString() ?? "moved"}, mode {pet.Travel})");
                 PetsMenuChanged?.Invoke();
             }
             _lastCellOf[pet.Id] = pet.CellId;
@@ -1251,12 +1389,16 @@ public sealed class AppHost
         _houseFront = null;
 
         _cell = cell;
-        _sim.ShowCell(cell, DateTime.UtcNow);
-        _backyard?.ShowCell(cell);
-        _overlay?.ShowCell(cell);
+        foreach (var v in _views)
+        {
+            v.Cell = _sim.World.CellFor(cell.DesktopId, v.MonitorId) ?? cell;
+            v.Backyard.ShowCell(v.Cell);
+            v.Overlay.ShowCell(v.Cell);
+        }
+        _sim.ShowCells(_views.Count > 0 ? _views.Select(v => v.Cell).ToList() : new List<Cell> { cell }, DateTime.UtcNow);
         if (desktopId is not null) _layering.MoveOwnWindowsToDesktop(desktopId);
 
-        var here = string.Join(", ", _sim.Pets.Where(p => p.CellId == cell.Id).Select(p => p.Name));
+        var here = string.Join(", ", _sim.Pets.Where(_sim.IsVisible).Select(p => p.Name));
         AppLog.Write($"Desktop: switched to {_sim.World.DescribeDesktop(cell)} (here: {(here.Length > 0 ? here : "nobody")})");
         _sinceWallpaperPoll = WallpaperPollSeconds;   // analyse its wallpaper on the next frame if new
         PetsMenuChanged?.Invoke();
@@ -1266,8 +1408,9 @@ public sealed class AppHost
     public string WhereIs(Pet pet)
     {
         var cell = _sim.World.Find(pet.CellId);
-        var place = cell is null || _sim.World.DesktopOrder.Count < 2 ? "" :
-            ReferenceEquals(cell, _cell) ? L.S("here", "여기") : _sim.World.DescribeDesktop(cell);
+        var place = cell is null || _sim.World.Cells.Count < 2 ? "" :
+            _sim.VisibleCellIds.Contains(cell.Id) ? (_sim.World.MonitorOrder.Count > 1 && !ReferenceEquals(cell, _cell) ? _sim.World.DescribeMonitor(cell) : L.S("here", "여기"))
+            : _sim.World.DescribeCell(cell);
         var doing = pet.Trip is not null ? L.S("travelling", "이동 중") :
             pet.Engine.Current is PetFam.Core.Behavior.Behaviors.SleepBehavior ? L.S("sleeping", "자는 중") :
             pet.Engine.Current is PetFam.Core.Behavior.Behaviors.EatBehavior ? L.S("eating", "먹는 중") :
@@ -1283,7 +1426,7 @@ public sealed class AppHost
 
     public bool HasDesktops => _sim.World.DesktopOrder.Count > 1;
 
-    public bool IsHere(Pet pet) => _cell is not null && pet.CellId == _cell.Id;
+    public bool IsHere(Pet pet) => _cell is not null && _sim.VisibleCellIds.Contains(pet.CellId);
 
     /// <summary>Tray: call a pet on another desktop.</summary>
     public void CallPet(Pet pet)

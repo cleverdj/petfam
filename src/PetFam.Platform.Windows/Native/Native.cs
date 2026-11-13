@@ -112,6 +112,9 @@ internal static class User32
     [DllImport("user32.dll")]
     public static extern bool IsWindowVisible(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    public static extern bool IsWindow(IntPtr hWnd);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 

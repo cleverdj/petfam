@@ -36,7 +36,7 @@ public sealed class TravelBehavior : Behavior
         }
         else
         {
-            BeginGap(pet, trip);
+            BeginGap(pet, trip, ctx.Cell);
         }
     }
 
@@ -56,7 +56,7 @@ public sealed class TravelBehavior : Behavior
                 return false;
 
             case Phase.Out:
-                if (Walk(ctx, trip, _target, dt, clamp: false)) BeginGap(pet, trip);
+                if (Walk(ctx, trip, _target, dt, clamp: false)) BeginGap(pet, trip, ctx.Cell);
                 return false;
 
             case Phase.Gap:
@@ -103,10 +103,16 @@ public sealed class TravelBehavior : Behavior
         pet.SetAnimation("idle");
     }
 
-    private void BeginGap(Pet pet, Trip trip)
+    private void BeginGap(Pet pet, Trip trip, Cell from)
     {
+        // Keep the same place between the top and bottom of the floor (screens differ in size and position).
+        var a = from.Map.RoamArea;
+        var b = trip.To.Map.RoamArea;
+        var y = a.Height > 0 && b.Height > 0
+            ? b.Top + System.Math.Clamp((pet.Position.Y - a.Top) / a.Height, 0f, 1f) * b.Height
+            : pet.Position.Y;
         pet.CellId = trip.To.Id;
-        pet.Position = OffScreen(trip.To, -trip.Direction, pet.Position.Y);
+        pet.Position = OffScreen(trip.To, -trip.Direction, y);
         _gap = trip.Gap;
         _phase = Phase.Gap;
     }

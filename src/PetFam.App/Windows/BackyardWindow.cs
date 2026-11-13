@@ -264,6 +264,15 @@ public sealed class BackyardWindow : Window
         DispatcherTimer.RunOnce(() => AppLog.Write("Backyard native: " + _layering?.DescribeWindow(_handle)), TimeSpan.FromSeconds(1));
     }
 
+    /// <summary>The monitor's size or place changed: move and resize to the cell's (new) bounds.</summary>
+    public void ApplyBounds(Screen screen)
+    {
+        if (_cell is null) return;
+        Position = new PixelPoint(_cell.Bounds.X, _cell.Bounds.Y);
+        if (_handle != IntPtr.Zero) Relayout();
+        else { Width = _cell.Bounds.Width / screen.Scaling; Height = _cell.Bounds.Height / screen.Scaling; }
+    }
+
     private void Relayout()
     {
         if (_cell is null) return;

@@ -17,7 +17,7 @@ PetFam은 화면 보호기가 아니고 작업을 방해하지도 않아요. 펫
 - **함께 자라요.** 모든 펫은 생후 두 달 된 새끼로 와서, 함께 보낸 날마다 하루씩 나이를 먹어요. 청소년, 성체를 지나 의젓한 노령까지 자라고, 나이에 따라 몸과 기운, 행동이 달라져요.
 - **자기만의 집.** 집을 짓고 꾸미고, 어느 집이 누구 집인지 정해 주세요. 펫이 잠을 자거나 비를 피하러 문으로 들어가는 모습을 볼 수 있어요.
 - **실제 날씨.** 사는 곳에 비가 오면 바탕화면에도 비가 와요. 고양이는 비를 피해 뛰어가고, 강아지는 물웅덩이에서 놀고, 지붕에는 눈이 쌓여요.
-- **모든 데스크톱에서.** 펫이 Windows 가상 데스크톱 사이를 오가요. 데스크톱을 바꾸면 따라오거나, 집을 지켜요.
+- **모든 데스크톱과 모니터에서.** 펫이 Windows 가상 데스크톱 사이를 오가요. 데스크톱을 바꾸면 따라오거나 집을 지키고, 모니터에서 옆 모니터로 놀러 가기도 해요.
 - **부담 없이.** 해야 할 일도, 죄책감도 없어요. 펫은 절대 죽지 않고, 컴퓨터 앞에 있기만 해도 유대감이 줄지 않아요. 전체 화면 앱이나 발표 중에는 조용히 지내요.
 
 ## 기능
@@ -70,6 +70,9 @@ PetFam은 화면 보호기가 아니고 작업을 방해하지도 않아요. 펫
 
 ### 가상 데스크톱
 데스크톱마다 자기 바탕화면으로 만든 서식지가 있어요. 펫은 한쪽 끝으로 걸어 나가 옆 데스크톱 반대쪽 끝으로 들어와요. 데스크톱을 바꾸면 따라오거나(따라다니기), 마음대로 돌아다니거나(자유롭게), 집을 지키고(집 지키기), 트레이에서 불러올 수도 있어요.
+
+### 여러 모니터
+모니터마다 그 화면의 바탕화면 그림으로 만든 서식지가 있고, 모든 모니터가 펫의 세상이에요. 펫은 가끔 한 화면의 끝으로 걸어 나가 옆 모니터의 마주 보는 끝에서, 바닥의 같은 높이로 들어와요(집 지키기 펫은 자기 화면에 머물러요). 데스크톱을 바꾸면 따라오는 펫은 원래 있던 모니터로 들어와요. 모니터를 연결하거나 빼면 PetFam이 알아서 맞춰 다시 구성하고, 사라진 화면에 있던 펫은 주 모니터로 옮겨 와요. 밥그릇, 집, 새 펫은 주 모니터에 놓여요.
 
 ### 언어
 기본은 영어, 한국어도 선택할 수 있어요(트레이 → Language / 언어). 품종 소개와 펫이 하는 말까지 전부 바뀌어요.
@@ -177,7 +180,7 @@ docs/PLANNING.md             제품·기술 기획(영어)
 | `PETFAM_RENDER=software\|angle\|wgl` | Avalonia 렌더 백엔드를 강제 |
 | `PETFAM_COMP=winui\|dcomp\|redirect` | Avalonia 합성 모드를 강제 |
 | `PETFAM_UI_RENDER=1` | UI 스레드에서 렌더링 |
-| `PETFAM_SNAPSHOT=1` | 시작 후 뒷마당 스냅샷을 자동 저장(`PETFAM_SNAPSHOT_DELAY=<초>`, 기본 3) |
+| `PETFAM_SNAPSHOT=1` | 시작 후 모니터마다 뒷마당 스냅샷을 자동 저장(`PETFAM_SNAPSHOT_DELAY=<초>`, 기본 3). PetFam이 그린 것만 담김 |
 | `PETFAM_STYLE=fur` | 카툰 대신 털 질감 3D 스타일로 그림 |
 | `PETFAM_WALLPAPER=<이미지 경로>` | 실제 바탕화면은 그대로 두고 이 이미지를 뒷마당에 깔아 서식지 인식과 행동을 시험 |
 | `PETFAM_ADOPT=cat,dog,shiba,…` | 시작할 때 펫을 더 데려옴: `cat`, `dog` 또는 품종 id(`pomeranian` `maltese` `poodle` `bichon` `shiba` `corgi` `jindo` `korean-shorthair` `russian-blue` `british-shorthair` `scottish-fold` `persian` `ragdoll` `munchkin` `golden-retriever` `french-bulldog` `dachshund` `siberian-husky` `chihuahua` `beagle` `siamese` `maine-coon` `bengal` `sphynx` `abyssinian`). 저장됨 |
@@ -189,6 +192,7 @@ docs/PLANNING.md             제품·기술 기획(영어)
 | `PETFAM_MOTION_SHEET=cat\|dog` | 돌아서기, 출발, 걷기, 멈추기, 앉기, 일어나 달리기를 30fps로 움직여 차례로 그린 `motion-sheet.png` 저장(동작 전환 확인용) |
 | `PETFAM_DEMO=ball` | 실행 3초 뒤 첫 강아지와 공놀이 시작(던지기 확인용) |
 | `PETFAM_DEMO=house` | 실행 3초 뒤 새 집 짓기 창을 엶 |
+| `PETFAM_DEMO=monitor` | 실행 3초 뒤 첫 펫이 옆 모니터로 걸어감 |
 | `PETFAM_DEMO=travel` | 실행 3초 뒤 첫 펫이 옆 데스크톱으로 걸어 나가고, 14초 뒤 다시 불러옴 |
 | `PETFAM_BREED_SHEET=1` | 모든 품종을 성체로 두 방향씩 그린 `breed-sheet.png` 저장 |
 | `PETFAM_ONBOARDING=1` / `cat` | 시작할 때 입양 창을 엶(`cat`: 고양이 탭) |
@@ -205,7 +209,6 @@ docs/PLANNING.md             제품·기술 기획(영어)
 
 ## 앞으로의 계획
 - macOS 버전(Spaces, 메뉴 막대)
-- 여러 모니터 사이를 오가는 펫
 - 바탕화면 분석이 틀린 부분을 고치는 서식지 편집기
 - 공식 서식지 바탕화면과 더 많은 품종
 

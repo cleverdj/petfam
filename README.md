@@ -17,7 +17,7 @@ PetFam is not a screensaver and does not get in your way. Your pets live on the 
 - **They grow up with you.** Every pet arrives as a two-month-old baby and grows a day older on each day you spend together, through junior and adult to a dignified senior. Body, energy and behaviour change with age.
 - **A home of their own.** Build and decorate houses, decide whose house is whose, and watch your pets walk in through the door to sleep or to get out of the rain.
 - **The real weather.** When it rains where you live, it rains on your desktop. Cats run for cover, dogs play in the puddles, snow piles up on the roofs.
-- **All of your desktops.** Pets travel between Windows virtual desktops, follow you when you switch, or stay home.
+- **All of your desktops and screens.** Pets travel between Windows virtual desktops, follow you when you switch, or stay home, and stroll from one monitor to the next.
 - **Gentle by design.** No chores, no guilt trips: pets never die, and simply being at your computer keeps your bond from fading. Full-screen apps and presentations put them on quiet mode.
 
 ## Features
@@ -70,6 +70,9 @@ Day and night follow your computer's clock and the real sunrise and sunset where
 
 ### Virtual desktops
 Each desktop has its own habitat from its own wallpaper. Pets walk off one edge and arrive at the other, follow you when you switch desktops (Follow me), wander on their own (Roam freely) or Stay home, and can be called over from the tray.
+
+### Multiple monitors
+Every monitor is part of the pets' world, each with its own habitat read from the wallpaper on that screen. Now and then a pet walks off the edge of one screen and comes in from the facing edge of the next, at the same height on the floor (Stay home pets keep to their own screen). After a desktop switch, following pets come in on the monitor they were on. Plug in or unplug a monitor and PetFam rebuilds itself to match; pets on a screen that goes away move to the main monitor. Food, houses and new pets go on the main monitor.
 
 ### Languages
 English by default, Korean optional (tray → Language / 언어). Everything switches, including breed personas and what the pets say.
@@ -187,7 +190,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_RENDER=software\|angle\|wgl` | Forces the Avalonia render backend |
 | `PETFAM_COMP=winui\|dcomp\|redirect` | Forces the Avalonia composition mode |
 | `PETFAM_UI_RENDER=1` | Renders on the UI thread |
-| `PETFAM_SNAPSHOT=1` | Automatically saves a backyard snapshot after startup (`PETFAM_SNAPSHOT_DELAY=<seconds>`, default 3) |
+| `PETFAM_SNAPSHOT=1` | Automatically saves a backyard snapshot of each monitor after startup (`PETFAM_SNAPSHOT_DELAY=<seconds>`, default 3); only what PetFam draws |
 | `PETFAM_STYLE=fur` | Draws in the fur-texture 3D style instead of cartoon |
 | `PETFAM_WALLPAPER=<image path>` | Leaves the real wallpaper alone and lays this image in the backyard to test habitat detection and behaviour |
 | `PETFAM_ADOPT=cat,dog,shiba,…` | Brings in more pets at startup: `cat`, `dog` or a breed id (`pomeranian` `maltese` `poodle` `bichon` `shiba` `corgi` `jindo` `korean-shorthair` `russian-blue` `british-shorthair` `scottish-fold` `persian` `ragdoll` `munchkin` `golden-retriever` `french-bulldog` `dachshund` `siberian-husky` `chihuahua` `beagle` `siamese` `maine-coon` `bengal` `sphynx` `abyssinian`); saved |
@@ -199,6 +202,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_MOTION_SHEET=cat\|dog` | Saves `motion-sheet.png` with frames of turn around, start, walk, stop, sit, and get up and run, driven at 30fps and drawn in sequence (for checking transitions) |
 | `PETFAM_DEMO=ball` | Starts ball play with the first dog 3 seconds after launch (for checking throwing) |
 | `PETFAM_DEMO=house` | Opens the build-a-new-house window 3 seconds after launch |
+| `PETFAM_DEMO=monitor` | 3 seconds after launch the first pet walks over to the next monitor |
 | `PETFAM_DEMO=travel` | 3 seconds after launch the first pet walks out to the neighbouring desktop, and is called back 14 seconds later |
 | `PETFAM_BREED_SHEET=1` | Saves `breed-sheet.png` with every breed drawn as an adult, two directions each |
 | `PETFAM_ONBOARDING=1` / `cat` | Opens the adoption window at startup (`cat`: Cat tab) |
@@ -215,7 +219,6 @@ docs/PLANNING.md             Product and technical plan
 
 ## Roadmap
 - macOS version (Spaces, menu bar)
-- Pets moving between multiple monitors
 - A habitat editor for fixing what the wallpaper analysis gets wrong
 - Official habitat wallpapers and more breeds
 

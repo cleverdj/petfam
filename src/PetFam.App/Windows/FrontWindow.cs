@@ -23,7 +23,7 @@ public sealed class FrontWindow : Window
 
     private readonly Pet _pet;
     private readonly Simulation _sim;
-    private readonly Cell _cell;
+    private readonly Cell _startCell;
     private readonly IPlatform _platform;
     private readonly IWindowLayering _layering;
     private readonly Action<Pet> _openMenu;
@@ -40,7 +40,7 @@ public sealed class FrontWindow : Window
     {
         _pet = pet;
         _sim = sim;
-        _cell = cell;
+        _startCell = cell;
         _platform = platform;
         _layering = layering;
         _openMenu = openMenu;
@@ -72,6 +72,9 @@ public sealed class FrontWindow : Window
     }
 
     public bool IsHolding => _pressed;
+
+    /// <summary>The cell the pet is in now (it may have walked over to another monitor since this window was made).</summary>
+    private Cell _cell => _sim.World.Find(_pet.CellId) ?? _startCell;
 
     /// <summary>Per frame: follow the pet (or the cursor while carrying) and redraw.</summary>
     public void Follow()

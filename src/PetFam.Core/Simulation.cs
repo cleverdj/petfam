@@ -113,24 +113,41 @@ public sealed class Simulation
     /// <summary>Moves pets between virtual desktops (plan §6.4).</summary>
     public TravelPlanner Travel { get; } = new();
 
-    /// <summary>The cell (virtual desktop) the user is looking at. Null: everything is visible (single cell, tests).</summary>
+    /// <summary>
+    /// The user's main cell: the current virtual desktop on the main monitor. Null: everything is visible (single
+    /// cell, tests). The other monitors of the same desktop are on screen too (<see cref="VisibleCellIds"/>).
+    /// </summary>
     public string? VisibleCellId { get; private set; }
 
-    public bool IsVisible(Pet pet) => VisibleCellId is null || pet.CellId == VisibleCellId;
+    /// <summary>Every cell on screen: the current desktop on each monitor.</summary>
+    public IReadOnlySet<string> VisibleCellIds => _visible;
+
+    private readonly HashSet<string> _visible = new();
+
+    public bool IsVisible(Pet pet) => VisibleCellId is null || _visible.Contains(pet.CellId);
+
+    /// <summary>The user is now looking at this cell (one monitor): see <see cref="ShowCells"/>.</summary>
+    public void ShowCell(Cell cell, DateTime nowUtc) => ShowCells(new[] { cell }, nowUtc);
 
     /// <summary>
-    /// The user is now looking at this cell (switched virtual desktop). Pets left on the other desktops let go of
-    /// anything screen-bound (held by the mouse, peeking at a window that is no longer on screen); follow-mode pets
-    /// start coming over a moment later.
+    /// The user is now looking at these cells: the current virtual desktop on every monitor, the main monitor first.
+    /// After a switch of virtual desktop, pets left on the other desktops let go of anything screen-bound (held by
+    /// the mouse, peeking at a window that is no longer on screen); follow-mode pets start coming over a moment later.
     /// </summary>
-    public void ShowCell(Cell cell, DateTime nowUtc)
+    public void ShowCells(IReadOnlyList<Cell> cells, DateTime nowUtc)
     {
-        if (VisibleCellId == cell.Id) return;
+        if (cells.Count == 0) return;
+        var main = cells[0];
+        if (VisibleCellId == main.Id && _visible.SetEquals(cells.Select(c => c.Id))) return;
         var first = VisibleCellId is null;
-        VisibleCellId = cell.Id;
+        var switched = !first && World.Find(VisibleCellId!) is { } was && was.DesktopId != main.DesktopId;
+        VisibleCellId = main.Id;
+        _visible.Clear();
+        foreach (var c in cells) _visible.Add(c.Id);
         foreach (var pet in Pets)
         {
-            if (pet.CellId == cell.Id) continue;
+            if (_visible.Contains(pet.CellId)) continue;
+            var cell = main;
             var own = World.Find(pet.CellId) ?? cell;
             if (pet.Hold != HoldState.None || pet.Layer != PetLayer.Backyard || pet.Peek is not null)
             {
@@ -145,7 +162,7 @@ public sealed class Simulation
             }
             pet.LookAt = null;
         }
-        if (!first) Travel.OnSwitched(Pets, _rng);
+        if (switched || (!first && World.MonitorOrder.Count < 2)) Travel.OnSwitched(Pets, _rng);
     }
 
     // ---------------------------------------------------------------- chatter (each breed's way of talking)
