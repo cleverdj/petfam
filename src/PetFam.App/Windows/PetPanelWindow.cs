@@ -40,6 +40,15 @@ public sealed class PetPanelWindow : Window
 
     /// <summary>Says goodbye to the pet for good (asked twice).</summary>
     public Action<Pet>? OnDelete { get; set; }
+
+    /// <summary>Opens the coat colour editor.</summary>
+    public Action<Pet>? OnColours { get; set; }
+    private readonly TextBlock _colours = new()
+    {
+        FontFamily = PieMenuWindow.UiFont, FontSize = 12, Cursor = new Cursor(StandardCursorType.Hand),
+        HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 6, 0, 0),
+        Foreground = PieMenuWindow.SimsBlue,
+    };
     private readonly TextBlock _delete = new()
     {
         FontFamily = PieMenuWindow.UiFont, FontSize = 12, Cursor = new Cursor(StandardCursorType.Hand),
@@ -105,6 +114,8 @@ public sealed class PetPanelWindow : Window
         stack.Children.Add(Separator());
         stack.Children.Add(new TextBlock { Text = L.S("To do (click to cancel)", "할 일 (눌러서 취소)"), FontFamily = PieMenuWindow.UiFont, FontSize = 12, Foreground = Muted });
         stack.Children.Add(_queue);
+        stack.Children.Add(_colours);
+        _colours.PointerPressed += (_, e) => { if (Pet is { } p) OnColours?.Invoke(p); e.Handled = true; };
         stack.Children.Add(_delete);
         _delete.PointerPressed += (_, e) =>
         {
@@ -147,6 +158,7 @@ public sealed class PetPanelWindow : Window
     private void ShowDelete()
     {
         var armed = DateTime.UtcNow <= _deleteArmedUntil;
+        _colours.Text = L.S("🎨 Change colours", "🎨 색 바꾸기");
         _delete.Text = armed ? L.S($"Really say goodbye to {Pet?.Name}? Click again to remove", $"정말 {Pet?.Name}을(를) 보낼까요? 한 번 더 누르면 삭제돼요") : L.S("Say goodbye (remove)", "떠나보내기 (삭제)");
         _delete.Foreground = armed ? Bad : Muted;
         _delete.TextDecorations = armed ? null : TextDecorations.Underline;

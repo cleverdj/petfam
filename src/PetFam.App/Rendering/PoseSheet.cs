@@ -113,6 +113,14 @@ public static class PoseSheet
             System.Globalization.CultureInfo.InvariantCulture, out var z) ? z : 3f;
         // PETFAM_CLOSEUP_POSE=walk, lie, sit, ... (default idle).
         var pose = Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_POSE") is { Length: > 0 } ps ? ps : "idle";
+        // PETFAM_CLOSEUP_COAT=coat,light,markings,eyes (hex, any may be empty): picked colours on every pet.
+        PetCoat? coat = null;
+        if (Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_COAT") is { Length: > 0 } cs)
+        {
+            uint? Hex(string[] p, int i) => i < p.Length && uint.TryParse(p[i], System.Globalization.NumberStyles.HexNumber, null, out var v) ? v : null;
+            var parts = cs.Split(',');
+            coat = new PetCoat(Hex(parts, 0), Hex(parts, 1), Hex(parts, 2), Hex(parts, 3)).OrNull();
+        }
         const int perRow = 4;
         const float cw = CellW, ch = CellH - 40;
         var cells = new List<(float X, float Y, SdfPetRenderer.Frame Frame)>();
@@ -127,6 +135,7 @@ public static class PoseSheet
                 var pet = new Pet(breed.Species, breed.Name, now, new Random(1), breed) { Position = Vec2.Zero, Heading = heading, TargetHeading = heading };
                 pet.Growth = new Growth(now, Growth.AdultAt);
                 pet.SetAnimation(pose);
+                pet.Coat = coat;
                 pet.AnimationTime = 0.9f;                       // eyes open (0.37 catches some breeds mid-blink)
                 var frame = SdfPetRenderer.Build(pet, 1f, cw / 2f, ch - 10, cw, ch);
                 frame.Zoom = s;

@@ -171,6 +171,9 @@ public sealed class Pet
     /// <summary>Something a behavior wants the pet to look at (a bird up in the sky, the owner it begs from) when the pointer is not nearby.</summary>
     public Vec2? Gaze { get; set; }
 
+    /// <summary>Colours the user picked (coat colour editor), over the breed's own. Null: the breed's colours.</summary>
+    public PetCoat? Coat { get; set; }
+
     /// <summary>Raised when a sleep ends so the stretch behavior runs next.</summary>
     public bool JustWokeUp { get; set; }
 

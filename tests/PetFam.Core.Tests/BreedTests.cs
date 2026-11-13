@@ -99,4 +99,20 @@ public class BreedTests
         save.Pets[0].Species = PetSpecies.Dog;
         Assert.Same(Breed.Pomeranian, SaveStore.Restore(save.Pets[0], T0, new Random(6)).Breed);
     }
+
+    [Fact]
+    public void Colours_the_user_picked_are_saved_and_the_breed_colours_are_the_default()
+    {
+        var pet = new Pet(PetSpecies.Dog, "Pinky", T0, new Random(5), Breed.Poodle);
+        Assert.Null(pet.Coat);
+        pet.Coat = new PetCoat(Fur: 0xF2A9C4, Eyes: 0x4F86D6);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(SaveStore.ToSave(new[] { pet }, T0));
+        var back = SaveStore.Restore(System.Text.Json.JsonSerializer.Deserialize<SaveData>(json)!.Pets[0], T0, new Random(6));
+        Assert.Equal(new PetCoat(Fur: 0xF2A9C4, Eyes: 0x4F86D6), back.Coat);
+
+        // Back to the breed's colours: nothing stored.
+        pet.Coat = new PetCoat().OrNull();
+        Assert.Null(SaveStore.Restore(SaveStore.ToSave(new[] { pet }, T0).Pets[0], T0, new Random(6)).Coat);
+    }
 }

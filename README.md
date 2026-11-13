@@ -59,6 +59,9 @@ Each breed has its own coat and build, temperament (playfulness, shyness, energy
 - Needs (hunger, energy, fun, affection, cleanliness), mood and a bond that unlocks more as you get closer.
 - Throw the ball yourself: grab it with the mouse and flick it; dogs fetch it back.
 - Pets get wet and muddy, shake off and dry in the sun.
+- **Your own colours:** give any pet the coat, belly, marking and eye colours you like, from suggested swatches or
+  any colour at all (pet panel → 🎨 Change colours, or tray → My pets → the pet → Change colours). Shades of the coat
+  follow along, the breed's markings stay, and "Breed colours" puts everything back.
 
 ### Growing up
 Baby (days 0–14) → Junior (15–45) → Adult (46–365) → Senior (366+). A day counts when you have been at the computer for ten minutes, so pets do not age while the computer is off. Milestones are celebrated with confetti and a party hat.
@@ -245,12 +248,14 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_DEMO=ball` | Starts ball play with the first dog 3 seconds after launch (for checking throwing) |
 | `PETFAM_DEMO=house` | Opens the build-a-new-house window 3 seconds after launch |
 | `PETFAM_DEMO=habitat` / `habitat2` | Opens the habitat editor on the main (or second) monitor 4 seconds after launch and saves a picture of it to `habitat-editor.png` |
+| `PETFAM_DEMO=colours` | Opens the colour editor for the first pet 4 seconds after launch and saves a picture of it to `coat-editor.png` |
 | `PETFAM_DEMO=monitor` | 3 seconds after launch the first pet walks over to the next monitor |
 | `PETFAM_DEMO=travel` | 3 seconds after launch the first pet walks out to the neighbouring desktop, and is called back 14 seconds later |
 | `PETFAM_BREED_SHEET=1` | Saves `breed-sheet.png` with every breed drawn as an adult, two directions each |
 | `PETFAM_ONBOARDING=1` / `cat` | Opens the adoption window at startup (`cat`: Cat tab) |
 | `PETFAM_TIME=HH:mm` | Pretends it is that time of day (also in the tray: Weather → (Test) Try a time of day) |
 | `PETFAM_CLOSEUP_SHEET=1` | Saves `closeup-sheet.png`: big close-ups of the breeds in `PETFAM_CLOSEUP_BREEDS` (ids, comma separated) for judging faces and coats |
+| `PETFAM_CLOSEUP_POSE=walk` / `PETFAM_CLOSEUP_COAT=F2A9C4,,,4F86D6` | Pose and picked colours (coat, light parts, markings, eyes; hex, any may be empty) for the close-up sheet |
 | `PETFAM_TURN_POSES=pant,yawn,…` | Poses for `PETFAM_TURN_SHEET` instead of the default set |
 | `PETFAM_LANG=en` / `ko` | Starts in that language (overrides the saved choice) |
 | `PETFAM_WEATHER=<weather>` | Instead of real weather: `clear`, `cloudy`, `fog`, `drizzle`, `rain`, `heavyrain`, `thunder`, `snow`, `heavysnow` (with snow already piled up) |

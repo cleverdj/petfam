@@ -216,6 +216,23 @@ public sealed class AppHost
                     AppLog.Write("Habitat editor picture saved: " + path);
                 }, TimeSpan.FromSeconds(3));
             }, TimeSpan.FromSeconds(4));
+        // Dev: opens the colour editor for the first pet and saves a picture of it to coat-editor.png.
+        if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "colours")
+            DispatcherTimer.RunOnce(() =>
+            {
+                if (_sim.Pets.FirstOrDefault() is not { } pet) return;
+                OpenCoatEditor(pet);
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (_coatEditor?.Content is not Visual v) return;
+                    var s = _coatEditor.RenderScaling;
+                    using var rtb = new RenderTargetBitmap(new PixelSize((int)(_coatEditor.Bounds.Width * s), (int)(_coatEditor.Bounds.Height * s)), new Vector(96 * s, 96 * s));
+                    rtb.Render(v);
+                    var path = Path.Combine(AppLog.DataDirectory, "coat-editor.png");
+                    rtb.Save(path);
+                    AppLog.Write("Colour editor picture saved: " + path);
+                }, TimeSpan.FromSeconds(2));
+            }, TimeSpan.FromSeconds(4));
         if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "house")
             DispatcherTimer.RunOnce(BuildHouse, TimeSpan.FromSeconds(3));
         if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "ball")
@@ -1114,9 +1131,27 @@ public sealed class AppHost
             {
                 SocialLine = SocialSummary,
                 OnDelete = DeletePet,
+                OnColours = OpenCoatEditor,
             };
         }
         _panel.ShowFor(pet);
+    }
+
+    private CoatColorWindow? _coatEditor;
+
+    /// <summary>Tray / panel: the coat colour editor for this pet.</summary>
+    public void OpenCoatEditor(Pet pet)
+    {
+        _coatEditor?.Close();
+        _coatEditor = new CoatColorWindow(pet, coat =>
+        {
+            pet.Coat = coat;
+            AppLog.Write($"Colours of {pet.Name}: {(coat is null ? "breed colours" : $"coat={coat.Fur:X6} light={coat.Light:X6} marking={coat.Marking:X6} eyes={coat.Eyes:X6}")}");
+            Save();
+        });
+        _coatEditor.Closed += (_, _) => _coatEditor = null;
+        _coatEditor.Show();
+        _coatEditor.Activate();
     }
 
     /// <summary>"Rank 1/3 · Best friend: Peanut (72)" for the panel.</summary>

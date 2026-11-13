@@ -51,6 +51,12 @@ public sealed class PetSave
 
     /// <summary>Breed id. Null in older saves: the grey tabby is a Korean shorthair, the orange dog a Pomeranian.</summary>
     public string? Breed { get; set; }
+
+    /// <summary>Colours the user picked (0xRRGGBB); null: the breed's colour.</summary>
+    public uint? CoatFur { get; set; }
+    public uint? CoatLight { get; set; }
+    public uint? CoatMarking { get; set; }
+    public uint? CoatEyes { get; set; }
 }
 
 public sealed class RelationSave
@@ -155,6 +161,10 @@ public static class SaveStore
             Travel = p.Travel,
             HomeCellId = p.HomeCellId,
             Breed = p.Breed.Id,
+            CoatFur = p.Coat?.Fur,
+            CoatLight = p.Coat?.Light,
+            CoatMarking = p.Coat?.Marking,
+            CoatEyes = p.Coat?.Eyes,
         }).ToList(),
     };
 
@@ -193,6 +203,7 @@ public static class SaveStore
             : new Growth(nowUtc.AddDays(-Growth.AdultAt), Growth.AdultAt);   // pets from before growth: adults
         if (s.Travel is { } travel) pet.Travel = travel;
         pet.HomeCellId = s.HomeCellId;
+        pet.Coat = new PetCoat(s.CoatFur, s.CoatLight, s.CoatMarking, s.CoatEyes).OrNull();
         return pet;
     }
 

@@ -75,11 +75,18 @@ public static class PetRenderer
 
     public static (float R, float G, float B) ShadeTint(Pet pet) => BreedLook.Of(pet).Shade;
 
-    public static (float R, float G, float B) StripeTint(Pet pet) => BreedLook.Of(pet).StripeTint;
+    public static (float R, float G, float B) StripeTint(Pet pet)
+    {
+        // Picked marking colour: the stripes are that colour over the (picked or breed) coat.
+        if (pet.Coat?.Marking is not { } m) return BreedLook.Of(pet).StripeTint;
+        var fur = pet.Coat.Fur ?? BreedLook.Of(pet).Fur;
+        static float Ratio(uint a, uint b, int shift) => Math.Clamp((a >> shift & 0xFF) / (float)Math.Max(1, b >> shift & 0xFF), 0.15f, 1f);
+        return (Ratio(m, fur, 16), Ratio(m, fur, 8), Ratio(m, fur, 0));
+    }
 
     public static (float R, float G, float B) LineColor(Pet pet)
     {
-        var c = BreedLook.Of(pet).Line;
+        var c = pet.Coat?.Fur is { } fur ? LineFor(fur) : BreedLook.Of(pet).Line;
         return ((c >> 16 & 0xFF) / 255f, (c >> 8 & 0xFF) / 255f, (c & 0xFF) / 255f);
     }
 
@@ -2154,7 +2161,7 @@ public static class PetRenderer
         var mud = pet.Appearance.Mud;
         var pawColor = mud > 0.01f ? Mix(style.Paw, MudColor(pet), Math.Min(1, mud + 0.3)) : style.Paw;
         var breedLook = BreedLook.Of(pet);
-        var lowerLeg = breedLook.PointLegs && breedLook.Point is { } legPoint ? Mix(style.Leg, BreedLook.C(legPoint), 0.75) : style.Leg;
+        var lowerLeg = breedLook.PointLegs && PointOf(pet, breedLook) is { } legPoint ? Mix(style.Leg, BreedLook.C(legPoint), 0.75) : style.Leg;
 
         // Legs: upper (joint → knee) and lower (knee → foot) tubes, paw spheres.
         s.K = 1.2;
@@ -2361,7 +2368,7 @@ public static class PetRenderer
         var species = pet.Species;
         var look = BreedLook.Of(pet);
         var pts = p.Tail.Count >= 2 ? p.Tail : TailPoints(species, d, p, t);
-        var point = look.Point is { } pc ? BreedLook.C(pc) : (Color?)null;
+        var point = PointOf(pet, look) is { } pc ? BreedLook.C(pc) : (Color?)null;
         if (species == PetSpecies.Dog)
         {
             switch (look.Tail)
@@ -2497,7 +2504,7 @@ public static class PetRenderer
         s.HeadCenter = h;
         var persian = pet.Species == PetSpecies.Cat;
         var look = BreedLook.Of(pet);
-        var point = look.Point is { } pc ? BreedLook.C(pc) : (Color?)null;
+        var point = PointOf(pet, look) is { } pc ? BreedLook.C(pc) : (Color?)null;
         s.Stripe = persian && look.Stripes && !Toon ? 0.8 : 0;
         s.Sphere(h, r, style.Fur, k: 3);
         s.Stripe = 0;
@@ -2770,7 +2777,7 @@ public static class PetRenderer
                     var gaze = (fwd * 0.9 + outward * 0.3 + up * 0.05).Normalized;
                     // Clip to the head surface so the eye sits flush in the face like a drawn-on eye, not a bulging ball.
                     // Odd eyes (Turkish Angora): the other eye has its own colour.
-                    var iris = sign > 0 && look.OddEye is { } odd ? BreedLook.C(odd) : style.Iris;
+                    var iris = sign > 0 && pet.Coat?.Eyes is null && look.OddEye is { } odd ? BreedLook.C(odd) : style.Iris;
                     s.AddSdf(ec, h, er, r * 1.01, iris, k: 0, eyeDir: gaze);
                     break;
                 }
@@ -2936,10 +2943,79 @@ public static class PetRenderer
         var w = pet.Appearance.Wet;
         var l = BreedLook.Of(pet);
         Color W(uint rgb) => Darken(BreedLook.C(rgb), 0.35 * w);
+        var coat = pet.Coat;
+        uint Fur(uint c) => CoatColour(l, coat, c);
         return new Style(
-            Fur: W(l.Fur), Belly: W(l.Belly), Dark: BreedLook.C(l.Dark), Nose: BreedLook.C(l.Nose), EarInner: BreedLook.C(l.EarInner),
-            Paw: W(l.Paw), Saddle: W(l.Saddle), Chest: W(l.Chest), Leg: W(l.Leg), Iris: BreedLook.C(l.Iris));
+            Fur: W(Fur(l.Fur)), Belly: W(Fur(l.Belly)), Dark: BreedLook.C(l.Dark), Nose: BreedLook.C(l.Nose), EarInner: BreedLook.C(Fur(l.EarInner)),
+            Paw: W(Fur(l.Paw)), Saddle: W(Fur(l.Saddle)), Chest: W(Fur(l.Chest)), Leg: W(Fur(l.Leg)), Iris: BreedLook.C(coat?.Eyes ?? l.Iris));
     }
+
+    /// <summary>
+    /// One of the breed's coat colours after the user's picks: the main coat becomes the picked coat colour; the light
+    /// parts (belly, chest, paws) the picked light colour; the saddle the picked marking colour. A colour that is
+    /// just a shade of the coat (a Pomeranian's darker back) follows a new coat colour; distinct markings (a
+    /// Beagle's black saddle, a white chest) stay unless picked.
+    /// </summary>
+    private static uint CoatColour(BreedLook l, PetCoat? coat, uint c)
+    {
+        if (coat is null) return c;
+        if (c == l.Fur) return coat.Fur ?? c;
+        if ((c == l.Belly || c == l.Chest || (c == l.Paw && l.Paw != l.Saddle)) && coat.Light is { } light) return light;
+        if (c == l.Saddle && coat.Marking is { } mark) return mark;
+        if (coat.Fur is { } fur && IsShadeOf(c, l.Fur)) return Scale(fur, c, l.Fur);
+        return c;
+    }
+
+    /// <summary>
+    /// A lighter or darker shade of the coat: nearly the same hue (or both nearly grey), not much darker, not white.
+    /// A Pomeranian's paler legs and darker back are shades of its orange; a Beagle's black saddle and white chest
+    /// are not.
+    /// </summary>
+    private static bool IsShadeOf(uint c, uint fur)
+    {
+        var a = BreedLook.C(c);
+        var b = BreedLook.C(fur);
+        var la = Lum(a);
+        var lb = Math.Max(1, Lum(b));
+        if (la > 242 || la / lb < 0.45 || la / lb > 1.45) return false;
+        var (ha, sa) = HueSat(a);
+        var (hb, sb) = HueSat(b);
+        if (sa < 0.12 || sb < 0.12) return sa < 0.12 && sb < 0.12;   // greys go with greys
+        var dh = Math.Abs(ha - hb);
+        return Math.Min(dh, 360 - dh) < 18;
+    }
+
+    private static (double Hue, double Sat) HueSat(Color c)
+    {
+        double r = c.R / 255.0, g = c.G / 255.0, b = c.B / 255.0;
+        double max = Math.Max(r, Math.Max(g, b)), min = Math.Min(r, Math.Min(g, b)), d = max - min;
+        if (d < 1e-6) return (0, 0);
+        var h = max == r ? 60 * (((g - b) / d + 6) % 6) : max == g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4);
+        return (h, max <= 0 ? 0 : d / max);
+    }
+
+    /// <summary>The new coat colour, made as much lighter (towards white) or darker as <paramref name="shade"/> was than the old coat.</summary>
+    private static uint Scale(uint newFur, uint shade, uint oldFur)
+    {
+        var ls = Lum(BreedLook.C(shade));
+        var lf = Math.Max(1, Lum(BreedLook.C(oldFur)));
+        var n = BreedLook.C(newFur);
+        var c = ls >= lf
+            ? Mix(n, Colors.White, Math.Clamp((ls - lf) / Math.Max(1, 255 - lf), 0, 1))
+            : Darken(n, Math.Clamp(1 - ls / lf, 0, 1));
+        return (uint)(c.R << 16 | c.G << 8 | c.B);
+    }
+
+    /// <summary>The cartoon outline for a coat colour: a deep shade of it, or a warm grey around a very pale coat.</summary>
+    private static uint LineFor(uint fur)
+    {
+        var c = BreedLook.C(fur);
+        var line = Lum(c) > 200 ? Mix(c, Color.FromRgb(0x6E, 0x66, 0x60), 0.8) : Darken(c, 0.55);
+        return (uint)(line.R << 16 | line.G << 8 | line.B);
+    }
+
+    /// <summary>The colourpoint colour (Siamese, Ragdoll): the picked marking colour, else the breed's.</summary>
+    private static uint? PointOf(Pet pet, BreedLook l) => l.Point is null ? null : pet.Coat?.Marking ?? l.Point;
 
     private static Color MudColor(Pet pet) => pet.Appearance.MudDried ? Color.FromRgb(0x8A, 0x6A, 0x4E) : Color.FromRgb(0x5B, 0x3A, 0x1E);
 
