@@ -13,7 +13,7 @@ PetFam is not a screensaver and does not get in your way. Your pets live on the 
 ## Why PetFam
 
 - **They live in your wallpaper.** PetFam reads your wallpaper and finds the floor, water, sunny spots, shade, mud and even houses in the picture. Dogs jump into a lake and shake off, cats sunbathe and avoid puddles. Change the wallpaper and they adapt within seconds.
-- **Real breeds with real personalities.** 13 dogs and 12 cats, each with its own look, temperament, habits and way of talking: a Shiba that screams when picked up, a Ragdoll that goes limp in your arms, a Corgi who only talks about food, a Husky who talks back, a Siamese who never stops chatting. Each is built like the real thing: a Golden Retriever or Maine Coon stands well above a Chihuahua; Poodles and Bichons are curly, a Maltese's silky coat falls to the floor, Pomeranians and Huskies wear a big ruff, a Husky has its dark cap and white mask, long-haired cats have a mane and britches, a British Shorthair has round jowls, a Bengal has leopard spots, and a Siamese's dark points run down its legs. Faces are breed-true too: a Dachshund's long nose and a Frenchie's pushed-in one, a Golden's broad muzzle and soft hanging ears, a Shiba's small eyes and pale eyebrow spots, a Chihuahua's big round eyes, a Siamese's dark face mask and long wedge-shaped face, and a Maltese with a bow in its topknot.
+- **Real breeds with real personalities.** 17 dogs and 16 cats, each with its own look, temperament, habits and way of talking: a Shiba that screams when picked up, a Ragdoll that goes limp in your arms, a Corgi who only talks about food, a Husky who talks back, a Siamese who never stops chatting. Each is built like the real thing: a Golden Retriever or Maine Coon stands well above a Chihuahua; Poodles and Bichons are curly, a Maltese's silky coat falls to the floor, Pomeranians and Huskies wear a big ruff, a Husky has its dark cap and white mask, long-haired cats have a mane and britches, a British Shorthair has round jowls, a Bengal has leopard spots, and a Siamese's dark points run down its legs. Faces are breed-true too: a Dachshund's long nose and a Frenchie's pushed-in one, a Golden's broad muzzle and soft hanging ears, a Shiba's small eyes and pale eyebrow spots, a Chihuahua's big round eyes, a Siamese's dark face mask and long wedge-shaped face, and a Maltese with a bow in its topknot.
 - **They grow up with you.** Every pet arrives as a two-month-old baby and grows a day older on each day you spend together, through junior and adult to a dignified senior. Body, energy and behaviour change with age.
 - **A home of their own.** Build and decorate houses, decide whose house is whose, and watch your pets walk in through the door to sleep or to get out of the rain.
 - **The real weather.** When it rains where you live, it rains on your desktop. Cats run for cover, dogs play in the puddles, snow piles up on the roofs.
@@ -46,7 +46,11 @@ PetFam is not a screensaver and does not get in your way. Your pets live on the 
 | Dachshund | Brave little sausage | Bengal | Mini leopard |
 | Siberian Husky | Dramatic snow runner | Sphynx | Warm velvet cuddler |
 | Chihuahua | Tiny bodyguard | Abyssinian | Curious explorer |
-| Beagle | Nose-first adventurer | | |
+| Beagle | Nose-first adventurer | American Shorthair | Silver tabby all-rounder |
+| Samoyed | Smiling snow cloud | Norwegian Forest Cat | Fluffy forest climber |
+| Border Collie | Genius herder | Turkish Angora | Graceful white dancer (odd eyes) |
+| Shih Tzu | Little lion royal | Exotic Shorthair | Plush-toy couch potato |
+| Pug | Wrinkly little clown | | |
 
 Each breed has its own coat and build, temperament (playfulness, shyness, energy, homebody), habits (appetite, sleep, jumping, love of water and snow, dislike of rain), how quickly it warms up to you, and its own voice for greetings, hunger, sleepiness, petting, weather and more.
 
@@ -70,6 +74,13 @@ Day and night follow your computer's clock and the real sunrise and sunset where
 
 ### Virtual desktops
 Each desktop has its own habitat from its own wallpaper. Pets walk off one edge and arrive at the other, follow you when you switch desktops (Follow me), wander on their own (Roam freely) or Stay home, and can be called over from the tray.
+
+### PetFam wallpapers
+**Tray → PetFam wallpapers** puts one of PetFam's own pictures on your desktop: **Sunny meadow** (a pond, a sandy
+path, a mud puddle, sunny patches and shady trees), **Seaside** (the sea, a beach, a tide pool and a palm's shade) or
+**Cozy garden** (a lawn, a fountain, a sandbox, a vegetable patch and a parasol). Each comes with an exact habitat
+drawn together with the picture, so pets know every spot without guessing. **Back to my own wallpaper** puts back the
+picture you had before (Windows Spotlight, if you used it, has to be switched on again in Settings).
 
 ### Habitat editor
 The wallpaper analysis gets most pictures right, but not all: a lake read as a beach, a hill pets should be able to
@@ -132,7 +143,7 @@ folder: press **Win + R**, type `%LOCALAPPDATA%\PetFam`, press Enter, and delete
 folder and double-click **PetFam.exe**. It doesn't start with Windows by itself and doesn't add a Start menu entry.
 
 ### Using PetFam
-- **Tray menu:** My pets (where they are, call them over, travel mode), Weather, put out a food bowl, build a house, fix the habitat, add a pet, language, quit.
+- **Tray menu:** My pets (where they are, call them over, travel mode), Weather, put out a food bowl, build a house, PetFam wallpapers, fix the habitat, add a pet, language, quit.
 - **Mouse:** hover a pet to bring it forward; click for its menu; press and rub to pet; drag to carry. Click a house to decorate it, drag it to move it.
 - **Panel:** clicking a pet opens its panel with mood, needs, bond, age and its to-do queue.
 
@@ -180,6 +191,7 @@ src/PetFam.Platform.Windows  Win32: WorkerW desktop layer, click-through, foregr
 src/PetFam.Platform.MacOS    Stub (planned)
 src/PetFam.App               Avalonia app: windows, tray, 3D (SkSL SDF) and vector renderers, weather service
 tests/PetFam.Core.Tests      xUnit
+build/wallpapers             Draws the PetFam wallpapers and their habitat maps (python -I build/wallpapers/make_wallpapers.py)
 docs/PLANNING.md             Product and technical plan
 ```
 
@@ -200,7 +212,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_SNAPSHOT=1` | Automatically saves a backyard snapshot of each monitor after startup (`PETFAM_SNAPSHOT_DELAY=<seconds>`, default 3); only what PetFam draws |
 | `PETFAM_STYLE=fur` | Draws in the fur-texture 3D style instead of cartoon |
 | `PETFAM_WALLPAPER=<image path>` | Leaves the real wallpaper alone and lays this image in the backyard to test habitat detection and behaviour |
-| `PETFAM_ADOPT=cat,dog,shiba,…` | Brings in more pets at startup: `cat`, `dog` or a breed id (`pomeranian` `maltese` `poodle` `bichon` `shiba` `corgi` `jindo` `korean-shorthair` `russian-blue` `british-shorthair` `scottish-fold` `persian` `ragdoll` `munchkin` `golden-retriever` `french-bulldog` `dachshund` `siberian-husky` `chihuahua` `beagle` `siamese` `maine-coon` `bengal` `sphynx` `abyssinian`); saved |
+| `PETFAM_ADOPT=cat,dog,shiba,…` | Brings in more pets at startup: `cat`, `dog` or a breed id (`pomeranian` `maltese` `poodle` `bichon` `shiba` `corgi` `jindo` `korean-shorthair` `russian-blue` `british-shorthair` `scottish-fold` `persian` `ragdoll` `munchkin` `golden-retriever` `french-bulldog` `dachshund` `siberian-husky` `chihuahua` `beagle` `samoyed` `border-collie` `shih-tzu` `pug` `siamese` `maine-coon` `bengal` `sphynx` `abyssinian` `american-shorthair` `norwegian-forest` `turkish-angora` `exotic-shorthair`); saved |
 | `PETFAM_SHOW_HABITAT=1` | Shows the detected floor in green and the horizon as a yellow line on screen (also toggled from the tray's "(Test) Show habitat detection") |
 | `PETFAM_BOND=<0~100>` | Sets every pet's bond to this value at startup (also adjustable from the tray menu "(Test) Bond") |
 | `PETFAM_DEMO_MENU=menu\|queue` | Automatically opens the first pet's pie menu 4 seconds after startup (queue: pre-fills the queue with a few actions) |
@@ -227,7 +239,6 @@ docs/PLANNING.md             Product and technical plan
 
 ## Roadmap
 - macOS version (Spaces, menu bar)
-- Official habitat wallpapers and more breeds
 
 ## Documentation
 - [Product and technical plan](docs/PLANNING.md)

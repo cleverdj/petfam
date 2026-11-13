@@ -30,7 +30,7 @@ public sealed record BreedLook(
     float Size = 1f, float Snout = 1f, CoatKind Coat = CoatKind.Short, bool PaleSnout = true, bool Cap = false,
     bool Spots = false, float Cheeks = 1f, bool PointLegs = false,
     float MuzzleW = 1f, float MuzzleH = 1f, float Jowls = 0f, bool Brows = false, uint? MuzzleColor = null,
-    float EyeSize = 1f, uint? Bow = null)
+    float EyeSize = 1f, uint? Bow = null, uint? OddEye = null)
 {
     public static Color C(uint rgb) => Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
 
@@ -92,6 +92,23 @@ public sealed record BreedLook(
             BodyLen: 1.05f, Legs: 1.15f,
             Size: 1.15f, Snout: 1.1f, Coat: CoatKind.Fluffy, MuzzleW: 0.9f, MuzzleH: 0.85f, Brows: true, EyeSize: 0.82f),
 
+        ["samoyed"] = new(0xF6F4EE, 0xFFFFFF, 0x2A2420, 0x1E1A18, 0xF0D6CC, 0xFFFFFF, 0xEDE8DE, 0xFFFFFF, 0xF6F4EE, 0x2A1C14,
+            Cool, Plain, 0x8A8078, Stripes: false, EarKind.DogErect, TailKind.DogCurl, FaceKind.Fox,
+            BodyLen: 1.05f, Legs: 1.05f, EarSize: 0.9f, HeadFluff: 0.3f,
+            Size: 1.25f, Snout: 0.95f, Coat: CoatKind.Fluffy, MuzzleW: 0.9f, MuzzleH: 0.85f, EyeSize: 0.9f),
+        ["border-collie"] = new(0x2A2626, 0xF6F4F0, 0x141010, 0x1A1414, 0xC8A8A0, 0xFFFFFF, 0x1E1A1A, 0xFFFFFF, 0xFFFFFF, 0x5A3A20,
+            Cool, Plain, 0x1A1616, Stripes: false, EarKind.DogErect, TailKind.DogFeather, FaceKind.Fox,
+            BodyLen: 1.1f, Legs: 1.1f, EarSize: 0.95f, Blaze: true, TailTip: 0xFFFFFF,
+            Size: 1.15f, Snout: 1.15f, MuzzleW: 0.85f, MuzzleH: 0.85f, EyeSize: 0.95f),
+        ["shih-tzu"] = new(0xD9B07A, 0xFFF8EC, 0x4A3220, 0x1E1612, 0xE8C8A8, 0xFFF8EC, 0xC49A62, 0xFFF8EC, 0xEBD3AE, 0x2A1A10,
+            Warm, Plain, 0x6A4A28, Stripes: false, EarKind.DogLongFloppy, TailKind.DogPlume, FaceKind.Flat,
+            BodyLen: 0.95f, Legs: 0.8f, HeadFluff: 0.5f, Blaze: true,
+            Size: 0.85f, Snout: 0.45f, Coat: CoatKind.Silky, MuzzleW: 1.1f, EyeSize: 1.1f, Bow: 0x5A9CF0),
+        ["pug"] = new(0xE3C79A, 0xEED8B4, 0x2A2018, 0x141010, 0x3A3028, 0xE3C79A, 0xCFAF80, 0xEED8B4, 0xE3C79A, 0x2A1A10,
+            Warm, Plain, 0x5A4028, Stripes: false, EarKind.DogFloppy, TailKind.DogCurl, FaceKind.Flat,
+            BodyLen: 0.85f, BodyR: 1.15f, Legs: 0.8f, Head: 1.1f, EarSize: 0.7f,
+            Size: 0.85f, Snout: 0.35f, MuzzleW: 1.3f, MuzzleH: 1.05f, Jowls: 0.5f, MuzzleColor: 0x2E2622, EyeSize: 1.2f),
+
         // ---------------------------------------------------------------- cats
         ["korean-shorthair"] = new(0xA9AFB8, 0xF3F3F1, 0x3E434C, 0xE08E98, 0xF2B4B6, 0xF3F3F1, 0x747B87, 0xF5F5F3, 0xA9AFB8, 0x4E7A34,
             Cool, (0.58f, 0.60f, 0.66f), 0x454A55, Stripes: true, EarKind.CatPointed, TailKind.CatLong, FaceKind.Kitten),
@@ -134,6 +151,21 @@ public sealed record BreedLook(
         ["abyssinian"] = new(0xC9874A, 0xE8C49A, 0x4A2A14, 0xC87870, 0xE0A890, 0xE6BC90, 0xA86A34, 0xEACCA4, 0xC9874A, 0xC9A030,
             Warm, Plain, 0x5A3418, Stripes: false, EarKind.CatPointed, TailKind.CatLong, FaceKind.Kitten,
             BodyR: 0.9f, Legs: 1.1f, EarSize: 1.3f, Snout: 1.12f),
+        ["american-shorthair"] = new(0xB8BEC6, 0xF2F2F0, 0x2E3238, 0xD98A90, 0xF0B4B6, 0xF2F2F0, 0x3E434C, 0xF4F4F2, 0xB8BEC6, 0x5A9A3A,
+            Cool, (0.42f, 0.44f, 0.5f), 0x3A3E46, Stripes: true, EarKind.CatPointed, TailKind.CatLong, FaceKind.Kitten,
+            BodyR: 1.05f, Head: 1.05f, Cheeks: 1.1f),
+        ["norwegian-forest"] = new(0x9A7A5A, 0xF0E8DC, 0x3A2A1C, 0xC88078, 0xE8B8A0, 0xF0E8DC, 0x5A4430, 0xF4ECE0, 0x9A7A5A, 0x6AAA4A,
+            Warm, (0.6f, 0.5f, 0.42f), 0x4A3624, Stripes: true, EarKind.CatPointed, TailKind.CatPlume, FaceKind.Kitten,
+            BodyLen: 1.15f, BodyR: 1.1f, EarSize: 1.1f, HeadFluff: 0.35f, EarTufts: true,
+            Size: 1.25f, Coat: CoatKind.Long, Snout: 1.05f),
+        ["turkish-angora"] = new(0xFAF8F4, 0xFFFFFF, 0x5A5450, 0xE8A0A8, 0xF4C4C8, 0xFFFFFF, 0xF0ECE6, 0xFFFFFF, 0xFAF8F4, 0x4F86D6,
+            Cool, Plain, 0x8A847E, Stripes: false, EarKind.CatPointed, TailKind.CatPlume, FaceKind.Kitten,
+            BodyR: 0.9f, Legs: 1.1f, EarSize: 1.2f,
+            Size: 0.95f, Snout: 1.1f, OddEye: 0xD9A030),
+        ["exotic-shorthair"] = new(0xE8A868, 0xFCEBD4, 0x6A3A1A, 0xE08A80, 0xF2BCA8, 0xFCEBD4, 0xC8783A, 0xFCEFDC, 0xE8A868, 0xD98A1C,
+            Warm, (0.82f, 0.6f, 0.42f), 0x7A4420, Stripes: true, EarKind.CatSmall, TailKind.CatLong, FaceKind.Flat,
+            BodyR: 1.15f, Legs: 0.85f, Head: 1.15f,
+            Cheeks: 1.3f, MuzzleW: 1.1f),
         ["munchkin"] = new(0xF0B46A, 0xFFF4E2, 0x7A4A1E, 0xE8939A, 0xF4BCA8, 0xFFF4E2, 0xDB8A3E, 0xFFF6E8, 0xF0B46A, 0xD8A030,
             (0.98f, 0.88f, 0.82f), (0.85f, 0.66f, 0.48f), 0x7A4A20, Stripes: true, EarKind.CatPointed, TailKind.CatLong, FaceKind.Kitten,
             Legs: 0.55f,

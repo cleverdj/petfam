@@ -57,6 +57,9 @@ public interface IPlatform
     /// (then everything happens on one desktop).
     /// </summary>
     VirtualDesktopState? GetVirtualDesktops() => null;
+
+    /// <summary>Puts this picture on the desktop with this fit (the user picked it in PetFam). False if not supported or it failed.</summary>
+    bool SetWallpaper(string path, WallpaperFit fit) => false;
 }
 
 /// <summary>Window layering operations that need a native window handle.</summary>

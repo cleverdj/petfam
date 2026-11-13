@@ -658,6 +658,13 @@ public sealed class AppHost
             return true;
         }
 
+        // PetFam's own wallpapers come with an exact habitat: no guessing needed.
+        if (OfficialHabitat.FromPath(path) is { } official && OfficialRows(official.Id) is { } rows)
+        {
+            ApplyHabitat(cell, OfficialHabitat.MaskFor(rows, official.Width, official.Height, cell.Bounds, fit), $"official wallpaper '{official.Id}' habitat");
+            return true;
+        }
+
         _analyzing = true;
         Task.Run(() =>
         {
@@ -681,6 +688,79 @@ public sealed class AppHost
         Environment.GetEnvironmentVariable("PETFAM_WALLPAPER") is { Length: > 0 } p && File.Exists(p) ? p : null;
 
     private string? WallpaperPath() => WallpaperOverride ?? _platform.GetWallpaperPath();
+
+    // ---------------------------------------------------------------- official wallpapers
+
+    private static string OfficialDir => Path.Combine(AppLog.DataDirectory, "Wallpapers");
+    private static string PreviousWallpaperFile => Path.Combine(AppLog.DataDirectory, "previous-wallpaper.txt");
+    private readonly Dictionary<string, string[]?> _officialRows = new();
+
+    private string[]? OfficialRows(string id)
+    {
+        if (_officialRows.TryGetValue(id, out var rows)) return rows;
+        try
+        {
+            using var s = AssetLoader.Open(new Uri($"avares://PetFam/Assets/Wallpapers/{id}.habitat.txt"));
+            using var reader = new StreamReader(s);
+            rows = reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write($"Official habitat '{id}' not found: {ex.Message}");
+            rows = null;
+        }
+        return _officialRows[id] = rows;
+    }
+
+    /// <summary>Is a PetFam wallpaper on the desktop now (and the user's own one remembered)?</summary>
+    public bool CanRestoreWallpaper => File.Exists(PreviousWallpaperFile);
+
+    /// <summary>Tray: puts one of PetFam's own wallpapers on the desktop (remembering the user's own to go back to).</summary>
+    public void UseOfficialWallpaper(string id)
+    {
+        if (OfficialHabitat.All.FirstOrDefault(w => w.Id == id) is not { } wall) return;
+        try
+        {
+            Directory.CreateDirectory(OfficialDir);
+            var dest = Path.Combine(OfficialDir, OfficialHabitat.FileName(wall));
+            using (var src = AssetLoader.Open(new Uri($"avares://PetFam/Assets/Wallpapers/{id}.jpg")))
+            using (var file = File.Create(dest))
+                src.CopyTo(file);
+
+            var current = _platform.GetWallpaperPath();
+            if (OfficialHabitat.FromPath(current) is null && !File.Exists(PreviousWallpaperFile))
+                File.WriteAllLines(PreviousWallpaperFile, new[] { current ?? "", _platform.GetWallpaperFit().ToString() });
+
+            if (_platform.SetWallpaper(dest, WallpaperFit.Fill))
+            {
+                _sinceWallpaperPoll = WallpaperPollSeconds;   // read the new habitat on the next frame
+                AppLog.Write($"Official wallpaper: {wall.Id}");
+            }
+        }
+        catch (Exception ex) { AppLog.Write("Official wallpaper failed: " + ex.Message); }
+        MenuChanged?.Invoke();
+    }
+
+    /// <summary>Tray: back to the wallpaper the user had before picking one of PetFam's.</summary>
+    public void RestoreWallpaper()
+    {
+        try
+        {
+            if (!File.Exists(PreviousWallpaperFile)) return;
+            var lines = File.ReadAllLines(PreviousWallpaperFile);
+            var path = lines.ElementAtOrDefault(0) ?? "";
+            var fit = Enum.TryParse<WallpaperFit>(lines.ElementAtOrDefault(1), out var f) ? f : WallpaperFit.Fill;
+            if (path.Length > 0 && File.Exists(path) && _platform.SetWallpaper(path, fit))
+            {
+                File.Delete(PreviousWallpaperFile);
+                _sinceWallpaperPoll = WallpaperPollSeconds;
+                AppLog.Write("Wallpaper restored: " + path);
+            }
+            else AppLog.Write("Wallpaper not restored: the old picture is gone (" + path + ")");
+        }
+        catch (Exception ex) { AppLog.Write("Wallpaper restore failed: " + ex.Message); }
+        MenuChanged?.Invoke();
+    }
 
     // ---------------------------------------------------------------- habitat editor
 
@@ -1498,6 +1578,9 @@ public sealed class AppHost
 
     /// <summary>Raised when the tray's pet list should be rebuilt.</summary>
     public event Action? PetsMenuChanged;
+
+    /// <summary>Raised when the whole tray menu should be rebuilt (e.g. the wallpaper menu changed).</summary>
+    public event Action? MenuChanged;
 
     public IReadOnlyList<Pet> Pets => _sim.Pets;
 

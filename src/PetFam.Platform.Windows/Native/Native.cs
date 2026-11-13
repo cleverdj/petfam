@@ -115,6 +115,13 @@ internal static class User32
     [DllImport("user32.dll")]
     public static extern bool IsWindow(IntPtr hWnd);
 
+    public const uint SPI_SETDESKWALLPAPER = 0x0014;
+    public const uint SPIF_UPDATEINIFILE = 0x01;
+    public const uint SPIF_SENDWININICHANGE = 0x02;
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern bool SystemParametersInfo(uint action, uint param, string pvParam, uint winIni);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 

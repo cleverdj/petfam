@@ -549,12 +549,178 @@ public sealed record Breed(
             Snow: new[] { T("Interesting… but cold", "신기한데… 추워") },
             Called: new[] { T("On my way, investigating!", "조사하면서 갈게!"), T("Mrrp, here!", "므릅, 왔어!") }));
 
+    // ---------------------------------------------------------------- more dogs
+
+    public static readonly Breed Samoyed = new(
+        "samoyed", PetSpecies.Dog, T("Samoyed", "사모예드"), T("Smiling snow cloud", "웃는 눈구름"),
+        T("A big white cloud with a smile that never switches off. Friendly to everyone, chatty in a soft woo-woo way, and never happier than rolling in fresh snow.",
+          "웃는 얼굴이 꺼지지 않는 커다란 하얀 구름. 누구에게나 다정하고, 우우 하며 부드럽게 수다를 떨고, 갓 내린 눈밭에서 뒹굴 때 제일 행복해요."),
+        0.8f, 0.1f, 0.7f, 0.3f, 0.45f,
+        1.0f, 1.05f, 1.0f, 1.1f, 0f,
+        0.1f, 1.6f, 0.5f, 1.3f, TravelMode.Follow,
+        new[] { T("Cloud", "구름이"), T("Snowy", "눈송이"), T("Mallow", "마시멜로"), T("Polar", "북극이"), T("Sugar", "설탕이") },
+        new BreedVoice(
+            Greeting: new[] { T("Woo-woo! Hi, friend!", "우우! 안녕, 친구!") },
+            Idle: new[] { T("Smiling is my job", "웃는 게 내 일이야"), T("Woo-woo-woo", "우우우~"), T("Is it snowing yet?", "아직 눈 안 와?"), T("Everyone's my friend", "다 내 친구야") },
+            Happy: new[] { T("Big Sammy smile!", "사모 스마일!"), T("Woo-hoo!", "우후!") },
+            Petted: new[] { T("Fluff me more!", "털 더 쓰다듬어 줘!"), T("Mmm, so soft, right?", "음~ 부드럽지?") },
+            Hungry: new[] { T("Woo… my tummy's talking", "우… 배가 말해") },
+            Sleepy: new[] { T("Curling into a cloud", "구름처럼 동그랗게 잘게") },
+            Held: new[] { T("I'm heavier than I look!", "보기보다 무거워!") },
+            Rain: new[] { T("My white coat! Not the mud!", "하얀 털 안 돼! 진흙은 싫어!") },
+            Snow: new[] { T("SNOW! This is my home!", "눈이다! 여기가 내 고향이야!"), T("Rolling, rolling!", "데굴데굴!") },
+            Called: new[] { T("Woo-woo, coming!", "우우, 간다!") }));
+
+    public static readonly Breed BorderCollie = new(
+        "border-collie", PetSpecies.Dog, T("Border Collie", "보더 콜리"), T("Genius herder", "천재 양치기"),
+        T("The cleverest dog around and it knows it. Always busy, always watching, it herds the other pets into neat little groups and learns any trick in one go.",
+          "제일 똑똑한 강아지이고 본인도 알아요. 늘 바쁘고 늘 지켜보면서, 다른 펫들을 가지런히 몰아 모으고, 어떤 재주든 한 번에 배워요."),
+        0.9f, 0.2f, 0.95f, 0.15f, 0.6f,
+        0.85f, 1.3f, 1.3f, 1.0f, -0.1f,
+        0f, 0.9f, 0.6f, 1.2f, TravelMode.Free,
+        new[] { T("Scout", "척척이"), T("Pepper", "후추"), T("Domino", "도미노"), T("Echo", "메아리"), T("Jet", "번개") },
+        new BreedVoice(
+            Greeting: new[] { T("Hello. Shall we get to work?", "안녕. 일 시작할까?") },
+            Idle: new[] { T("Everyone, line up!", "모두 줄 서!"), T("I'm watching. Always.", "다 보고 있어. 항상."), T("Give me a job!", "일 좀 줘!"), T("Got a new trick for me?", "새 재주 없어?") },
+            Happy: new[] { T("Nailed it!", "완벽해!"), T("Again, faster!", "또, 더 빨리!") },
+            Petted: new[] { T("Good, but what's next?", "좋아, 근데 다음은?") },
+            Hungry: new[] { T("Fuel for the brain, please", "두뇌 연료 주세요") },
+            Sleepy: new[] { T("Brain… off… for a bit", "두뇌… 잠깐… 끌게") },
+            Held: new[] { T("I can't herd from up here!", "여기선 못 몰잖아!") },
+            Rain: new[] { T("Work goes on, rain or shine", "비가 와도 일은 해") },
+            Snow: new[] { T("Snow zoomies!", "눈밭 질주!") },
+            Called: new[] { T("Already on my way", "벌써 가는 중이야"), T("Reporting!", "도착 보고!") }));
+
+    public static readonly Breed ShihTzu = new(
+        "shih-tzu", PetSpecies.Dog, T("Shih Tzu", "시츄"), T("Little lion royal", "꼬마 사자 왕족"),
+        T("A palace dog with a lion's mane and a lapdog's heart. Calm, sweet and a little proud, it would much rather be carried than walk, and it naps like royalty.",
+          "사자 갈기를 한 궁궐 강아지, 마음은 무릎 강아지예요. 차분하고 다정하고 조금 도도해서, 걷는 것보다 안기는 걸 좋아하고 왕족처럼 낮잠을 자요."),
+        0.45f, 0.25f, 0.3f, 0.85f, 0.75f,
+        1.15f, 0.8f, 0.6f, 1.0f, 0.2f,
+        0.6f, 0.3f, 0f, 1.15f, TravelMode.Follow,
+        new[] { T("Bao", "바오"), T("Lulu", "루루"), T("Ming", "밍밍"), T("Toffee", "토피"), T("Duchess", "공작부인") },
+        new BreedVoice(
+            Greeting: new[] { T("You may pet me now", "이제 쓰다듬어도 좋아") },
+            Idle: new[] { T("Carry me, please", "안아서 옮겨 줘"), T("My mane is perfect today", "오늘 갈기 완벽해"), T("A cushion would be nice", "방석 있으면 좋겠다"), T("Hmph, too much walking", "흥, 너무 많이 걸었어") },
+            Happy: new[] { T("How delightful!", "아주 흡족해!") },
+            Petted: new[] { T("Yes, the ears too", "그래, 귀도"), T("Royal treatment, finally", "드디어 왕족 대접") },
+            Hungry: new[] { T("Dinner should be served", "식사를 올려라") },
+            Sleepy: new[] { T("Royal nap time", "왕실 낮잠 시간") },
+            Held: new[] { T("This is the right way to travel", "이게 바른 이동 방법이지") },
+            Rain: new[] { T("Not in this weather, thank you", "이런 날씨엔 사양할게") },
+            Snow: new[] { T("Cold paws… carry me", "발 시려… 안아 줘") },
+            Called: new[] { T("I'm coming… slowly", "가고 있어… 천천히") }));
+
+    public static readonly Breed Pug = new(
+        "pug", PetSpecies.Dog, T("Pug", "퍼그"), T("Wrinkly little clown", "주름 많은 꼬마 광대"),
+        T("A wrinkly face, a curly tail and a snort for every occasion. A charming clown who loves food, naps and you, in that order on most days.",
+          "주름진 얼굴, 돌돌 말린 꼬리, 상황마다 다른 킁킁 소리. 먹을 것, 낮잠, 그리고 주인을 좋아하는 매력 만점 광대예요. 보통은 그 순서대로요."),
+        0.75f, 0.1f, 0.3f, 0.75f, 0.35f,
+        1.25f, 0.75f, 0.5f, 1.5f, 0.3f,
+        0.4f, 0f, -0.3f, 1.3f, TravelMode.Follow,
+        new[] { T("Dumpling", "만두"), T("Mochi", "모찌"), T("Otis", "오티스"), T("Peanut", "땅콩"), T("Waffle", "와플") },
+        new BreedVoice(
+            Greeting: new[] { T("Snort! Hi! Snort!", "킁! 안녕! 킁!") },
+            Idle: new[] { T("Snort snort", "킁킁"), T("Did someone say snack?", "누가 간식이라고 했어?"), T("My wrinkles have wrinkles", "내 주름에도 주름이 있어"), T("Nap? Nap.", "낮잠? 낮잠.") },
+            Happy: new[] { T("Snort-snort-snort!", "킁킁킁!"), T("Pug zoomies!", "퍼그 질주!") },
+            Petted: new[] { T("Rub the wrinkles!", "주름 쓰다듬어 줘!"), T("Hrrmph, happy", "흐릉, 행복해") },
+            Hungry: new[] { T("Hungry. Always hungry.", "배고파. 언제나 배고파.") },
+            Sleepy: new[] { T("Snooore…", "드르렁…") },
+            Held: new[] { T("I'm a loaf of bread now", "나 이제 식빵이야") },
+            Rain: new[] { T("Nope. Too wet.", "싫어. 너무 축축해.") },
+            Snow: new[] { T("Too cold for my face!", "얼굴이 너무 시려!") },
+            Called: new[] { T("Snort! On my way!", "킁! 간다!") }));
+
+    // ---------------------------------------------------------------- more cats
+
+    public static readonly Breed AmericanShorthair = new(
+        "american-shorthair", PetSpecies.Cat, T("American Shorthair", "아메리칸 숏헤어"), T("Silver tabby all-rounder", "은빛 줄무늬 만능캣"),
+        T("Silver swirls and an easy-going heart. Healthy, playful and sensible, it gets along with everyone, keeps the house free of 'intruders' and never makes a fuss.",
+          "은빛 소용돌이 무늬에 느긋한 마음. 튼튼하고 장난기 많고 똑똑해서 누구와도 잘 지내고, 집 안 '침입자'도 잡고, 투정을 부리지 않아요."),
+        0.7f, 0.2f, 0.6f, 0.5f, 0.6f,
+        1.0f, 1.0f, 1.1f, 1.1f, 0.05f,
+        0.5f, 0.2f, 0f, 1.15f, TravelMode.Free,
+        new[] { T("Silver", "은동이"), T("Smokey", "연기"), T("Jasper", "재스퍼"), T("Misty", "안개"), T("Ash", "잿빛이") },
+        new BreedVoice(
+            Greeting: new[] { T("Mrrow. Nice to see you.", "므로우. 반가워.") },
+            Idle: new[] { T("Patrolling the house", "집 순찰 중"), T("Anything to hunt?", "사냥할 거 없나?"), T("All good here", "여긴 이상 없음"), T("Mrrp?", "므릅?") },
+            Happy: new[] { T("Mrrrow!", "므르르!") },
+            Petted: new[] { T("That's nice, carry on", "좋아, 계속해") },
+            Hungry: new[] { T("Dinner time, I believe", "밥 시간인 것 같은데") },
+            Sleepy: new[] { T("Sun spot nap", "햇볕 자리에서 낮잠") },
+            Held: new[] { T("Fine, a short hug", "좋아, 짧게만 안아") },
+            Rain: new[] { T("I'll watch it from the window", "창문으로 구경할게") },
+            Snow: new[] { T("Cold! Back inside", "추워! 들어가자") },
+            Called: new[] { T("Coming, mrrp", "간다, 므릅") }));
+
+    public static readonly Breed NorwegianForest = new(
+        "norwegian-forest", PetSpecies.Cat, T("Norwegian Forest Cat", "노르웨이숲"), T("Fluffy forest climber", "숲속 털뭉치 등반가"),
+        T("A sturdy fluffball from the snowy woods with a lion's ruff and a bushy tail. Gentle and calm, but give it something high and it climbs like a squirrel.",
+          "눈 덮인 숲에서 온 튼튼한 털뭉치, 사자 같은 목털과 풍성한 꼬리를 가졌어요. 순하고 차분하지만 높은 곳만 보이면 다람쥐처럼 올라가요."),
+        0.6f, 0.3f, 0.65f, 0.55f, 0.65f,
+        1.0f, 1.0f, 1.35f, 1.15f, 0.05f,
+        0.1f, 1.0f, 0.2f, 1.0f, TravelMode.Free,
+        new[] { T("Freya", "프레야"), T("Bjorn", "비욘"), T("Pine", "솔이"), T("Fjord", "피오르"), T("Moss", "이끼") },
+        new BreedVoice(
+            Greeting: new[] { T("Hello from the forest", "숲에서 인사할게") },
+            Idle: new[] { T("Is there anything taller?", "더 높은 데 없나?"), T("My tail is magnificent", "내 꼬리 멋지지"), T("Quiet day in the woods", "숲은 오늘도 조용해"), T("Mrrrm", "므르르음") },
+            Happy: new[] { T("Up, up, up!", "위로, 위로!") },
+            Petted: new[] { T("Mind the fluff", "털 조심해"), T("Purrrr", "골골골") },
+            Hungry: new[] { T("A forest cat needs fish", "숲 고양이는 생선이 필요해") },
+            Sleepy: new[] { T("Curled up in my tail", "꼬리에 폭 싸여 잘게") },
+            Held: new[] { T("I'd rather be on a tree", "나무 위가 더 좋은데") },
+            Rain: new[] { T("My coat sheds water, mostly", "털이 물을 튕겨, 대체로") },
+            Snow: new[] { T("Snow! Like home!", "눈이다! 고향 같아!") },
+            Called: new[] { T("Climbing down, coming", "내려가는 중, 갈게") }));
+
+    public static readonly Breed TurkishAngora = new(
+        "turkish-angora", PetSpecies.Cat, T("Turkish Angora", "터키시 앙고라"), T("Graceful white dancer", "우아한 하얀 무용수"),
+        T("A slender white cat with silky fur and sometimes odd-coloured eyes. Elegant but lively, it dances after toys, opens doors and likes to be part of everything.",
+          "비단결 털에 가끔 짝짝이 눈을 가진 날씬한 하얀 고양이. 우아하지만 활발해서 장난감을 따라 춤추고, 문도 열고, 모든 일에 끼고 싶어 해요."),
+        0.8f, 0.2f, 0.8f, 0.3f, 0.8f,
+        0.95f, 1.2f, 1.3f, 0.9f, -0.05f,
+        0.4f, 0.1f, 0.3f, 1.1f, TravelMode.Follow,
+        new[] { T("Pearl", "진주"), T("Ivory", "상아"), T("Luna", "루나"), T("Snow", "설이"), T("Silk", "비단이") },
+        new BreedVoice(
+            Greeting: new[] { T("Mew! What are we doing?", "미야! 우리 뭐 해?") },
+            Idle: new[] { T("Look at me twirl", "빙글 도는 거 봐"), T("What's behind that door?", "저 문 뒤엔 뭐가 있지?"), T("I'm helping!", "나 돕는 중!"), T("Mew mew", "미야미야") },
+            Happy: new[] { T("Dance time!", "춤출 시간!") },
+            Petted: new[] { T("Gently, I'm silk", "살살, 나는 비단이야") },
+            Hungry: new[] { T("A dainty snack, please", "우아한 간식 주세요") },
+            Sleepy: new[] { T("A short, graceful nap", "짧고 우아한 낮잠") },
+            Held: new[] { T("Only for a moment!", "잠깐만이야!") },
+            Rain: new[] { T("Hmm, water…", "흠, 물이네…") },
+            Snow: new[] { T("I blend right in!", "나랑 똑같은 색이야!") },
+            Called: new[] { T("Dancing over!", "춤추며 갈게!") }));
+
+    public static readonly Breed ExoticShorthair = new(
+        "exotic-shorthair", PetSpecies.Cat, T("Exotic Shorthair", "엑조틱 숏헤어"), T("Plush-toy couch potato", "봉제인형 집콕러"),
+        T("A Persian face in a short plush coat, like a teddy bear that came to life. Quiet, sweet and wonderfully lazy, it follows you from room to room and then naps there.",
+          "짧고 폭신한 털에 페르시안 얼굴, 살아 움직이는 곰인형 같아요. 조용하고 다정하고 아주 게을러서, 방마다 따라와서는 거기서 낮잠을 자요."),
+        0.45f, 0.3f, 0.25f, 0.85f, 0.6f,
+        1.2f, 0.8f, 0.6f, 1.1f, 0.25f,
+        0.4f, 0f, 0f, 1.2f, TravelMode.Follow,
+        new[] { T("Teddy", "테디"), T("Pudding", "푸딩"), T("Biscuit", "비스킷"), T("Bun", "찐빵"), T("Momo", "모모") },
+        new BreedVoice(
+            Greeting: new[] { T("Mew. Hello.", "먕. 안녕.") },
+            Idle: new[] { T("I'm resting my eyes", "눈만 잠깐 쉬는 중"), T("Wherever you go, I go… slowly", "어디 가든 따라가… 천천히"), T("Squishy face, squishy heart", "말랑한 얼굴, 말랑한 마음"), T("Mrrm", "므음") },
+            Happy: new[] { T("Mrrp, nice", "므릅, 좋다") },
+            Petted: new[] { T("Mmm, yes, purr", "음, 좋아, 골골") },
+            Hungry: new[] { T("Snack o'clock?", "간식 시간?") },
+            Sleepy: new[] { T("Nap number five…", "다섯 번째 낮잠…") },
+            Held: new[] { T("I'm a plush toy now", "나 이제 인형이야") },
+            Rain: new[] { T("Good weather for napping", "낮잠 자기 좋은 날씨") },
+            Snow: new[] { T("Too cold, back to the blanket", "추워, 담요로 갈래") },
+            Called: new[] { T("Coming… in a minute", "가… 조금 이따") }));
+
     public static readonly IReadOnlyList<Breed> All = new[]
     {
         Pomeranian, Maltese, Poodle, Bichon, Shiba, Corgi, Jindo,
         GoldenRetriever, FrenchBulldog, Dachshund, SiberianHusky, Chihuahua, Beagle,
+        Samoyed, BorderCollie, ShihTzu, Pug,
         KoreanShorthair, RussianBlue, BritishShorthair, ScottishFold, Persian, Ragdoll, Munchkin,
         Siamese, MaineCoon, Bengal, Sphynx, Abyssinian,
+        AmericanShorthair, NorwegianForest, TurkishAngora, ExoticShorthair,
     };
 
     public static IEnumerable<Breed> Of(PetSpecies species) => All.Where(b => b.Species == species);

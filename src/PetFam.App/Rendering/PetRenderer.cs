@@ -2769,7 +2769,9 @@ public static class PetRenderer
                              * (1 + 0.12 * (1 - pet.Growth.BodyGrowth));   // baby eyes are bigger for the head
                     var gaze = (fwd * 0.9 + outward * 0.3 + up * 0.05).Normalized;
                     // Clip to the head surface so the eye sits flush in the face like a drawn-on eye, not a bulging ball.
-                    s.AddSdf(ec, h, er, r * 1.01, style.Iris, k: 0, eyeDir: gaze);
+                    // Odd eyes (Turkish Angora): the other eye has its own colour.
+                    var iris = sign > 0 && look.OddEye is { } odd ? BreedLook.C(odd) : style.Iris;
+                    s.AddSdf(ec, h, er, r * 1.01, iris, k: 0, eyeDir: gaze);
                     break;
                 }
             }

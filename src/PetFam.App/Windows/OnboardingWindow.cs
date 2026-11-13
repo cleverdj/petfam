@@ -135,7 +135,8 @@ public sealed class OnboardingWindow : Window
         {
             Margin = new Thickness(24, 20),
             Spacing = 12,
-            Children = { title, subtitle, tabs, _grid, detail, later },
+            // The breed cards scroll, so the window still fits a small laptop screen with every breed listed.
+            Children = { title, subtitle, tabs, new ScrollViewer { Content = _grid, MaxHeight = 390, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled }, detail, later },
         };
 
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(40), DispatcherPriority.Render, (_, _) => Tick());

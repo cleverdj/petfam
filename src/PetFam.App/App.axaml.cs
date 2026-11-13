@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using PetFam.Core;
 using PetFam.Core.Pets;
+using PetFam.Core.World;
 
 namespace PetFam.Desktop;
 
@@ -31,6 +32,7 @@ public partial class App : Application
             BuildMenu();
             L.Changed += BuildMenu;
             _host.PetsMenuChanged += RefreshPetsMenu;
+            _host.MenuChanged += () => Dispatcher.UIThread.Post(BuildMenu);
             // Locations change as pets move around: refresh the labels every couple of seconds.
             new DispatcherTimer(TimeSpan.FromSeconds(2), DispatcherPriority.Background, (_, _) => RefreshPetsMenu()).Start();
         }
@@ -70,6 +72,13 @@ public partial class App : Application
 
         _menu.Items.Add(Item(L.S("Put out a food bowl", "밥그릇 놓기"), h.FeedAll));
         _menu.Items.Add(Item(L.S("Build a new house (click a house to decorate)", "새 집 짓기 (집을 누르면 꾸미기)"), h.BuildHouse));
+        var walls = OfficialHabitat.All.Select(w => (NativeMenuItemBase)Item(w.Name.Text, () => h.UseOfficialWallpaper(w.Id))).ToList();
+        if (h.CanRestoreWallpaper)
+        {
+            walls.Add(new NativeMenuItemSeparator());
+            walls.Add(Item(L.S("Back to my own wallpaper", "원래 바탕화면으로"), h.RestoreWallpaper));
+        }
+        _menu.Items.Add(Sub(L.S("PetFam wallpapers (pets know every spot)", "PetFam 바탕화면 (펫이 구석구석 알아요)"), walls.ToArray()));
         var fixLabel = L.S("Fix the habitat (floor, water, …)", "서식지 고치기 (바닥, 물, …)");
         if (h.Monitors.Count > 1)
             _menu.Items.Add(Sub(fixLabel, h.Monitors.Select(m => Item(m.Name, () => h.OpenHabitatEditor(m.Index))).ToArray()));

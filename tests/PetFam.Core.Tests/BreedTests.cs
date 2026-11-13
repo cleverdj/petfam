@@ -12,8 +12,8 @@ public class BreedTests
     [Fact]
     public void Every_breed_has_a_full_voice_in_both_languages()
     {
-        Assert.Equal(13, Breed.Of(PetSpecies.Dog).Count());
-        Assert.Equal(12, Breed.Of(PetSpecies.Cat).Count());
+        Assert.Equal(17, Breed.Of(PetSpecies.Dog).Count());
+        Assert.Equal(16, Breed.Of(PetSpecies.Cat).Count());
         Assert.Equal(Breed.All.Count, Breed.All.Select(b => b.Id).Distinct().Count());
         foreach (var b in Breed.All)
         {

@@ -85,6 +85,34 @@ public sealed class WindowsPlatform : IPlatform, IWindowLayering
         }
     }
 
+    /// <summary>Sets the desktop wallpaper (Control Panel\Desktop style first, then SPI_SETDESKWALLPAPER so Explorer redraws).</summary>
+    public bool SetWallpaper(string path, WallpaperFit fit)
+    {
+        try
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", writable: true))
+            {
+                key?.SetValue("TileWallpaper", fit == WallpaperFit.Tile ? "1" : "0");
+                key?.SetValue("WallpaperStyle", fit switch
+                {
+                    WallpaperFit.Center or WallpaperFit.Tile => "0",
+                    WallpaperFit.Stretch => "2",
+                    WallpaperFit.Fit => "6",
+                    WallpaperFit.Span => "22",
+                    _ => "10",
+                });
+            }
+            var ok = User32.SystemParametersInfo(User32.SPI_SETDESKWALLPAPER, 0, path, User32.SPIF_UPDATEINIFILE | User32.SPIF_SENDWININICHANGE);
+            Log?.Invoke($"Wallpaper set to {path} ({fit}): {(ok ? "ok" : "failed " + System.Runtime.InteropServices.Marshal.GetLastWin32Error())}");
+            return ok;
+        }
+        catch (Exception ex)
+        {
+            Log?.Invoke("Wallpaper not set: " + ex.Message);
+            return false;
+        }
+    }
+
     public WallpaperFit GetWallpaperFit()
     {
         try
