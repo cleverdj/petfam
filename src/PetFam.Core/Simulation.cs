@@ -165,6 +165,55 @@ public sealed class Simulation
         if (switched || (!first && World.MonitorOrder.Count < 2)) Travel.OnSwitched(Pets, _rng);
     }
 
+    // ---------------------------------------------------------------- dress-up
+
+    /// <summary>Pets that dress for the weather put on a raincoat in the rain and a scarf (and beanie) in the snow.</summary>
+    private void TickWeatherWear()
+    {
+        var w = Weather;
+        foreach (var pet in Pets)
+        {
+            if (!pet.Outfit.DressForWeather) { pet.WeatherWear = null; continue; }
+            Dictionary<OutfitSlot, OutfitPiece>? wear = null;
+            if (w.Raining) wear = new() { [OutfitSlot.Body] = OutfitCatalog.RainWear };
+            else if (w.Snowing)
+            {
+                wear = new() { [OutfitSlot.Neck] = pet.Outfit.Get(OutfitSlot.Neck)?.ItemId == "scarf" ? pet.Outfit.Get(OutfitSlot.Neck)! : OutfitCatalog.SnowScarf };
+                if (pet.Outfit.Get(OutfitSlot.Head) is null) wear[OutfitSlot.Head] = OutfitCatalog.SnowHat;
+            }
+            pet.WeatherWear = wear;
+        }
+    }
+
+    /// <summary>
+    /// The user dressed the pet up: it reacts in character. Fashion lovers (Maltese, Persian…) are delighted, proud
+    /// and wild breeds (Shiba, Husky…) shake themselves and grumble, the rest are fine with it.
+    /// </summary>
+    public void ReactToOutfit(Pet pet, bool undressed)
+    {
+        var love = OutfitCatalog.FashionLove(pet);
+        if (undressed)
+        {
+            pet.Say(love < 0.35f ? L.S("Finally! Free!", "드디어 자유다!") : L.S("Oh… it's gone", "어… 없어졌네"), 2.2f);
+            return;
+        }
+        if (love >= 0.7f)
+        {
+            pet.SetAnimation(pet.Species == PetSpecies.Dog ? "playbow" : "sit");
+            pet.Say(L.S("Am I pretty? I'm pretty!", "나 예뻐? 예쁘지!"), 2.4f);
+            pet.Needs.Fun = System.Math.Min(100f, pet.Needs.Fun + 10f);
+        }
+        else if (love <= 0.3f)
+        {
+            pet.SetAnimation("shake");
+            pet.Say(L.S("Hmph… do I have to wear this?", "흥… 이거 꼭 입어야 해?"), 2.4f);
+        }
+        else
+        {
+            pet.Say(L.S("Hmm, not bad", "음, 나쁘지 않네"), 2f);
+        }
+    }
+
     // ---------------------------------------------------------------- chatter (each breed's way of talking)
 
     private readonly Dictionary<Guid, float> _nextChat = new();
@@ -248,6 +297,7 @@ public sealed class Simulation
         Travel.Tick(this, dt, _rng);
         TickWeather(dt);
         TickChatter(dt);
+        TickWeatherWear();
 
         foreach (var pet in Pets)
         {

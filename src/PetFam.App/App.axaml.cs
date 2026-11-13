@@ -163,6 +163,9 @@ public partial class App : Application
                 var call = new NativeMenuItem(L.S("Call to this desktop", "이 데스크톱으로 부르기"));
                 call.Click += (_, _) => { _host?.CallPet(pet); RefreshPetsMenu(); };
                 item.Menu.Items.Add(call);
+                var dress = new NativeMenuItem(L.S("Dress up…", "꾸미기…"));
+                dress.Click += (_, _) => _host?.OpenOutfitEditor(pet);
+                item.Menu.Items.Add(dress);
                 var colours = new NativeMenuItem(L.S("Change colours…", "색 바꾸기…"));
                 colours.Click += (_, _) => _host?.OpenCoatEditor(pet);
                 item.Menu.Items.Add(colours);

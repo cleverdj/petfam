@@ -174,6 +174,18 @@ public sealed class Pet
     /// <summary>Colours the user picked (coat colour editor), over the breed's own. Null: the breed's colours.</summary>
     public PetCoat? Coat { get; set; }
 
+    /// <summary>What the user dressed the pet in.</summary>
+    public Outfit Outfit { get; set; } = new();
+
+    /// <summary>Put on by the weather right now (Outfit.DressForWeather): raincoat, scarf, beanie. Not saved.</summary>
+    public Dictionary<OutfitSlot, OutfitPiece>? WeatherWear { get; set; }
+
+    /// <summary>What the pet has on in that slot now: weather wear first, then its own outfit.</summary>
+    public OutfitPiece? Wears(OutfitSlot slot) => WeatherWear?.GetValueOrDefault(slot) ?? Outfit.Get(slot);
+
+    public bool IsWearing(string itemId) =>
+        Enum.GetValues<OutfitSlot>().Any(s => Wears(s)?.ItemId == itemId);
+
     /// <summary>Raised when a sleep ends so the stretch behavior runs next.</summary>
     public bool JustWokeUp { get; set; }
 

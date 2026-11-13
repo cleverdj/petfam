@@ -2215,6 +2215,7 @@ public static class PetRenderer
         if (mud >= 0.7f)
             s.Capsule(trunkA + new V3(6, d.BodyR * 0.6, 0), trunkB + new V3(-6, d.BodyR * 0.6, 0), d.BodyR * 0.35, MudColor(pet), k: 1);
         BuildCoat(s, d, style, p, look, trunkA, trunkB);
+        if (Worn(pet, OutfitSlot.Body) is { } bodyWear) BuildBodyWear(s, d, trunkA, trunkB, kitten, bodyWear.Item.Id, bodyWear.Color);
 
         // Tail.
         s.Stripe = striped ? 1 : 0;
@@ -2227,7 +2228,38 @@ public static class PetRenderer
         var neckFrom = trunkB + new V3(0, d.BodyR * 0.1, 0);
         var neckTo = p.Head + new V3(-d.HeadR * 0.3, -d.HeadR * 0.2, 0);
         s.Capsule(neckFrom, neckTo, d.BodyR * 0.58, fur);
-        if (cat && Toon) BuildCollar(s, d, V3.Lerp(neckFrom, neckTo, 0.42), (neckTo - neckFrom).Normalized);
+        var neckAt = V3.Lerp(neckFrom, neckTo, 0.42);
+        var neckAxis = (neckTo - neckFrom).Normalized;
+        // These pets carry their heads right on their chests, so a worn collar goes round where head and chest meet,
+        // wide enough to show under the chin.
+        if (Worn(pet, OutfitSlot.Neck) is { } neckWear)
+        {
+            var toHead = (p.Head - neckFrom).Normalized;
+            var at = p.Head - toHead * (d.HeadR * 0.86);
+            // The throat: where a ray going forward from the neck leaves the chest fur, ruff and cheeks. The front
+            // pieces (tag, bell, bow, knot, kerchief) go there, on top of the fur.
+            var start = V3.Lerp(trunkB, p.Head, 0.4);
+            var dir = new V3(1, -0.3, 0).Normalized;
+            var blobs = new List<(V3 C, double R)>
+            {
+                (trunkB, d.BodyR * (kitten ? 1.1 : 1.06)),
+                (V3.Lerp(trunkB, p.Head, 0.4) + new V3(d.BodyR * 0.2, -d.BodyR * 0.25, 0), d.BodyR * 0.85),
+                (V3.Lerp(neckFrom, neckTo, 0.5), d.BodyR * 0.6),
+            };
+            if (look.Coat is CoatKind.Fluffy or CoatKind.Long or CoatKind.Feathered)
+                blobs.Add((V3.Lerp(trunkB, p.Head, 0.3) + new V3(d.BodyR * 0.3, -d.BodyR * 0.2, 0), d.BodyR * 1.2));
+            var exit = 0.0;
+            foreach (var (c, rad) in blobs)
+            {
+                var oc = start - c;
+                var b = oc.X * dir.X + oc.Y * dir.Y + oc.Z * dir.Z;
+                var disc = b * b - (oc.X * oc.X + oc.Y * oc.Y + oc.Z * oc.Z - rad * rad);
+                if (disc > 0) exit = Math.Max(exit, -b + Math.Sqrt(disc));
+            }
+            var throat = start + dir * (exit + d.BodyR * 0.04);
+            BuildNeckWear(s, d, at, toHead, neckWear.Item.Id, neckWear.Color, d.HeadR * 0.8 / d.BodyR, throat);
+        }
+        else if (cat && Toon) BuildCollar(s, d, neckAt, neckAxis);
 
         BuildHead(s, pet, d, style, p, t);
     }
@@ -2312,32 +2344,232 @@ public static class PetRenderer
     }
 
     /// <summary>A brown collar ring around the neck with a little heart tag hanging at the front.</summary>
-    private static void BuildCollar(Scene s, Dims d, V3 center, V3 axis)
+    private enum Tag { Heart, Bell, None }
+
+    private static void BuildCollar(Scene s, Dims d, V3 center, V3 axis, Color? colour = null, Tag tagKind = Tag.Heart,
+        double thick = 0.13, double ringR = 0.66, int n = 8)
     {
-        var collar = Color.FromRgb(0xB8, 0x6E, 0x3C);
+        var collar = colour ?? Color.FromRgb(0xB8, 0x6E, 0x3C);
         var tagColor = Color.FromRgb(0x96, 0x78, 0x66);
         var u = Cross(axis, new V3(0, 0, 1)).Normalized;
         if (u.Length < 0.5) u = new V3(1, 0, 0);
         var w = Cross(axis, u).Normalized;
-        var ring = d.BodyR * 0.66;
-        const int n = 8;
+        var ring = d.BodyR * ringR;
         for (var i = 0; i < n; i++)
         {
             double a0 = i * Math.PI * 2 / n, a1 = (i + 1) * Math.PI * 2 / n;
             var p0 = center + (u * Math.Cos(a0) + w * Math.Sin(a0)) * ring;
             var p1 = center + (u * Math.Cos(a1) + w * Math.Sin(a1)) * ring;
-            s.AddSdf(p0, p1, d.BodyR * 0.13, d.BodyR * 0.13, collar, k: 0, gloss: 0.2);
+            s.AddSdf(p0, p1, d.BodyR * thick, d.BodyR * thick, collar, k: 0, gloss: 0.2);
         }
 
-        // Front of the neck: the direction in the collar plane closest to forward-and-down.
-        var want = new V3(1, -0.6, 0);
-        var front = (want - axis * (want.X * axis.X + want.Y * axis.Y + want.Z * axis.Z)).Normalized;
-        var side = Cross(axis, front).Normalized;
+        var (front, side) = NeckFront(axis);
+        if (tagKind == Tag.None) return;
+        if (tagKind == Tag.Bell)
+        {
+            var bell = center + front * (ring + d.BodyR * 0.22) - axis * (d.BodyR * 0.2);
+            s.Sphere(bell, d.BodyR * 0.22, Color.FromRgb(0xF2, 0xC2, 0x3A), edge: false, k: 0, gloss: 0.9);
+            s.AddSdf(bell - axis * (d.BodyR * 0.12) + front * (d.BodyR * 0.16), bell - axis * (d.BodyR * 0.12) + front * (d.BodyR * 0.16),
+                d.BodyR * 0.05, d.BodyR * 0.05, Color.FromRgb(0x5A, 0x40, 0x10), k: 0, gloss: 0);
+            return;
+        }
         var tag = center + front * (ring + d.BodyR * 0.2) - axis * (d.BodyR * 0.25);
         var lobe = d.BodyR * 0.15;
         s.AddSdf(tag + side * (lobe * 0.8) + axis * (lobe * 0.4), tag + side * (lobe * 0.8) + axis * (lobe * 0.4), lobe, lobe, tagColor, k: 0, gloss: 0.7);
         s.AddSdf(tag - side * (lobe * 0.8) + axis * (lobe * 0.4), tag - side * (lobe * 0.8) + axis * (lobe * 0.4), lobe, lobe, tagColor, k: 0, gloss: 0.7);
         s.AddSdf(tag, tag - axis * (lobe * 1.6), lobe * 1.15, lobe * 0.15, tagColor, k: 0, gloss: 0.7);
+    }
+
+    /// <summary>Front of the neck (the direction in the collar plane closest to forward-and-down) and across it.</summary>
+    private static (V3 Front, V3 Side) NeckFront(V3 axis)
+    {
+        var want = new V3(1, -0.6, 0);
+        var front = (want - axis * (want.X * axis.X + want.Y * axis.Y + want.Z * axis.Z)).Normalized;
+        return (front, Cross(axis, front).Normalized);
+    }
+
+    // ---------------------------------------------------------------- dress-up
+
+    private static (OutfitItem Item, Color Color)? Worn(Pet pet, OutfitSlot slot) =>
+        pet.Wears(slot) is { } piece && piece.Item is { } item ? (item, BreedLook.C(piece.Color)) : null;
+
+    /// <summary>Collar, bell collar, bandana, bow tie or scarf round the neck.</summary>
+    private static void BuildNeckWear(Scene s, Dims d, V3 c, V3 axis, string id, Color col, double ringR, V3 throat)
+    {
+        var r = d.BodyR;
+        var down = new V3(0, -1, 0);
+        var (front, side) = NeckFront(axis);
+        switch (id)
+        {
+            case "collar":
+            {
+                BuildCollar(s, d, c, axis, col, Tag.None, thick: 0.15, ringR: ringR, n: 6);
+                // The band across the throat and a little heart tag on it.
+                s.AddSdf(throat + side * (r * 0.45) + down * (r * 0.05), throat - side * (r * 0.45) + down * (r * 0.05), r * 0.13, r * 0.13, col, k: 0, gloss: 0.2);
+                var tagC = throat + down * (r * 0.32) + new V3(r * 0.06, 0, 0);
+                var heart = Color.FromRgb(0xF2, 0xC2, 0x3A);
+                s.Sphere(tagC + side * (r * 0.1) + new V3(0, r * 0.05, 0), r * 0.12, heart, edge: false, k: 0, gloss: 0.8);
+                s.Sphere(tagC - side * (r * 0.1) + new V3(0, r * 0.05, 0), r * 0.12, heart, edge: false, k: 0, gloss: 0.8);
+                s.AddSdf(tagC, tagC + down * (r * 0.18), r * 0.13, r * 0.03, heart, k: 0, gloss: 0.8);
+                break;
+            }
+            case "bell":
+            {
+                BuildCollar(s, d, c, axis, col, Tag.None, thick: 0.15, ringR: ringR, n: 6);
+                s.AddSdf(throat + side * (r * 0.45) + down * (r * 0.05), throat - side * (r * 0.45) + down * (r * 0.05), r * 0.13, r * 0.13, col, k: 0, gloss: 0.2);
+                var bell = throat + down * (r * 0.32) + new V3(r * 0.08, 0, 0);
+                s.Sphere(bell, r * 0.24, Color.FromRgb(0xF2, 0xC2, 0x3A), edge: false, k: 0, gloss: 0.9);
+                s.AddSdf(bell + new V3(r * 0.2, -r * 0.08, 0), bell + new V3(r * 0.2, -r * 0.08, 0), r * 0.05, r * 0.05, Color.FromRgb(0x5A, 0x40, 0x10), k: 0, gloss: 0);
+                break;
+            }
+            case "bandana":
+                BuildCollar(s, d, c, axis, col, Tag.None, thick: 0.14, ringR: ringR, n: 6);
+                // The kerchief: a soft triangle hanging down over the chest fur from the throat.
+                s.AddSdf(throat + new V3(-r * 0.05, r * 0.08, 0), throat + new V3(r * 0.15, -r * 0.95, 0), r * 0.55, r * 0.1, col, k: 0.3, gloss: 0.05);
+                break;
+            case "bowtie":
+            {
+                BuildCollar(s, d, c, axis, Darken(col, 0.15), Tag.None, thick: 0.07, ringR: ringR, n: 6);
+                var knot = throat;
+                foreach (var sign in new[] { -1, 1 })
+                    s.Ellipsoid(knot + side * (sign * r * 0.3), side, axis, r * 0.3, r * 0.22, r * 0.1, col, k: 0);
+                s.Sphere(knot, r * 0.13, Darken(col, 0.15), edge: false, k: 0, gloss: 0.2);
+                break;
+            }
+            case "scarf":
+                BuildCollar(s, d, c, axis, col, Tag.None, thick: 0.28, ringR: ringR + 0.04, n: 6);
+                // A knot at the throat and one end hanging down, with a lighter fringe.
+                s.Sphere(throat, r * 0.32, col, edge: false, k: 0.3);
+                var from = throat + side * (r * 0.3);
+                s.AddSdf(from, from - axis * (r * 1.0) + front * (r * 0.15), r * 0.22, r * 0.2, col, k: 0.4, gloss: 0.05);
+                s.Sphere(from - axis * (r * 1.12) + front * (r * 0.17), r * 0.17, Lighten(col, 0.25), edge: false, k: 0.4);
+                break;
+        }
+    }
+
+    /// <summary>Sweater, vest or raincoat: a shell round the trunk, open at the rump, with a collar or trim.</summary>
+    private static void BuildBodyWear(Scene s, Dims d, V3 trunkA, V3 trunkB, bool kitten, string id, Color col)
+    {
+        var r = d.BodyR;
+        var along = (trunkB - trunkA).Normalized;
+        var start = id switch { "vest" => 0.4, "raincoat" => 0.05, _ => 0.22 };
+        var a = V3.Lerp(trunkA, trunkB, start);
+        var b = trunkB + along * (r * 0.35);
+        var shell = r * (kitten ? 1.2 : 1.13);
+        var gloss = id == "raincoat" ? 0.6 : 0.03;
+        s.AddSdf(a, b, shell * 0.97, shell, col, k: 0.2, gloss: gloss);
+        switch (id)
+        {
+            case "sweater":
+                // A ribbed collar where the neck comes out, and a darker stripe round the middle.
+                BuildCollar(s, d, b + along * (r * 0.05), along, Darken(col, 0.12), Tag.None, thick: 0.18, ringR: 0.78, n: 6);
+                BuildCollar(s, d, V3.Lerp(a, b, 0.45), along, Darken(col, 0.18), Tag.None, thick: 0.1, ringR: shell / r * 0.98, n: 6);
+                break;
+            case "vest":
+                // A light trim along the open edge at the back.
+                BuildCollar(s, d, a, along, Lighten(col, 0.55), Tag.None, thick: 0.1, ringR: shell / r * 0.95, n: 6);
+                break;
+            case "raincoat":
+                // Shiny press studs down the side.
+                for (var i = 0; i < 2; i++)
+                    s.Sphere(V3.Lerp(a, b, 0.45 + i * 0.25) + new V3(0, -shell * 0.2, shell * 0.98), r * 0.09, Darken(col, 0.35), edge: false, k: 0, gloss: 0.8);
+                break;
+        }
+    }
+
+    /// <summary>Hats, ribbons and flowers on the head; glasses on the face; a raincoat's hood behind the head.</summary>
+    private static void BuildHeadWear(Scene s, Pet pet, BreedLook look, double r, V3 h, V3 fwd, V3 up, V3 side,
+        Func<double, double, double, V3> At, bool cat)
+    {
+        // Top of the head, higher on fluffy-headed breeds (Bichon, Poodle, Maltese).
+        var top = look.HeadFluff > 0 ? 1.12 + 0.35 * look.HeadFluff : 0.98;
+        if (Worn(pet, OutfitSlot.Body) is { Item.Id: "raincoat" } coat)
+            s.Ellipsoid(At(-0.42, 0.3, 0), fwd, up, r * 0.72, r * 0.95, r * 1.06, coat.Color, k: 0.6);
+
+        if (Worn(pet, OutfitSlot.Head) is { } hat)
+        {
+            var col = hat.Color;
+            switch (hat.Item.Id)
+            {
+                case "ribbon":
+                {
+                    var knot = At(-0.05, top, 0);
+                    foreach (var sign in new[] { -1, 1 })
+                        s.Ellipsoid(knot + up * (r * 0.16) + side * (sign * r * 0.22), side, up, r * 0.22, r * 0.15, r * 0.1, col, k: 0);
+                    s.Sphere(knot + up * (r * 0.16), r * 0.08, Darken(col, 0.12), edge: false, k: 0);
+                    break;
+                }
+                case "flower":
+                {
+                    var c = At(0.15, top - 0.2, 0.52);
+                    var n = (c - h).Normalized;
+                    var e1 = Cross(n, fwd).Normalized;
+                    var e2 = Cross(n, e1).Normalized;
+                    for (var i = 0; i < 5; i++)
+                    {
+                        var a = i * Math.PI * 2 / 5;
+                        s.Sphere(c + (e1 * Math.Cos(a) + e2 * Math.Sin(a)) * (r * 0.14), r * 0.11, col, edge: false, k: 0);
+                    }
+                    s.Sphere(c + n * (r * 0.04), r * 0.08, Color.FromRgb(0xF6, 0xD2, 0x4A), edge: false, k: 0);
+                    break;
+                }
+                case "beanie":
+                {
+                    var cy = top - 0.18;
+                    s.Ellipsoid(At(-0.12, cy, 0), fwd, up, r * 0.98, r * 0.52, r * 1.0, col, k: 0);
+                    s.Ellipsoid(At(-0.1, cy - 0.3, 0), fwd, up, r * 1.0, r * 0.13, r * 1.03, Darken(col, 0.15), k: 0);
+                    s.Sphere(At(-0.18, cy + 0.55, 0), r * 0.2, Lighten(col, 0.6), edge: false, k: 0);
+                    break;
+                }
+                case "straw-hat":
+                {
+                    var straw = Color.FromRgb(0xF0, 0xD5, 0x8A);
+                    s.Ellipsoid(At(-0.08, top - 0.02, 0), fwd, up, r * 1.25, r * 0.13, r * 1.25, straw, k: 0);
+                    s.Ellipsoid(At(-0.05, top + 0.16, 0), fwd, up, r * 0.64, r * 0.4, r * 0.64, straw, k: 0);
+                    s.Ellipsoid(At(-0.05, top + 0.05, 0), fwd, up, r * 0.66, r * 0.12, r * 0.66, col, k: 0);
+                    break;
+                }
+                case "crown":
+                {
+                    var gold = Color.FromRgb(0xF0, 0xC4, 0x3C);
+                    var c = At(-0.05, top + 0.04, 0);
+                    s.Ellipsoid(c, fwd, up, r * 0.48, r * 0.12, r * 0.48, gold, k: 0);
+                    for (var i = 0; i < 5; i++)
+                    {
+                        var a = i * Math.PI * 2 / 5;
+                        var bse = c + (fwd * Math.Cos(a) + side * Math.Sin(a)) * (r * 0.42);
+                        s.AddSdf(bse, bse + up * (r * 0.34), r * 0.1, r * 0.035, gold, k: 0, gloss: 0.8);
+                    }
+                    s.Sphere(c + fwd * (r * 0.5), r * 0.09, col, edge: false, k: 0, gloss: 0.9);
+                    break;
+                }
+            }
+        }
+
+        if (Worn(pet, OutfitSlot.Face) is { } glasses)
+        {
+            var eyeU = cat ? 0.13 : 0.16;
+            var lens = r * (cat ? 0.37 : 0.3) * Math.Clamp(look.EyeSize, 0.85, 1.15);
+            var frame = glasses.Color;
+            var sun = glasses.Item.Id == "sunglasses";
+            foreach (var sign in new[] { -1, 1 })
+            {
+                var c = At(cat ? 0.9 : 0.95, eyeU, sign * 0.42);
+                if (sun) s.Ellipsoid(c, fwd, up, r * 0.05, lens * 0.82, lens, Color.FromRgb(0x1E, 0x20, 0x26), k: 0);
+                const int n = 6;
+                for (var i = 0; i < n; i++)
+                {
+                    double a0 = i * Math.PI * 2 / n, a1 = (i + 1) * Math.PI * 2 / n;
+                    var p0 = c + (up * Math.Cos(a0) * 0.85 + side * Math.Sin(a0)) * lens;
+                    var p1 = c + (up * Math.Cos(a1) * 0.85 + side * Math.Sin(a1)) * lens;
+                    s.AddSdf(p0, p1, r * 0.035, r * 0.035, frame, k: 0, gloss: 0.5);
+                }
+                // Arm back to the ear.
+                s.AddSdf(c + side * (sign * lens), At(0.15, eyeU + 0.1, sign * 0.97), r * 0.03, r * 0.03, frame, k: 0, gloss: 0.3);
+            }
+            s.AddSdf(At(cat ? 0.93 : 0.98, eyeU + 0.03, -0.42) + side * lens, At(cat ? 0.93 : 0.98, eyeU + 0.03, 0.42) - side * lens,
+                r * 0.03, r * 0.03, frame, k: 0, gloss: 0.5);
+        }
     }
 
     private static V3 SolveKnee(V3 joint, V3 foot, double l1, double l2)
@@ -2545,7 +2777,7 @@ public static class PetRenderer
             s.AddSdf(At(0.78, 0.0, 0), At(0.2, 0.92, 0), r * 0.13, r * 0.2, style.Belly, k: 1.5);
 
         // A topknot tied with a bow (Maltese).
-        if (look.Bow is { } bowRgb)
+        if (look.Bow is { } bowRgb && Worn(pet, OutfitSlot.Head) is null)
         {
             var bow = BreedLook.C(bowRgb);
             var knot = At(-0.12, 1.2, 0);                  // on top of the head fluff
@@ -2786,6 +3018,8 @@ public static class PetRenderer
 
         // Whiskers fanning out from the muzzle (drawn as lines on top of the 3D body): cats only, in the fur style.
         // The cartoon kitten has whisker dots instead, and dogs have none (whiskers made the puppy look like a cat).
+        BuildHeadWear(s, pet, look, r, h, fwd, up, side, At, persian);
+
         if (!persian || Toon) return;
         var root = persian ? At(0.82, -0.3, 0) : At(1.0, -0.2, 0);
         var len = persian ? r * 1.5 : r * 0.8;

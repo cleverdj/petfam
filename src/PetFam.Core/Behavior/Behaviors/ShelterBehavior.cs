@@ -49,6 +49,9 @@ public sealed class ShelterBehavior : Behavior
             WeatherKind.Snow => cat ? 0.3f + 0.3f * w.Intensity : System.Math.Max(0f, (1f - b.SnowLove) * 0.6f),
             _ => 0f,
         };
+        // Dressed for it: a raincoat keeps the rain off, a scarf or beanie keeps the snow from bothering it as much.
+        if (w.Kind is WeatherKind.Rain or WeatherKind.Thunder && pet.IsWearing("raincoat")) v *= w.Kind == WeatherKind.Thunder ? 0.7f : 0.35f;
+        if (w.Kind == WeatherKind.Snow && (pet.IsWearing("scarf") || pet.IsWearing("beanie") || pet.IsWearing("sweater"))) v *= 0.6f;
         return System.Math.Clamp(v, 0f, 1f);
     }
 

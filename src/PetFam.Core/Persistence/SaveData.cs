@@ -57,6 +57,17 @@ public sealed class PetSave
     public uint? CoatLight { get; set; }
     public uint? CoatMarking { get; set; }
     public uint? CoatEyes { get; set; }
+
+    /// <summary>What the pet wears. Null in older saves: nothing.</summary>
+    public List<OutfitPieceSave>? Outfit { get; set; }
+    public bool DressForWeather { get; set; }
+}
+
+public sealed class OutfitPieceSave
+{
+    public OutfitSlot Slot { get; set; }
+    public string Item { get; set; } = "";
+    public uint Color { get; set; }
 }
 
 public sealed class RelationSave
@@ -165,6 +176,9 @@ public static class SaveStore
             CoatLight = p.Coat?.Light,
             CoatMarking = p.Coat?.Marking,
             CoatEyes = p.Coat?.Eyes,
+            Outfit = p.Outfit.Pieces.Count == 0 ? null
+                : p.Outfit.Pieces.Select(kv => new OutfitPieceSave { Slot = kv.Key, Item = kv.Value.ItemId, Color = kv.Value.Color }).ToList(),
+            DressForWeather = p.Outfit.DressForWeather,
         }).ToList(),
     };
 
@@ -204,6 +218,9 @@ public static class SaveStore
         if (s.Travel is { } travel) pet.Travel = travel;
         pet.HomeCellId = s.HomeCellId;
         pet.Coat = new PetCoat(s.CoatFur, s.CoatLight, s.CoatMarking, s.CoatEyes).OrNull();
+        pet.Outfit = new Outfit { DressForWeather = s.DressForWeather };
+        foreach (var o in s.Outfit ?? new())
+            if (OutfitCatalog.Find(o.Item) is { } item && item.Slot == o.Slot) pet.Outfit.Set(o.Slot, new OutfitPiece(o.Item, o.Color));
         return pet;
     }
 

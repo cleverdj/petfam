@@ -59,6 +59,10 @@ PetFam은 화면 보호기가 아니고 작업을 방해하지도 않아요. 펫
 - 욕구(배고픔, 기운, 재미, 애정, 청결), 기분, 그리고 가까워질수록 더 많은 것이 열리는 유대감.
 - 공을 직접 던져 보세요. 마우스로 공을 잡아 휙 던지면 강아지가 물어 와요.
 - 펫은 물에 젖고 진흙이 묻고, 몸을 털고, 햇볕에 말라요.
+- **꾸미기:** 목걸이·방울 목걸이·반다나·나비넥타이·목도리, 리본·꽃핀·비니·밀짚모자·왕관, 스웨터·조끼·우비, 동그란 안경·선글라스를 여러 색으로
+  입힐 수 있어요(펫 패널 → 👗 꾸미기, 또는 트레이 → 우리 아이들 → 펫 → 꾸미기). 모두 무료예요. 처음부터 4가지가 열려 있고, 나머지는 유대감이 쌓일수록
+  열려요. "날씨에 맞춰 입히기"를 켜면 비 오면 우비, 눈 오면 목도리와 비니를 알아서 입고, 우비를 입은 펫은 비를 훨씬 덜 싫어해요. 반응도 품종마다
+  달라서 말티즈나 페르시안은 신나 하고, 시바나 허스키는 몸을 털며 투덜대요.
 - **원하는 색으로:** 펫마다 털, 배·가슴·발, 무늬, 눈 색을 추천 색이나 원하는 아무 색으로 바꿀 수 있어요(펫 패널 → 🎨 색 바꾸기, 또는 트레이 →
   우리 아이들 → 펫 → 색 바꾸기). 털의 음영은 함께 따라 바뀌고 품종 무늬는 그대로 남으며, "품종 원래 색으로"를 누르면 되돌아가요.
 
@@ -231,6 +235,7 @@ docs/PLANNING.md             제품·기술 기획(영어)
 | `PETFAM_DEMO=ball` | 실행 3초 뒤 첫 강아지와 공놀이 시작(던지기 확인용) |
 | `PETFAM_DEMO=house` | 실행 3초 뒤 새 집 짓기 창을 엶 |
 | `PETFAM_DEMO=habitat` / `habitat2` | 실행 4초 뒤 주(또는 두 번째) 모니터에 서식지 편집기를 열고 그 모습을 `habitat-editor.png`로 저장 |
+| `PETFAM_DEMO=outfit` | 실행 4초 뒤 첫 펫의 꾸미기 창을 열고 그 모습을 `outfit-editor.png`로 저장 |
 | `PETFAM_DEMO=colours` | 실행 4초 뒤 첫 펫의 색 바꾸기 창을 열고 그 모습을 `coat-editor.png`로 저장 |
 | `PETFAM_DEMO=monitor` | 실행 3초 뒤 첫 펫이 옆 모니터로 걸어감 |
 | `PETFAM_DEMO=travel` | 실행 3초 뒤 첫 펫이 옆 데스크톱으로 걸어 나가고, 14초 뒤 다시 불러옴 |
@@ -239,6 +244,7 @@ docs/PLANNING.md             제품·기술 기획(영어)
 | `PETFAM_TIME=HH:mm` | 그 시각인 것처럼 함(트레이: 날씨 → (테스트) 시간대 바꿔 보기) |
 | `PETFAM_CLOSEUP_SHEET=1` | `PETFAM_CLOSEUP_BREEDS`(품종 id, 쉼표 구분)의 품종을 크게 그린 `closeup-sheet.png` 저장(얼굴과 털 확인용) |
 | `PETFAM_CLOSEUP_POSE=walk` / `PETFAM_CLOSEUP_COAT=F2A9C4,,,4F86D6` | 근접 시트의 자세와 고른 색(털, 밝은 부분, 무늬, 눈; 16진수, 비워 둬도 됨) |
+| `PETFAM_CLOSEUP_OUTFIT=head:beanie:3C8DDE,body:sweater:F2A9C4` | 근접 시트의 모든 펫에게 옷을 입힘(부위:아이템:색, 쉼표로 구분) |
 | `PETFAM_TURN_POSES=pant,yawn,…` | `PETFAM_TURN_SHEET`의 기본 자세 대신 쓸 자세 |
 | `PETFAM_LANG=en` / `ko` | 그 언어로 시작(저장된 선택보다 우선) |
 | `PETFAM_WEATHER=<날씨>` | 실제 날씨 대신: `clear`, `cloudy`, `fog`, `drizzle`, `rain`, `heavyrain`, `thunder`, `snow`, `heavysnow`(눈이 이미 쌓인 상태) |

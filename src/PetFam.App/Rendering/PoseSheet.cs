@@ -121,6 +121,15 @@ public static class PoseSheet
             var parts = cs.Split(',');
             coat = new PetCoat(Hex(parts, 0), Hex(parts, 1), Hex(parts, 2), Hex(parts, 3)).OrNull();
         }
+        // PETFAM_CLOSEUP_OUTFIT=head:straw-hat:3C8DDE,body:sweater:F2A9C4,... dresses every pet.
+        var outfit = new Outfit();
+        foreach (var part in (Environment.GetEnvironmentVariable("PETFAM_CLOSEUP_OUTFIT") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var bits = part.Split(':');
+            if (bits.Length == 3 && Enum.TryParse<OutfitSlot>(bits[0], true, out var slot) &&
+                uint.TryParse(bits[2], System.Globalization.NumberStyles.HexNumber, null, out var rgb))
+                outfit.Set(slot, new OutfitPiece(bits[1], rgb));
+        }
         const int perRow = 4;
         const float cw = CellW, ch = CellH - 40;
         var cells = new List<(float X, float Y, SdfPetRenderer.Frame Frame)>();
@@ -136,6 +145,7 @@ public static class PoseSheet
                 pet.Growth = new Growth(now, Growth.AdultAt);
                 pet.SetAnimation(pose);
                 pet.Coat = coat;
+                pet.Outfit = outfit.Clone();
                 pet.AnimationTime = 0.9f;                       // eyes open (0.37 catches some breeds mid-blink)
                 var frame = SdfPetRenderer.Build(pet, 1f, cw / 2f, ch - 10, cw, ch);
                 frame.Zoom = s;

@@ -217,6 +217,23 @@ public sealed class AppHost
                 }, TimeSpan.FromSeconds(3));
             }, TimeSpan.FromSeconds(4));
         // Dev: opens the colour editor for the first pet and saves a picture of it to coat-editor.png.
+        // Dev: opens the dress-up window for the first pet and saves a picture of it to outfit-editor.png.
+        if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "outfit")
+            DispatcherTimer.RunOnce(() =>
+            {
+                if (_sim.Pets.FirstOrDefault() is not { } pet) return;
+                OpenOutfitEditor(pet);
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (_outfitEditor?.Content is not Visual v) return;
+                    var s = _outfitEditor.RenderScaling;
+                    using var rtb = new RenderTargetBitmap(new PixelSize((int)(_outfitEditor.Bounds.Width * s), (int)(_outfitEditor.Bounds.Height * s)), new Vector(96 * s, 96 * s));
+                    rtb.Render(v);
+                    var path = Path.Combine(AppLog.DataDirectory, "outfit-editor.png");
+                    rtb.Save(path);
+                    AppLog.Write("Outfit editor picture saved: " + path);
+                }, TimeSpan.FromSeconds(2));
+            }, TimeSpan.FromSeconds(4));
         if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "colours")
             DispatcherTimer.RunOnce(() =>
             {
@@ -1132,9 +1149,29 @@ public sealed class AppHost
                 SocialLine = SocialSummary,
                 OnDelete = DeletePet,
                 OnColours = OpenCoatEditor,
+                OnOutfit = OpenOutfitEditor,
             };
         }
         _panel.ShowFor(pet);
+    }
+
+    private OutfitWindow? _outfitEditor;
+
+    /// <summary>Tray / panel: dress the pet up. On Save it reacts in character (delighted, fine, or grumbling).</summary>
+    public void OpenOutfitEditor(Pet pet)
+    {
+        _outfitEditor?.Close();
+        _outfitEditor = new OutfitWindow(pet, outfit =>
+        {
+            var hadSomething = pet.Outfit.Pieces.Count > 0;
+            pet.Outfit = outfit;
+            _sim.ReactToOutfit(pet, undressed: hadSomething && outfit.Pieces.Count == 0);
+            AppLog.Write($"Outfit of {pet.Name}: {(outfit.Pieces.Count == 0 ? "nothing" : string.Join(", ", outfit.Pieces.Select(kv => $"{kv.Key}={kv.Value.ItemId}#{kv.Value.Color:X6}")))}{(outfit.DressForWeather ? " (dresses for the weather)" : "")}");
+            Save();
+        });
+        _outfitEditor.Closed += (_, _) => _outfitEditor = null;
+        _outfitEditor.Show();
+        _outfitEditor.Activate();
     }
 
     private CoatColorWindow? _coatEditor;
