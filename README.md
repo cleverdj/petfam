@@ -1,5 +1,7 @@
 # PetFam
 
+**English** | [한국어](README.ko.md)
+
 **Your pet family, living on your desktop.**
 
 PetFam is a desktop pet for Windows. Adopt a puppy or a kitten, and it moves in *behind your windows*: it walks around on your wallpaper, treats the scenery as its home, naps in a little house you build for it, peeks out from the edge of the window you are working in, and grows up with you day by day.
