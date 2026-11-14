@@ -17,6 +17,8 @@ namespace PetFam.Desktop.Windows;
 public sealed class HouseFrontWindow : Window
 {
     private const double DragThreshold = 6;
+    /// <summary>A press held longer than this is not a click, even if the mouse hardly moved.</summary>
+    private const double ClickSeconds = 0.5;
 
     private readonly Cell _cell;
     private readonly IPlatform _platform;
@@ -28,6 +30,10 @@ public sealed class HouseFrontWindow : Window
     private PetHouse? _house;
     private bool _pressed, _dragging;
     private Vec2 _pressAt, _grab;
+    private DateTime _pressTime;
+    private double _farthest;
+    private int _w, _h;
+    private double _scale;
     private IPointer? _pointer;
 
     public HouseFrontWindow(Cell cell, IPlatform platform, IWindowLayering layering, Action<PetHouse> onClick, Action<PetHouse> onMoved)
@@ -54,7 +60,13 @@ public sealed class HouseFrontWindow : Window
         _hit.PointerPressed += OnPressed;
         _hit.PointerMoved += OnMoved;
         _hit.PointerReleased += OnReleased;
-        _hit.PointerCaptureLost += (_, _) => { _pressed = false; _dragging = false; };
+        // Losing the mouse mid-drag still counts as a move (never as a click).
+        _hit.PointerCaptureLost += (_, _) =>
+        {
+            if (_pressed && _dragging && _house is not null) _onMoved(_house);
+            _pressed = false;
+            _dragging = false;
+        };
         Content = _hit;
 
         Opened += (_, _) =>
@@ -84,9 +96,17 @@ public sealed class HouseFrontWindow : Window
         if (_house is null) return;
         var body = BodyOnScreen(_cell, _house);
         var scale = RenderScaling;
-        Position = new PixelPoint(body.X, body.Y);
-        Width = body.Width / scale;
-        Height = body.Height / scale;
+        var pos = new PixelPoint(body.X, body.Y);
+        if (Position != pos) Position = pos;
+        // Resizing every frame while a house is dragged up or down the screen can drop the mouse; only when it changes.
+        if (body.Width != _w || body.Height != _h || scale != _scale)
+        {
+            _w = body.Width;
+            _h = body.Height;
+            _scale = scale;
+            Width = body.Width / scale;
+            Height = body.Height / scale;
+        }
     }
 
     private Vec2 ScreenPixels(PointerEventArgs e)
@@ -101,6 +121,8 @@ public sealed class HouseFrontWindow : Window
         _pressed = true;
         _dragging = false;
         _pressAt = ScreenPixels(e);
+        _pressTime = DateTime.UtcNow;
+        _farthest = 0;
         _grab = _house.Position - _pressAt;
         _pointer = e.Pointer;
         e.Pointer.Capture(_hit);
@@ -111,7 +133,8 @@ public sealed class HouseFrontWindow : Window
     {
         if (!_pressed || _house is null) return;
         var cur = ScreenPixels(e);
-        if (!_dragging && Vec2.Distance(cur, _pressAt) > DragThreshold)
+        _farthest = Math.Max(_farthest, Vec2.Distance(cur, _pressAt));
+        if (!_dragging && _farthest > DragThreshold)
         {
             _dragging = true;
             _hit.Cursor = new Cursor(StandardCursorType.SizeAll);
@@ -123,13 +146,18 @@ public sealed class HouseFrontWindow : Window
     private void OnReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (!_pressed || _house is null) return;
+        var cur = ScreenPixels(e);
+        _farthest = Math.Max(_farthest, Vec2.Distance(cur, _pressAt));
+        var dragged = _dragging || _farthest > DragThreshold;
+        var quick = (DateTime.UtcNow - _pressTime).TotalSeconds < ClickSeconds;
         _pressed = false;
+        _dragging = false;
         _pointer?.Capture(null);
         _pointer = null;
         _hit.Cursor = new Cursor(StandardCursorType.Hand);
-        if (_dragging) _onMoved(_house);
-        else _onClick(_house);
-        _dragging = false;
+        // Only a quick click without moving opens the decorating window; moving it never does.
+        if (dragged) _onMoved(_house);
+        else if (quick) _onClick(_house);
         e.Handled = true;
     }
 }

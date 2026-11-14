@@ -1188,7 +1188,10 @@ public sealed class AppHost
     public void OpenMenu(Pet pet)
     {
         if (_cell is null) return;
-        _menu?.Close();
+        // Swapping menus keeps the panel up; only the open menu closing takes the panel with it.
+        var old = _menu;
+        _menu = null;
+        old?.Close();
         Select(pet);
         _sim.BeginAttention(pet);
 
@@ -1207,7 +1210,10 @@ public sealed class AppHost
         menu.Closed += (_, _) =>
         {
             _sim.EndAttention(pet);
-            if (ReferenceEquals(_menu, menu)) _menu = null;
+            if (!ReferenceEquals(_menu, menu)) return;
+            _menu = null;
+            // The details panel opens with the pie menu and goes away with it.
+            Deselect();
         };
         _menu = menu;
         menu.Show();
