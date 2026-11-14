@@ -2,4 +2,8 @@
   <PropertyGroup>
     <Description>PetFam platform-independent core: pets, needs, bond, appearance, habitat, behavior engine.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PetFam.Core.Tests" />
+  </ItemGroup>
 </Project>

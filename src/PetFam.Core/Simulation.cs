@@ -206,6 +206,12 @@ public sealed class Simulation
         _sinceCouple += dt;
         if (_sinceCouple < 20f) return;
         _sinceCouple = 0f;
+        CoupleBonus();
+    }
+
+    /// <summary>Pets in matching outfits on the same screen grow a little closer (every 20 s).</summary>
+    internal void CoupleBonus()
+    {
         for (var i = 0; i < Pets.Count; i++)
         for (var j = i + 1; j < Pets.Count; j++)
         {

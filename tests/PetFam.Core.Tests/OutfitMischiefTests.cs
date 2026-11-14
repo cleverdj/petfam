@@ -178,9 +178,14 @@ public class OutfitMischiefTests
         Assert.Null(b.PoseWith);
         Assert.True(sim.Social.Friendship(a, b) > before);
 
-        // Sharing a screen in matching outfits keeps bringing them closer.
+        // Sharing a screen in matching outfits keeps bringing them closer. (Measured on its own: left to run, a hiss
+        // between them now and then would cost more than this small bonus brings.)
         var mid = sim.Social.Friendship(a, b);
-        for (var t = 0f; t < 600f; t += 1f) sim.Tick(1f, T0);
+        sim.CoupleBonus();
         Assert.True(sim.Social.Friendship(a, b) > mid);
+        b.Outfit = new Outfit();
+        var after = sim.Social.Friendship(a, b);
+        sim.CoupleBonus();
+        Assert.Equal(after, sim.Social.Friendship(a, b));
     }
 }
