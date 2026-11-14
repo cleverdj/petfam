@@ -217,6 +217,24 @@ public sealed class AppHost
                 }, TimeSpan.FromSeconds(3));
             }, TimeSpan.FromSeconds(4));
         // Dev: opens the colour editor for the first pet and saves a picture of it to coat-editor.png.
+        // Dev: lays one of each hat and pair of glasses on the floor of the main monitor (to see how they look).
+        if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "dropped")
+            DispatcherTimer.RunOnce(() =>
+            {
+                if (_cell is null || _sim.Pets.FirstOrDefault() is not { } owner) return;
+                var roam = _cell.Map.RoamArea;
+                var ids = new[] { "beanie", "straw-hat", "crown", "ribbon", "flower", "glasses", "sunglasses" };
+                for (var i = 0; i < ids.Length; i++)
+                {
+                    var item = OutfitCatalog.Find(ids[i])!;
+                    _cell.Dropped.Add(new DroppedWear
+                    {
+                        OwnerId = owner.Id, Slot = item.Slot, Piece = new OutfitPiece(item.Id, item.Colors[0]),
+                        Position = _cell.Map.ClampToRoam(new Vec2(roam.X + roam.Width * (0.15f + i * 0.11f), roam.Bottom - roam.Height * 0.25f)),
+                    });
+                }
+                AppLog.Write("Demo: dropped wear on the floor");
+            }, TimeSpan.FromSeconds(3));
         // Dev: opens the dress-up window for the first pet and saves a picture of it to outfit-editor.png.
         if (Environment.GetEnvironmentVariable("PETFAM_DEMO") == "outfit")
             DispatcherTimer.RunOnce(() =>
@@ -1150,6 +1168,7 @@ public sealed class AppHost
                 OnDelete = DeletePet,
                 OnColours = OpenCoatEditor,
                 OnOutfit = OpenOutfitEditor,
+                OnPutBack = p => { var n = _sim.PutBack(p); AppLog.Write($"Put back on {p.Name}: {n} piece(s)"); },
             };
         }
         _panel.ShowFor(pet);
@@ -1161,11 +1180,22 @@ public sealed class AppHost
     public void OpenOutfitEditor(Pet pet)
     {
         _outfitEditor?.Close();
-        _outfitEditor = new OutfitWindow(pet, outfit =>
+        _outfitEditor = new OutfitWindow(pet, _sim.Pets.Where(p => p != pet).ToList(), (outfit, partners) =>
         {
             var hadSomething = pet.Outfit.Pieces.Count > 0;
+            pet.Doffed.Clear();
+            foreach (var cell in _sim.World.Cells) cell.Dropped.RemoveAll(w => w.OwnerId == pet.Id && w.CarriedBy is null);
             pet.Outfit = outfit;
             _sim.ReactToOutfit(pet, undressed: hadSomething && outfit.Pieces.Count == 0);
+            // Couple look: the same pieces on the chosen pets too (those they have unlocked).
+            foreach (var partner in partners)
+            {
+                foreach (var (slot, piece) in outfit.Pieces)
+                    if (piece.Item is { } item && OutfitCatalog.IsUnlocked(partner, item)) partner.Outfit.Set(slot, piece);
+                partner.Doffed.Clear();
+                _sim.ReactToOutfit(partner, undressed: false);
+                AppLog.Write($"Couple look: {partner.Name} now matches {pet.Name} ({OutfitCatalog.Matching(pet, partner)} pieces)");
+            }
             AppLog.Write($"Outfit of {pet.Name}: {(outfit.Pieces.Count == 0 ? "nothing" : string.Join(", ", outfit.Pieces.Select(kv => $"{kv.Key}={kv.Value.ItemId}#{kv.Value.Color:X6}")))}{(outfit.DressForWeather ? " (dresses for the weather)" : "")}");
             Save();
         });

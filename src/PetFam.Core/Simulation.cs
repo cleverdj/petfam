@@ -185,6 +185,67 @@ public sealed class Simulation
         }
     }
 
+    /// <summary>A piece left on the floor goes back on its owner after this long (somebody put it back on).</summary>
+    public const float DroppedBackAfter = 600f;
+
+    private float _sinceCouple;
+
+    /// <summary>
+    /// Pieces on the floor age and eventually go back on their owners; pets in matching outfits grow closer a little
+    /// faster while they share a screen.
+    /// </summary>
+    private void TickDressUp(float dt)
+    {
+        foreach (var cell in World.Cells)
+            foreach (var w in cell.Dropped.ToList())
+            {
+                w.Age += dt;
+                if (w.Age >= DroppedBackAfter && w.CarriedBy is null) Return(cell, w);
+            }
+
+        _sinceCouple += dt;
+        if (_sinceCouple < 20f) return;
+        _sinceCouple = 0f;
+        for (var i = 0; i < Pets.Count; i++)
+        for (var j = i + 1; j < Pets.Count; j++)
+        {
+            var (a, b) = (Pets[i], Pets[j]);
+            if (a.CellId != b.CellId) continue;
+            var match = OutfitCatalog.Matching(a, b);
+            if (match > 0) Social.AddFriendship(a, b, 0.03f * match);
+        }
+    }
+
+    private void Return(Cell cell, DroppedWear w)
+    {
+        cell.Dropped.Remove(w);
+        if (Pets.FirstOrDefault(p => p.Id == w.OwnerId) is { } owner) owner.Doffed.Remove(w.Slot);
+    }
+
+    /// <summary>Pet panel: puts back on everything this pet shook off (wherever it lies).</summary>
+    public int PutBack(Pet pet)
+    {
+        var n = 0;
+        foreach (var cell in World.Cells)
+            foreach (var w in cell.Dropped.Where(w => w.OwnerId == pet.Id && w.CarriedBy is null).ToList())
+            {
+                Return(cell, w);
+                n++;
+            }
+        // Something a dog is wearing right now comes back too.
+        foreach (var other in Pets)
+            if (other.Borrowed is { } borrowed)
+                foreach (var slot in borrowed.Where(kv => pet.Doffed.Contains(kv.Key) && pet.Outfit.Get(kv.Key) == kv.Value).Select(kv => kv.Key).ToList())
+                {
+                    borrowed.Remove(slot);
+                    foreach (var cell in World.Cells) cell.Dropped.RemoveAll(w => w.OwnerId == pet.Id && w.Slot == slot);
+                    n++;
+                }
+        pet.Doffed.Clear();
+        if (n > 0 && OutfitCatalog.FashionLove(pet) <= 0.35f) pet.Say(L.S("Hmph… fine", "흥… 알았어"), 1.8f);
+        return n;
+    }
+
     /// <summary>
     /// The user dressed the pet up: it reacts in character. Fashion lovers (Maltese, Persian…) are delighted, proud
     /// and wild breeds (Shiba, Husky…) shake themselves and grumble, the rest are fine with it.
@@ -298,6 +359,7 @@ public sealed class Simulation
         TickWeather(dt);
         TickChatter(dt);
         TickWeatherWear();
+        TickDressUp(dt);
 
         foreach (var pet in Pets)
         {

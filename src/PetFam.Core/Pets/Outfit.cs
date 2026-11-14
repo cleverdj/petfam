@@ -59,6 +59,13 @@ public static class OutfitCatalog
     public static readonly OutfitPiece SnowHat = new("beanie", 0xD8484A);
 
     /// <summary>
+    /// How many pieces two pets wear alike (same item in the same slot; their own outfits, not weather wear): a
+    /// couple look when it is one or more.
+    /// </summary>
+    public static int Matching(Pet a, Pet b) =>
+        Enum.GetValues<OutfitSlot>().Count(s => a.Outfit.Get(s) is { } x && b.Outfit.Get(s) is { } y && x.ItemId == y.ItemId);
+
+    /// <summary>
     /// How much this pet likes dressing up, 0..1: the show-dog and lap breeds love it, the proud and wild ones would
     /// rather not, a hairless Sphynx loves a warm sweater. Tidy, less shy pets like it a little more.
     /// </summary>

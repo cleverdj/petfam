@@ -180,8 +180,18 @@ public sealed class Pet
     /// <summary>Put on by the weather right now (Outfit.DressForWeather): raincoat, scarf, beanie. Not saved.</summary>
     public Dictionary<OutfitSlot, OutfitPiece>? WeatherWear { get; set; }
 
-    /// <summary>What the pet has on in that slot now: weather wear first, then its own outfit.</summary>
-    public OutfitPiece? Wears(OutfitSlot slot) => WeatherWear?.GetValueOrDefault(slot) ?? Outfit.Get(slot);
+    /// <summary>Its own pieces it shook off onto the floor (they lie in the cell's Dropped list). Not saved: back on after a restart.</summary>
+    public HashSet<OutfitSlot> Doffed { get; } = new();
+
+    /// <summary>Someone else's piece it picked up off the floor and is wearing for a bit (a playful dog). Not saved.</summary>
+    public Dictionary<OutfitSlot, OutfitPiece>? Borrowed { get; set; }
+
+    /// <summary>A pet in a matching outfit asked this one to pose together (see CoupleLookBehavior).</summary>
+    public Guid? PoseWith { get; set; }
+
+    /// <summary>What the pet has on in that slot now: a borrowed piece, weather wear, then its own outfit (unless shaken off).</summary>
+    public OutfitPiece? Wears(OutfitSlot slot) =>
+        Borrowed?.GetValueOrDefault(slot) ?? WeatherWear?.GetValueOrDefault(slot) ?? (Doffed.Contains(slot) ? null : Outfit.Get(slot));
 
     public bool IsWearing(string itemId) =>
         Enum.GetValues<OutfitSlot>().Any(s => Wears(s)?.ItemId == itemId);

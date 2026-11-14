@@ -46,6 +46,15 @@ public sealed class PetPanelWindow : Window
 
     /// <summary>Opens the dress-up window.</summary>
     public Action<Pet>? OnOutfit { get; set; }
+
+    /// <summary>Puts back on what the pet shook off.</summary>
+    public Action<Pet>? OnPutBack { get; set; }
+    private readonly TextBlock _putBack = new()
+    {
+        FontFamily = PieMenuWindow.UiFont, FontSize = 12, Cursor = new Cursor(StandardCursorType.Hand),
+        HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 6, 0, 0),
+        Foreground = new SolidColorBrush(Color.FromRgb(0xC0, 0x6A, 0x20)), IsVisible = false,
+    };
     private readonly TextBlock _outfit = new()
     {
         FontFamily = PieMenuWindow.UiFont, FontSize = 12, Cursor = new Cursor(StandardCursorType.Hand),
@@ -123,6 +132,8 @@ public sealed class PetPanelWindow : Window
         stack.Children.Add(Separator());
         stack.Children.Add(new TextBlock { Text = L.S("To do (click to cancel)", "할 일 (눌러서 취소)"), FontFamily = PieMenuWindow.UiFont, FontSize = 12, Foreground = Muted });
         stack.Children.Add(_queue);
+        stack.Children.Add(_putBack);
+        _putBack.PointerPressed += (_, e) => { if (Pet is { } p) OnPutBack?.Invoke(p); e.Handled = true; };
         stack.Children.Add(_outfit);
         _outfit.PointerPressed += (_, e) => { if (Pet is { } p) OnOutfit?.Invoke(p); e.Handled = true; };
         stack.Children.Add(_colours);
@@ -170,6 +181,8 @@ public sealed class PetPanelWindow : Window
     {
         var armed = DateTime.UtcNow <= _deleteArmedUntil;
         _outfit.Text = L.S("👗 Dress up", "👗 꾸미기");
+        _putBack.Text = L.S("🎩 Put it back on (it shook it off!)", "🎩 다시 씌워 주기 (벗어 던졌어요!)");
+        _putBack.IsVisible = Pet?.Doffed.Count > 0;
         _colours.Text = L.S("🎨 Change colours", "🎨 색 바꾸기");
         _delete.Text = armed ? L.S($"Really say goodbye to {Pet?.Name}? Click again to remove", $"정말 {Pet?.Name}을(를) 보낼까요? 한 번 더 누르면 삭제돼요") : L.S("Say goodbye (remove)", "떠나보내기 (삭제)");
         _delete.Foreground = armed ? Bad : Muted;

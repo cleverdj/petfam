@@ -29,7 +29,9 @@ public sealed class OutfitWindow : Window
     private readonly List<(Border Chip, OutfitSlot Slot, string? Id)> _chips = new();
     private readonly Dictionary<OutfitSlot, WrapPanel> _colourRows = new();
 
-    public OutfitWindow(Pet pet, Action<Outfit> onSave)
+    private readonly HashSet<Pet> _partners = new();
+
+    public OutfitWindow(Pet pet, IReadOnlyList<Pet> others, Action<Outfit, IReadOnlyList<Pet>> onSave)
     {
         _pet = pet;
         _work = pet.Outfit.Clone();
@@ -91,7 +93,7 @@ public sealed class OutfitWindow : Window
             Content = L.S("Save", "저장"), Background = PieMenuWindow.SimsBlue, Foreground = Brushes.White, FontWeight = FontWeight.Bold,
             Padding = new Thickness(18, 8), CornerRadius = new CornerRadius(10),
         };
-        save.Click += (_, _) => { onSave(_work); Close(); };
+        save.Click += (_, _) => { onSave(_work, _partners.ToList()); Close(); };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { bare, cancel, save } };
 
         var love = OutfitCatalog.FashionLove(pet);
@@ -106,7 +108,37 @@ public sealed class OutfitWindow : Window
         var left = new StackPanel { Spacing = 8, Children = { _view, hint } };
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), Margin = new Thickness(18) };
         grid.Children.Add(left);
-        var right = new StackPanel { Spacing = 14, Margin = new Thickness(18, 0, 0, 0), Children = { rows, weather, buttons } };
+        // Couple look: dress other pets the same way (pieces they have unlocked), and they grow closer.
+        var couple = new StackPanel { Spacing = 4 };
+        if (others.Count > 0)
+        {
+            couple.Children.Add(new TextBlock
+            {
+                Text = L.S("Couple look: dress them the same (matching pets grow closer and pose together)", "커플룩: 똑같이 입히기 (같이 입은 펫끼리 더 친해지고 함께 포즈를 잡아요)"),
+                FontSize = 12, FontWeight = FontWeight.SemiBold, Foreground = Ink, TextWrapping = TextWrapping.Wrap,
+            });
+            var list = new WrapPanel();
+            foreach (var other in others)
+            {
+                var chip = new Border
+                {
+                    Padding = new Thickness(10, 5), Margin = new Thickness(0, 0, 6, 6), CornerRadius = new CornerRadius(12),
+                    BorderThickness = new Thickness(2), BorderBrush = Line, Background = Brushes.White, Cursor = new Cursor(StandardCursorType.Hand),
+                    Child = new TextBlock { Text = (other.Species == PetSpecies.Cat ? "🐱 " : "🐶 ") + other.Name, FontSize = 13, Foreground = Ink },
+                };
+                chip.PointerPressed += (_, e) =>
+                {
+                    e.Handled = true;
+                    var on = !_partners.Remove(other);
+                    if (on) _partners.Add(other);
+                    chip.BorderBrush = on ? PieMenuWindow.SimsBlue : Line;
+                    chip.Background = on ? new SolidColorBrush(Color.FromRgb(0xE4, 0xEE, 0xFC)) : Brushes.White;
+                };
+                list.Children.Add(chip);
+            }
+            couple.Children.Add(list);
+        }
+        var right = new StackPanel { Spacing = 14, Margin = new Thickness(18, 0, 0, 0), Children = { rows, weather, couple, buttons } };
         Grid.SetColumn(right, 1);
         grid.Children.Add(right);
         Content = grid;

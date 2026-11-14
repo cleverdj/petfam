@@ -56,6 +56,9 @@ public sealed class BehaviorContext
     /// <summary>All pets (for pecking order and sharing the bowl).</summary>
     public IReadOnlyList<Pet> Pets { get; init; } = Array.Empty<Pet>();
 
+    /// <summary>Every pet but this one.</summary>
+    public IEnumerable<Pet> Others => Pets.Where(p => !ReferenceEquals(p, Pet));
+
     public Social.SocialState? Social { get; init; }
 
     public float RandomRange(float min, float max) => min + (float)Rng.NextDouble() * (max - min);

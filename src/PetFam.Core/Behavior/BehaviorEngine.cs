@@ -45,6 +45,8 @@ public sealed class BehaviorEngine
             new ZoomiesBehavior(),
             new YawnBehavior(),
             new ButterflyBehavior(),
+            new ShakeOffBehavior(),
+            new CoupleLookBehavior(),
         };
         if (species == PetSpecies.Cat)
         {
@@ -65,6 +67,7 @@ public sealed class BehaviorEngine
             list.Add(new BegBehavior());
             list.Add(new FollowCursorBehavior());
             list.Add(new InvitePlayBehavior());
+            list.Add(new StealWearBehavior());
             list.Add(new AlertBehavior());
             list.Add(new ScratchBehavior());
         }

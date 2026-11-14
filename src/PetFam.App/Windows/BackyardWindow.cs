@@ -26,6 +26,7 @@ public sealed class BackyardWindow : Window
     private readonly Canvas _canvas = new();
     private readonly Dictionary<Guid, PetSprite> _sprites = new();
     private readonly Dictionary<Guid, BowlSprite> _bowls = new();
+    private readonly Dictionary<Guid, DroppedWearSprite> _dropped = new();
     private readonly Dictionary<Guid, HouseSprite> _houses = new();
     private readonly BallSprite _ball = new() { IsVisible = false };
     private readonly WeatherLayer _weather = new() { IsVisible = false };
@@ -179,6 +180,24 @@ public sealed class BackyardWindow : Window
         {
             _canvas.Children.Remove(_bowls[id]);
             _bowls.Remove(id);
+        }
+
+        // Hats and glasses lying on the floor.
+        foreach (var item in _cell.Dropped)
+        {
+            if (!_dropped.TryGetValue(item.Id, out var ds))
+            {
+                ds = new DroppedWearSprite(item);
+                _dropped[item.Id] = ds;
+                _canvas.Children.Add(ds);
+            }
+            ds.Scale = scale;
+            ds.Place(_cell);
+        }
+        foreach (var id in _dropped.Keys.Where(id => _cell.Dropped.All(d => d.Id != id)).ToList())
+        {
+            _canvas.Children.Remove(_dropped[id]);
+            _dropped.Remove(id);
         }
 
         // Weather: every frame while something falls, otherwise only when it changes (or once a second).

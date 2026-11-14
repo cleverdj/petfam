@@ -29,6 +29,9 @@ public sealed class Cell
     /// <summary>Pet houses built and decorated by the user in this cell.</summary>
     public List<PetHouse> Houses { get; } = new();
 
+    /// <summary>Hats and glasses lying on the floor (shaken off, or dropped by a dog that ran off with them).</summary>
+    public List<DroppedWear> Dropped { get; } = new();
+
     public const int MaxHouses = 3;
 
     public FoodBowl? NearestBowl(Vec2 from)
@@ -188,6 +191,20 @@ public sealed class PetHouse
         Id = Id, Position = Position, Name = Name, Shape = Shape, RoofColor = RoofColor, WallColor = WallColor,
         Decorations = new HashSet<string>(Decorations), OwnerId = OwnerId,
     };
+}
+
+/// <summary>A worn piece lying on the floor: whose it is, what it is, where it is, and how long it has been there.</summary>
+public sealed class DroppedWear
+{
+    public Guid Id { get; } = Guid.NewGuid();
+    public Guid OwnerId { get; init; }
+    public Pets.OutfitSlot Slot { get; init; }
+    public required Pets.OutfitPiece Piece { get; init; }
+    public Vec2 Position { get; set; }
+    public float Age { get; set; }
+
+    /// <summary>The pet carrying (wearing) it now, if any.</summary>
+    public Guid? CarriedBy { get; set; }
 }
 
 public sealed class FoodBowl

@@ -65,6 +65,11 @@ Each breed has its own coat and build, temperament (playfulness, shyness, energy
   your bond grows. "Dress for the weather" puts on a raincoat in the rain and a scarf and beanie in the snow, and a
   pet in a raincoat minds the rain much less. Pets react in character: a Maltese or Persian is delighted, a Shiba or
   Husky shakes itself and grumbles.
+- **Dress-up mischief and couple looks:** a pet that doesn't like dressing up now and then shakes its hat or glasses
+  off onto the floor ("Free at last!"); put it back from the pet panel (🎩 Put it back on), or it is talked into it
+  again after ten minutes. A playful dog may find it first, wear it on a victory lap and drop it somewhere else.
+  Pets in matching outfits (a **couple look**: "dress them the same" in the dress-up window) grow closer faster and
+  now and then come side by side to show it off: "We match!" "Twins!"
 - **Your own colours:** give any pet the coat, belly, marking and eye colours you like, from suggested swatches or
   any colour at all (pet panel → 🎨 Change colours, or tray → My pets → the pet → Change colours). Shades of the coat
   follow along, the breed's markings stay, and "Breed colours" puts everything back.
@@ -254,6 +259,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_DEMO=ball` | Starts ball play with the first dog 3 seconds after launch (for checking throwing) |
 | `PETFAM_DEMO=house` | Opens the build-a-new-house window 3 seconds after launch |
 | `PETFAM_DEMO=habitat` / `habitat2` | Opens the habitat editor on the main (or second) monitor 4 seconds after launch and saves a picture of it to `habitat-editor.png` |
+| `PETFAM_DEMO=dropped` | Lays one of each hat and pair of glasses on the floor 3 seconds after launch (to see how they look) |
 | `PETFAM_DEMO=outfit` | Opens the dress-up window for the first pet 4 seconds after launch and saves a picture of it to `outfit-editor.png` |
 | `PETFAM_DEMO=colours` | Opens the colour editor for the first pet 4 seconds after launch and saves a picture of it to `coat-editor.png` |
 | `PETFAM_DEMO=monitor` | 3 seconds after launch the first pet walks over to the next monitor |
