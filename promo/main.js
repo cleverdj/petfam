@@ -116,20 +116,35 @@ function runPass(frag, uniforms, out) {
 }
 // Turns a flat vector wallpaper into a painted background: wobbly hand-drawn edges and uneven pigment, brush
 // strokes (a Kuwahara filter), pigment pooling at the edges, a little warmth, and paper grain.
-function paint(tex) {
-  const a = runPass(`uniform sampler2D map; uniform vec2 res; varying vec2 vUv; ${NOISE}
+function paint(tex, horizon) {
+  const a = runPass(`uniform sampler2D map; uniform vec2 res; uniform float horizon; varying vec2 vUv; ${NOISE}
     void main(){
       vec2 p = vUv * res;
       vec2 warp = vec2(fbm(p / 70.0), fbm(p / 70.0 + 17.3)) - 0.5;
       vec3 c = texture2D(map, vUv + warp * 5.0 / res).rgb;
       float pig = fbm(p / 160.0) - 0.5, fine = fbm(p / 22.0) - 0.5;
       c *= 1.0 + pig * 0.14 + fine * 0.07;
+      // Sky: a deep blue overhead fading to a pale haze at the horizon, in uneven washes.
+      float sky = smoothstep(0.1, 0.25, c.b - c.r) * smoothstep(horizon, horizon + 0.1, vUv.y) * smoothstep(0.12, 0.35, c.b) * (1.0 - smoothstep(0.45, 0.65, dot(c, vec3(0.3, 0.59, 0.11))));
+      vec3 skyCol = mix(vec3(0.62, 0.80, 0.90), vec3(0.06, 0.26, 0.70), smoothstep(horizon, 1.0, vUv.y));
+      skyCol *= 0.94 + 0.12 * fbm(vec2(p.x / 260.0, p.y / 90.0));
+      c = mix(c, skyCol, sky * 0.8);
+      // Grass: dabs and strokes of darker blue-green and sunny yellow-green, like gouache.
+      float grass = smoothstep(0.02, 0.1, c.g - max(c.r, c.b));
+      float stroke = fbm(vec2(p.x / 7.0, p.y / 26.0) + fbm(p / 90.0) * 3.0);
+      float dab = fbm(p / 38.0);
+      vec3 deep = c * vec3(0.5, 0.7, 0.74), sunny = c * vec3(1.2, 1.08, 0.62);
+      vec3 g = mix(deep, c, smoothstep(0.3, 0.55, stroke));
+      g = mix(g, sunny, smoothstep(0.58, 0.8, dab) * 0.55);
+      c = mix(c, g * 0.9, grass);
       c = mix(c, c * vec3(1.05, 1.0, 0.92), smoothstep(0.2, 0.8, dot(c, vec3(0.3, 0.6, 0.1))));
+      float l = dot(c, vec3(0.3, 0.59, 0.11));
+      c = max(mix(vec3(l), c, 1.03), 0.0);
       gl_FragColor = vec4(c, 1.0);
-    }`, { map: { value: tex } }, target());
+    }`, { map: { value: tex }, horizon: { value: horizon } }, target());
   const b = runPass(`uniform sampler2D map; uniform vec2 res; varying vec2 vUv;
     void main(){
-      const int R = 6;
+      const int R = 7;
       vec3 m0 = vec3(0), m1 = vec3(0), m2 = vec3(0), m3 = vec3(0), s0 = vec3(0), s1 = vec3(0), s2 = vec3(0), s3 = vec3(0);
       for (int j = 0; j <= R; j++) for (int i = 0; i <= R; i++) {
         vec3 c;
@@ -158,7 +173,7 @@ function paint(tex) {
       gl_FragColor = vec4(max(c, 0.0), 1.0);
     }`, { map: { value: b } }, target());
 }
-const [meadow, seaside, garden] = (await Promise.all(['sunny-meadow', 'seaside', 'cozy-garden'].map(wallpaper))).map(paint);
+const [meadow, seaside, garden] = (await Promise.all(['sunny-meadow', 'seaside', 'cozy-garden'].map(wallpaper))).map((t, i) => paint(t, [0.6, 0.645, 0.73][i]));
 
 const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(SW, SH), new THREE.ShaderMaterial({
   uniforms: {
@@ -188,7 +203,7 @@ scene.add(backdrop);
 
 // ---------------------------------------------------------------------------------------------------- toon look
 const gradMap = (() => {
-  const t = new THREE.DataTexture(new Uint8Array([150, 255]), 2, 1, THREE.RedFormat);
+  const t = new THREE.DataTexture(new Uint8Array([168, 255]), 2, 1, THREE.RedFormat);
   t.minFilter = t.magFilter = THREE.NearestFilter; t.needsUpdate = true; return t;
 })();
 const toon = (c, extra = {}) => new THREE.MeshToonMaterial({ color: c, gradientMap: gradMap, ...extra });
@@ -525,16 +540,16 @@ function cloudTexture(seed) {
       const x = 170 + r() * 690, hump = 1 - Math.abs(x - 515) / 430;
       blobs.push([x, 420 - r() * 260 * hump, 55 + r() * 85 * (0.5 + hump)]);
     }
-    const layer = (dx, dy, k, inner, outer) => {
-      for (const [x, y, rad] of blobs) {
-        const gr = g.createRadialGradient(x + dx - rad * 0.3, y + dy - rad * 0.35, rad * 0.1, x + dx, y + dy, rad * k);
-        gr.addColorStop(0, inner); gr.addColorStop(0.85, outer); gr.addColorStop(1, outer.replace(/[\d.]+\)$/, '0)'));
-        g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, rad * k, 0, Math.PI * 2); g.fill();
-      }
+    // Hard-edged layers, as painted: lavender shade, cool body, warm sunlit tops, a bright rim.
+    const layer = (dx, dy, k, color, blur) => {
+      g.filter = `blur(${blur}px)`; g.fillStyle = color;
+      for (const [x, y, rad] of blobs) { g.beginPath(); g.arc(x + dx, y + dy, rad * k, 0, Math.PI * 2); g.fill(); }
     };
-    layer(10, 26, 1.0, 'rgba(176,190,218,1)', 'rgba(160,176,208,0.95)');
-    layer(0, 0, 0.92, 'rgba(250,251,255,1)', 'rgba(226,232,244,0.97)');
-    layer(-14, -20, 0.6, 'rgba(255,255,255,1)', 'rgba(255,253,246,0.9)');
+    layer(0, 0, 1.0, '#9aa6cc', 1.5);
+    layer(-6, -10, 0.9, '#c9d2ea', 1.2);
+    layer(-14, -24, 0.72, '#f3f5fb', 1.0);
+    layer(-22, -36, 0.5, '#fffaf0', 0.8);
+    g.filter = 'none';
     g.globalCompositeOperation = 'destination-out';
     const cut = g.createLinearGradient(0, 430, 0, 500);
     cut.addColorStop(0, 'rgba(0,0,0,0)'); cut.addColorStop(1, 'rgba(0,0,0,1)');
@@ -543,7 +558,7 @@ function cloudTexture(seed) {
 }
 const cloudTex = [11, 23, 37].map(cloudTexture);
 const clouds = [
-  [0, -5.2, 3.75, 4.6], [1, 1.2, 4.0, 3.8], [2, 6.4, 3.6, 4.3], [0, 11.5, 3.9, 3.6],
+  [0, -5.4, 3.55, 5.4], [1, 1.0, 3.95, 4.0], [2, 6.4, 3.45, 5.0], [0, 11.5, 3.8, 4.2],
 ].map(([k, x, y, w]) => {
   const m = new THREE.Mesh(PLANE, new THREE.MeshBasicMaterial({ map: cloudTex[k], transparent: true, depthWrite: false, clippingPlanes: SCREEN_CLIP }));
   m.userData = { x, y, w }; m.scale.set(w, w * 0.547, 1); scene.add(m);
@@ -571,6 +586,18 @@ const petals = instanced(new THREE.CircleGeometry(1, 10), new THREE.MeshBasicMat
   for (let i = 0; i < PETALS; i++) petals.setColorAt(i, cols[i % cols.length]);
 }
 
+// Grass in the foreground, close to the camera, swaying in the wind (on the meadow and the garden).
+const BLADES = 320;
+const bladeGeo = new THREE.BufferGeometry();
+bladeGeo.setAttribute('position', new THREE.Float32BufferAttribute([-0.05, 0, 0, 0.05, 0, 0, 0.012, 1, 0], 3));
+bladeGeo.setAttribute('color', new THREE.Float32BufferAttribute([0.35, 0.5, 0.45, 0.35, 0.5, 0.45, 1.25, 1.2, 0.85], 3));
+const grassMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true });
+const blades = instanced(bladeGeo, grassMat, BLADES);
+{
+  const r = rng(808), cols = ['#3f8a3a', '#2f7434', '#5a9e3c', '#4c8f45', '#6aa548'].map(c => new THREE.Color(c));
+  for (let i = 0; i < BLADES; i++) blades.setColorAt(i, cols[Math.floor(r() * cols.length)]);
+}
+
 // ---------------------------------------------------------------------------------------------------- post
 // Painted look over the whole frame: a soft bloom on the light, then a warm grade, gentle vignette and paper grain.
 const composer = new EffectComposer(renderer);
@@ -587,7 +614,8 @@ const grade = new ShaderPass({
       vec3 c = texture2D(tDiffuse, vUv).rgb, o = c;
       float l = dot(c, vec3(0.3, 0.59, 0.11));
       c = mix(c, c * vec3(1.04, 1.0, 0.93) + vec3(0.012, 0.008, 0.0), 0.9);
-      c = mix(vec3(l), c, 1.07);
+      c = mix(vec3(l), c, 1.12);
+      c += vec3(-0.012, 0.006, 0.018) * (1.0 - smoothstep(0.0, 0.6, l));
       c = mix(c, smoothstep(0.0, 1.0, c), 0.18);
       vec2 q = (vUv - 0.5) * vec2(1.0, 0.8);
       c *= mix(0.84, 1.0, smoothstep(0.62, 0.18, length(q)));
@@ -978,6 +1006,23 @@ function renderAt(t) {
       put(petals, i, cx + x, cy + y, z, size, Math.sin(t * 2 + ph) * 1.2, t * 1.5 + ph, t * 0.8 + ph, seed ? size : size * 0.55);
     }
     petals.instanceMatrix.needsUpdate = true;
+  }
+
+  {
+    const onGreen = tx => (tx === meadow || tx === garden ? 1 : 0);
+    const w = u.wipe.value, green = lerp(onGreen(u.a.value), onGreen(u.b.value), w);
+    const amt = green * smooth(range(t, 12.3, 12.9)) * (1 - u.brand.value);
+    grassMat.opacity = amt;
+    grassMat.color.copy(u.tint.value);
+    blades.visible = amt > 0.01;
+    const r = rng(909), cx = camera.position.x, cy = camera.position.y, gust = Math.sin(t * 0.7) * 0.5 + 0.5;
+    for (let i = 0; i < BLADES; i++) {
+      const z = 2.0 + r() * 1.6, half = (camera.position.z - z) * Math.tan(THREE.MathUtils.degToRad(15));
+      const x = cx + (r() * 2 - 1) * half * 16 / 9 * 1.05, hgt = 0.25 + r() * 0.6, lean = (r() - 0.5) * 0.5, ph = r() * 6.3;
+      const sway = Math.sin(t * 1.7 + x * 0.9 + ph * 0.3) * (0.12 + 0.18 * gust) + Math.sin(t * 4.1 + ph) * 0.03;
+      put(blades, i, x, cy - half - 0.05, z, 1, 0, 0, lean - sway, hgt * (0.9 + 0.1 * Math.sin(t * 2 + ph)));
+    }
+    blades.instanceMatrix.needsUpdate = true;
   }
 
   // The AI scan line over the meadow.

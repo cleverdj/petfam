@@ -296,6 +296,17 @@ node render.mjs --lang en    # 영어   -> promo/out/petfam-promo-en.mp4
 `node render.mjs --serve`로 띄우면 http://127.0.0.1:5173/ 에서 실시간으로 재생돼요(영어는 `?lang=en`).
 `node render.mjs --stills 3,15`는 원하는 순간을 PNG로 저장해요.
 
+### 단편 애니메이션
+`promo/film.html`은 순수 three.js로 만든(영상 생성 모델 없이) 108초짜리 단편 *창문 여행*이에요. 강아지와 고양이가
+앱 창을 타고 바탕화면을 떠나 여덟 세계(해 질 녘의 방, 일출의 구름바다, 풍차가 있는 꽃 언덕, 돌고래가 뛰는 바다,
+반딧불 숲, 폭풍, 오로라 아래 설산, 달)를 날아다니다 집으로 돌아와요. 18컷, 코드로 그린 약 3,200프레임이고,
+음악(세계마다 다르게 편곡한 하나의 주제)과 효과음은 모두 `promo/film-audio.mjs`가 합성해요.
+
+```
+node render.mjs --film             # -> promo/out/petfam-film-ko.mp4
+node render.mjs --film --lang en   # 영어 제목과 엔딩
+```
+
 ## 앞으로의 계획
 - 실제 Mac에서 macOS 버전을 시험하고 다듬기(서로 다른 해상도 배율의 디스플레이, 디스플레이별 Space)
 - 서명·공증된 배포 파일(Windows와 macOS에서 첫 실행 경고 없애기)

@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PetFam short film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Fredoka:wght@500;700&family=Fraunces:ital,wght@0,600;1,500&display=block" rel="stylesheet">
+<script type="importmap">{ "imports": { "three": "./node_modules/three/build/three.module.js", "three/addons/": "./node_modules/three/examples/jsm/" } }</script>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; }
+  #c { position: absolute; inset: 0; width: 1920px; height: 1080px; display: block; }
+  #ui { position: absolute; inset: 0; pointer-events: none; color: #fffaf0; font-family: 'Gowun Batang', 'Batang', serif; }
+  .en #ui { font-family: 'Fraunces', Georgia, serif; }
+  #ui > div { position: absolute; visibility: hidden; }
+  .title { left: 50%; top: 110px; text-align: center; white-space: nowrap; }
+  .title .name { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 120px; letter-spacing: -2px; text-shadow: 0 6px 34px rgba(40,20,60,.6); }
+  .title .sub { margin-top: 2px; font-weight: 700; font-size: 44px; letter-spacing: .3em; color: #ffe6c0; text-shadow: 0 3px 16px rgba(40,20,60,.7); }
+  .en .title .sub { font-style: italic; font-weight: 500; letter-spacing: .12em; }
+  .scrim { inset: 0; background: radial-gradient(ellipse at 50% 42%, rgba(30,18,40,.62), rgba(30,18,40,.25) 70%); }
+  .end { left: 50%; top: 250px; display: flex; flex-direction: column; align-items: center; text-align: center; white-space: nowrap; }
+  .end img { width: 170px; height: 170px; filter: drop-shadow(0 12px 30px rgba(0,0,0,.45)); }
+  .end .name { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 150px; line-height: 1.08; letter-spacing: -2px; text-shadow: 0 6px 34px rgba(0,0,0,.5); }
+  .end .sub { margin-top: 10px; font-weight: 700; font-size: 54px; color: #ffe9c8; text-shadow: 0 3px 18px rgba(0,0,0,.6); }
+  .en .end .sub { font-weight: 600; }
+  .flash { inset: 0; background: #fff8ea; visibility: visible !important; opacity: 0; }
+  .fade { inset: 0; background: #000; visibility: visible !important; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c" width="1920" height="1080"></canvas><div id="ui"></div></div>
+<script type="module" src="film.js"></script>
+</body>
+</html>

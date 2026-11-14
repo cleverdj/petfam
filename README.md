@@ -317,6 +317,18 @@ node render.mjs --lang en    # English -> promo/out/petfam-promo-en.mp4
 `node render.mjs --serve` plays it live at http://127.0.0.1:5173/ (add `?lang=en` for English), and
 `node render.mjs --stills 3,15` saves single moments as PNGs.
 
+### Short film
+`promo/film.html` is *The Window Ride*, a 108-second animated short in pure three.js (no video model): the dog and
+the cat leave the desktop on an app window and fly through eight worlds (the room at dusk, a sea of clouds at
+sunrise, flower hills with windmills, the sea with dolphins, a firefly forest, a storm, snowy mountains under the
+aurora, the moon) and come home. 18 shots, about 3,200 code-rendered frames; the score (one theme arranged for
+each world) and all sound effects are synthesised by `promo/film-audio.mjs`.
+
+```
+node render.mjs --film             # -> promo/out/petfam-film-ko.mp4
+node render.mjs --film --lang en   # English title and end card
+```
+
 ## Roadmap
 - Try the macOS version on real Macs and polish it (Retina scaling across mixed displays, separate Spaces per display)
 - Signed and notarised downloads (no first-run warnings on Windows and macOS)
