@@ -31,6 +31,7 @@ public sealed partial class AppHost
         _aiTimer = new DispatcherTimer(TimeSpan.FromSeconds(DiaryNow ? 20 : 60), DispatcherPriority.Background, (_, _) => _ = DiaryTickAsync());
         _aiTimer.Start();
         Ai.Changed += RestartServer;
+        Ai.Changed += ReadAllWallpapers;
     }
 
     private void RestartServer()
@@ -542,6 +543,14 @@ public sealed partial class AppHost
         AppLog.Write("AI self-test coat: " + (await CoatFromAsync(pet, L.Ko ? "크림색에 귀만 갈색" : "cream with brown ears", null))?.ToString());
         AppLog.Write("AI self-test adopt: " + (await PickPetAsync(L.Ko ? "겁 많고 조용한 하얀 고양이" : "a shy quiet white cat", null))?.ToString());
         if (Environment.GetEnvironmentVariable("PETFAM_AI_SELFTEST_PHOTO") is { } photo && File.Exists(photo)) AppLog.Write("AI self-test coat from a picture: " + (await CoatFromAsync(pet, null, photo))?.ToString());
+        if (Environment.GetEnvironmentVariable("PETFAM_AI_SELFTEST_WALLPAPER") is { } wall && File.Exists(wall) && _cell is { } c0)
+        {
+            using var pic = new Avalonia.Media.Imaging.Bitmap(wall);
+            var view = ScreenView(pic, c0.Bounds.Width, c0.Bounds.Height);
+            AppLog.Write($"AI self-test: screen view of {wall} saved to {view}");
+            var dabs = await ReadWallpaperAsync(c0, pic);
+            AppLog.Write($"AI self-test test wallpaper: {dabs?.Count.ToString() ?? "no answer"} dabs");
+        }
         if (_cell is { } cell && WallpaperPath() is { } wp && File.Exists(wp))
         {
             using var picture = new Avalonia.Media.Imaging.Bitmap(wp);
@@ -552,6 +561,67 @@ public sealed partial class AppHost
     }
 
     // ---------------------------------------------------------------- reading the wallpaper
+
+    private static string AiHabitatPath => Path.Combine(AppLog.DataDirectory, "habitat-ai.json");
+    private HabitatEdits? _aiEdits;
+
+    /// <summary>The AI's reading of each wallpaper (per wallpaper and screen size), kept so it is asked only once.</summary>
+    private HabitatEdits AiEdits => _aiEdits ??= HabitatEdits.Read(AiHabitatPath);
+
+    /// <summary>The wallpaper file each analysed cell shows (not for PetFam's own wallpapers: those are exact).</summary>
+    private readonly Dictionary<string, string> _cellWallpaper = new();
+    private readonly HashSet<string> _aiReading = new();
+
+    /// <summary>Every analysed wallpaper the AI hasn't read yet (the AI has just been set up, or changed).</summary>
+    private void ReadAllWallpapers()
+    {
+        foreach (var cell in _sim.World.Cells) MaybeReadWallpaper(cell);
+    }
+
+    /// <summary>Tray "Re-detect habitat": the AI reads it again too.</summary>
+    private void ForgetAiReading(Cell cell)
+    {
+        var key = EditKey(cell);
+        _aiReading.Remove(key);
+        if (AiEdits.For(key).Count == 0) return;
+        AiEdits.Set(key, Array.Empty<HabitatStroke>());
+        try { AiEdits.Write(AiHabitatPath); } catch (IOException) { }
+    }
+
+    /// <summary>
+    /// Once per wallpaper (and screen size): if the AI can see pictures and the setting is on, it reads the wallpaper
+    /// in the background and its reading is laid over the automatic analysis (the user's own fixes stay on top).
+    /// </summary>
+    private void MaybeReadWallpaper(Cell cell)
+    {
+        if (!Ai.Settings.AutoHabitat || Ai.Writer?.CanSee != true) return;
+        if (!_cellWallpaper.TryGetValue(cell.Id, out var path) || !File.Exists(path)) return;
+        var key = EditKey(cell);
+        if (AiEdits.For(key).Count > 0 || !_aiReading.Add(key)) return;
+        _ = ReadAndApplyAsync(cell, path, key);
+    }
+
+    private async Task ReadAndApplyAsync(Cell cell, string path, string key)
+    {
+        IReadOnlyList<HabitatStroke>? strokes;
+        try
+        {
+            using var picture = new Avalonia.Media.Imaging.Bitmap(path);
+            AppLog.Write($"AI habitat: reading the wallpaper on {_sim.World.DescribeCell(cell)}");
+            strokes = await ReadWallpaperAsync(cell, picture);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("AI habitat: " + ex.Message);
+            return;
+        }
+        if (strokes is null) return;
+        if (EditKey(cell) != key) { AppLog.Write("AI habitat: the wallpaper changed meanwhile; dropped"); return; }
+        AiEdits.Set(key, strokes);
+        try { AiEdits.Write(AiHabitatPath); }
+        catch (IOException ex) { AppLog.Write("AI habitat not saved: " + ex.Message); }
+        ApplyHabitat(cell, _autoMasks.GetValueOrDefault(cell.Id), $"the AI ({Ai.Writer?.Name}) read the wallpaper");
+    }
 
     public const int GridCols = 24;
 
@@ -580,12 +650,24 @@ public sealed partial class AppHost
                 H = shade or shelter on the ground (under trees, porches, bushes)
                 B = not walkable (walls, buildings, trunks, rocks faces, furniture fronts, anything upright)
                 K = sky or far-away background
+                The pets must have somewhere to walk: about a fifth of the cells or more should be G (or S, M, U, H).
+                If the picture has no obvious ground (a seascape, a cityscape, a close-up, an abstract picture), pick the most
+                plausible surfaces as floor: a shore, the tops of rocks, a road or pier, a window sill, or else the bottom
+                strip of the picture. Water a pet could swim in stays W.
                 Reply with JSON only: {"rows":["{{new string('G', GridCols)}}", ...]} with exactly {{rows}} strings of exactly {{GridCols}} letters, top row first.
                 """;
             var answer = await Ai.AskAsync("You label pictures for a desktop pet game's habitat map. Reply with JSON only.", prompt, TimeSpan.FromSeconds(120), file);
             if (Json(answer)?["rows"] is not JsonArray arr) return null;
             var grid = arr.Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToList();
             if (grid.Count < rows / 2) return null;
+            // Pets need somewhere to stand: a reading with hardly any floor is a misreading, not a habitat.
+            var cells = grid.Sum(r => r.Length);
+            var standable = grid.Sum(r => r.Count(ch => "GSMUHgsmuh".Contains(ch)));
+            if (standable < cells * 0.08)
+            {
+                AppLog.Write($"AI habitat: only {standable} of {cells} cells are floor; keeping the automatic analysis\n  " + string.Join("\n  ", grid));
+                return null;
+            }
             var strokes = HabitatEdits.FromGrid(grid, aspect);
             AppLog.Write($"AI read the wallpaper on {_sim.World.DescribeCell(cell)}: {grid.Count}x{grid.Max(r => r.Length)} grid, {strokes.Count} dabs\n  " + string.Join("\n  ", grid));
             return strokes;

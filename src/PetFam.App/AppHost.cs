@@ -704,7 +704,12 @@ public sealed partial class AppHost
     public void AnalyzeHabitat(bool force = false)
     {
         if (_cell is null || _analyzing) return;
-        if (force) foreach (var v in _views) _analyzedKeys.Remove(v.Cell.Id);
+        if (force)
+            foreach (var v in _views)
+            {
+                ForgetAiReading(v.Cell);
+                _analyzedKeys.Remove(v.Cell.Id);
+            }
         foreach (var v in _views)
             if (AnalyzeCell(v.Cell, WallpaperPath(), force: false)) return;
         if (WallpaperOverride is not null) return;
@@ -732,6 +737,7 @@ public sealed partial class AppHost
         }
         if (!force && _analyzedKeys.GetValueOrDefault(cell.Id) == key) return false;
         _analyzedKeys[cell.Id] = key;
+        _cellWallpaper.Remove(cell.Id);
 
         if (path is null)
         {
@@ -746,6 +752,7 @@ public sealed partial class AppHost
             return true;
         }
 
+        _cellWallpaper[cell.Id] = path;
         _analyzing = true;
         Task.Run(() =>
         {
@@ -759,6 +766,8 @@ public sealed partial class AppHost
             {
                 _analyzing = false;
                 ApplyHabitat(cell, result?.Mask, error ?? $"{result?.Report ?? "could not read wallpaper"} ({ms} ms)");
+                // Then the user's AI (if it can see pictures) looks at it too and its reading goes on top.
+                MaybeReadWallpaper(cell);
             });
         });
         return true;
@@ -867,8 +876,10 @@ public sealed partial class AppHost
         _habitatEditor?.Close();
         var view = _views[Math.Clamp(monitor, 0, _views.Count - 1)];
         var cell = view.Cell;
-        var auto = _autoMasks.GetValueOrDefault(cell.Id) ?? HabitatEdits.FlatMask(HabitatMap.Flat(cell.Bounds, cell.WorkingArea));
         var key = EditKey(cell);
+        var auto = _autoMasks.GetValueOrDefault(cell.Id) ?? HabitatEdits.FlatMask(HabitatMap.Flat(cell.Bounds, cell.WorkingArea));
+        // The editor starts from what the analysis and the AI found; the user's dabs go on top.
+        if (AiEdits.For(key) is { Count: > 0 } aiDabs) auto = HabitatEdits.Apply(auto, aiDabs);
         Bitmap? picture = null;
         try
         {
@@ -900,11 +911,14 @@ public sealed partial class AppHost
     {
         // The user's fixes from the habitat editor go on top of what the analysis found.
         _autoMasks[cell.Id] = mask;
+        // The AI's reading of the wallpaper (if any) first, then the user's own fixes on top.
+        var ai = AiEdits.For(EditKey(cell));
         var strokes = Edits.For(EditKey(cell));
-        if (strokes.Count > 0)
+        if (ai.Count + strokes.Count > 0)
         {
-            mask = HabitatEdits.Apply(mask ?? HabitatEdits.FlatMask(HabitatMap.Flat(cell.Bounds, cell.WorkingArea)), strokes);
-            report += $"; with {strokes.Count} hand fixes";
+            mask = HabitatEdits.Apply(mask ?? HabitatEdits.FlatMask(HabitatMap.Flat(cell.Bounds, cell.WorkingArea)), ai.Concat(strokes).ToList());
+            if (ai.Count > 0) report += $"; with the AI's reading ({ai.Count} dabs)";
+            if (strokes.Count > 0) report += $"; with {strokes.Count} hand fixes";
         }
         cell.Map = mask is null ? HabitatMap.Flat(cell.Bounds, cell.WorkingArea) : HabitatMap.FromMask(cell.Bounds, cell.WorkingArea, mask);
         foreach (var pet in _sim.Pets.Where(p => p.CellId == cell.Id))

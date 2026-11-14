@@ -24,6 +24,9 @@ public sealed class AiSettings
     public string? OllamaModel { get; set; }
     public string? AnthropicKey { get; set; }
 
+    /// <summary>The AI looks at each new wallpaper and works out the habitat (floor, water, sand, sun, shade) by itself.</summary>
+    public bool AutoHabitat { get; set; } = true;
+
     /// <summary>Pets write a diary at night (one short call per pet a day).</summary>
     public bool Diary { get; set; } = true;
 

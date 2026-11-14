@@ -74,8 +74,11 @@ public sealed class AiSettingsWindow : Window
         var talk = Check(L.S("Pets chat with each other in their own personas", "펫끼리 각자의 성격대로 대화하기"), talkOn);
         var diary = Check(L.S("Pets write a diary every night (and a weekly story)", "펫이 밤마다 일기 쓰기 (주간 이야기도)"), s.Diary);
         diary.IsCheckedChanged += (_, _) => s.Diary = diary.IsChecked == true;
+        var habitat = Check(L.S("Read each new wallpaper and work out the habitat (needs an AI that can see pictures)", "새 바탕화면을 AI가 보고 서식지 자동 판단 (그림을 볼 수 있는 AI 필요)"), s.AutoHabitat);
+        habitat.IsCheckedChanged += (_, _) => s.AutoHabitat = habitat.IsChecked == true;
         stack.Children.Add(talk);
         stack.Children.Add(diary);
+        stack.Children.Add(habitat);
         stack.Children.Add(Text(L.S("Talking to a pet (click it → Talk) and making outfits, houses and pets from words use it whenever you ask.",
             "펫에게 말 걸기(펫 클릭 → 말 걸기)와 말로 옷·집·펫 만들기는 요청할 때마다 써요."), Muted, 12));
 
