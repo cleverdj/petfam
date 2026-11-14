@@ -546,9 +546,10 @@ public sealed partial class AppHost
 
     private void OpenHouseEditor(PetHouse house, bool isNew)
     {
-        if (_cell is null) return;
+        // The screen the house is on (a house on another monitor is decorated there); a new one goes on the main one.
+        var cell = isNew ? _cell : _sim.World.Cells.FirstOrDefault(c => c.Houses.Contains(house)) ?? _cell;
+        if (cell is null) return;
         _houseEditor?.Close();
-        var cell = _cell;
         _houseEditor = new HouseEditorWindow(house, isNew,
             onSave: edited =>
             {
@@ -580,9 +581,14 @@ public sealed partial class AppHost
             },
             pets: _sim.Pets.Select(p => (p.Id, p.Name, p.Species)).ToList(),
             fromWords: Ai.Available ? DesignHouseAsync : null);
-        _houseEditor.Closed += (_, _) => _houseEditor = null;
-        _houseEditor.Show();
-        _houseEditor.Activate();
+        _houseEditor.Closed += (_, _) => { _houseEditor = null; AppLog.Write("House editor closed"); };
+        AppLog.Write($"House editor: {(isNew ? "new house" : $"'{house.Name}'")}{(Ai.Available ? $" (AI: {Ai.Writer?.Name})" : " (no AI)")}");
+        try
+        {
+            _houseEditor.Show();
+            _houseEditor.Activate();
+        }
+        catch (Exception ex) { AppLog.Write("House editor failed to show: " + ex); }
     }
 
     /// <summary>While the cursor is on a built house, an invisible window over it takes clicks and drags.</summary>
@@ -591,18 +597,27 @@ public sealed partial class AppHost
         if (_cell is null) return;
         var holding = _houseFront?.IsHolding ?? false;
         PetHouse? target = holding ? _houseFront!.House : null;
+        var cell = holding ? _houseFront!.Cell : null;
         if (target is null && _sim.User.CursorOnDesktop)
         {
-            // Nearest (front-most) house first: the one lowest on screen.
-            target = _cell.Houses.OrderByDescending(h => h.Position.Y)
-                .FirstOrDefault(h => HouseFrontWindow.BodyOnScreen(_cell, h).Contains(_sim.User.Cursor));
-            // A pet in front of the house gets the click instead.
-            if (target is not null && _sim.Pets.Any(p => _fronts.TryGetValue(p.Id, out var f) && f.IsVisible && p.Position.Y > target.Position.Y)) target = null;
+            // Every screen's houses (a house on the second monitor is clickable too); the front-most one (lowest) first.
+            (cell, target) = _sim.World.Cells.Where(c => _sim.VisibleCellIds.Contains(c.Id))
+                .SelectMany(c => c.Houses.Select(h => (Cell: c, House: h)))
+                .Where(x => HouseFrontWindow.BodyOnScreen(x.Cell, x.House).Contains(_sim.User.Cursor))
+                .OrderByDescending(x => x.House.Position.Y)
+                .Select(x => ((Cell?)x.Cell, (PetHouse?)x.House)).FirstOrDefault();
+            // A pet standing in front of the house (under the mouse) gets the click instead.
+            if (target is not null && _sim.Pets.Any(p => p.Hovered && p.CellId == cell!.Id && p.Position.Y > target.Position.Y)) target = null;
         }
 
-        if (target is not null && _cell.Houses.Contains(target))
+        if (target is not null && cell is not null && cell.Houses.Contains(target))
         {
-            _houseFront ??= new HouseFrontWindow(_cell, _platform, _layering,
+            if (_houseFront is not null && !ReferenceEquals(_houseFront.Cell, cell))
+            {
+                _houseFront.Close();
+                _houseFront = null;
+            }
+            _houseFront ??= new HouseFrontWindow(cell, _platform, _layering,
                 onClick: h => OpenHouseEditor(h, isNew: false),
                 onMoved: h => { AppLog.Write($"Moved house '{h.Name}' to {h.Position}"); Save(); });
             _houseFront.Follow(target);

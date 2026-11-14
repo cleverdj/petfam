@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using PetFam.Core;
 
 namespace PetFam.Desktop.Windows;
@@ -29,12 +30,12 @@ public sealed class AiAskRow : StackPanel
         Spacing = 4;
         _words = new TextBox { Watermark = watermark, MaxLength = 200, MinWidth = 220 };
         _go = new Button { Content = "✨ " + button, Padding = new Thickness(12, 5), Background = new SolidColorBrush(Color.FromRgb(0xEE, 0xE6, 0xFF)) };
-        _go.Click += async (_, _) => await Run(_words.Text, null);
+        _go.Click += async (_, _) => await Run(await WordsAsync(), null);
         _words.KeyDown += async (_, e) =>
         {
             if (e.Key != Key.Enter) return;
             e.Handled = true;
-            await Run(_words.Text, null);
+            await Run(await WordsAsync(), null);
         };
         var row = new DockPanel();
         DockPanel.SetDock(_go, Dock.Right);
@@ -62,13 +63,31 @@ public sealed class AiAskRow : StackPanel
             FileTypeFilter = new[] { new FilePickerFileType(L.S("Pictures", "사진")) { Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.webp", "*.gif" } } },
         });
         if (files.Count == 0 || files[0].TryGetLocalPath() is not { } path) return;
-        await Run(string.IsNullOrWhiteSpace(_words.Text) ? null : _words.Text, path);
+        await Run(await WordsAsync(), path);
+    }
+
+    /// <summary>
+    /// The words in the box, including a Korean (or other IME) syllable still being composed: moving the focus off
+    /// the box makes the IME hand it over first.
+    /// </summary>
+    private async Task<string?> WordsAsync()
+    {
+        if (_words.IsFocused) _go.Focus();
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Input);
+        return string.IsNullOrWhiteSpace(_words.Text) ? null : _words.Text;
     }
 
     private async Task Run(string? words, string? photo)
     {
         words = string.IsNullOrWhiteSpace(words) ? null : words.Trim();
-        if (words is null && photo is null) return;
+        if (words is null && photo is null)
+        {
+            _status.Foreground = Bad;
+            _status.Text = L.S("Write what you'd like first.", "원하는 모습을 먼저 적어 주세요.");
+            _words.Focus();
+            return;
+        }
+        AppLog.Write($"AI ask: \"{words}\"{(photo is null ? "" : " with a photo")}");
         _go.IsEnabled = false;
         if (_photo is not null) _photo.IsEnabled = false;
         _status.Foreground = Muted;

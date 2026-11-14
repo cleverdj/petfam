@@ -16,9 +16,8 @@ namespace PetFam.Desktop.Windows;
 /// </summary>
 public sealed class HouseFrontWindow : Window
 {
-    private const double DragThreshold = 6;
-    /// <summary>A press held longer than this is not a click, even if the mouse hardly moved.</summary>
-    private const double ClickSeconds = 0.5;
+    /// <summary>Moving the mouse farther than this (screen pixels) while pressed makes it a drag, never a click.</summary>
+    private const double DragThreshold = 10;
 
     private readonly Cell _cell;
     private readonly IPlatform _platform;
@@ -80,6 +79,7 @@ public sealed class HouseFrontWindow : Window
     }
 
     public bool IsHolding => _pressed;
+    public Cell Cell => _cell;
     public PetHouse? House => _house;
 
     /// <summary>Screen rectangle of a house body, in pixels.</summary>
@@ -149,15 +149,15 @@ public sealed class HouseFrontWindow : Window
         var cur = ScreenPixels(e);
         _farthest = Math.Max(_farthest, Vec2.Distance(cur, _pressAt));
         var dragged = _dragging || _farthest > DragThreshold;
-        var quick = (DateTime.UtcNow - _pressTime).TotalSeconds < ClickSeconds;
         _pressed = false;
         _dragging = false;
         _pointer?.Capture(null);
         _pointer = null;
         _hit.Cursor = new Cursor(StandardCursorType.Hand);
-        // Only a quick click without moving opens the decorating window; moving it never does.
+        // A click (however long, as long as the mouse stayed put) opens the decorating window; moving it never does.
+        AppLog.Write($"House {(dragged ? "dragged" : "clicked")}: '{_house.Name}' (moved {_farthest:0} px, held {(DateTime.UtcNow - _pressTime).TotalSeconds:0.00}s)");
         if (dragged) _onMoved(_house);
-        else if (quick) _onClick(_house);
+        else _onClick(_house);
         e.Handled = true;
     }
 }
