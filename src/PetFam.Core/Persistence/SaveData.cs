@@ -110,6 +110,11 @@ public sealed class SaveData
 
     /// <summary>False: the user turned AI pet talk off. Null (older saves): on.</summary>
     public bool? AiTalk { get; set; }
+
+    /// <summary>Each pet's recent days, diaries and the weekly stories (see Talk.Journal).</summary>
+    public List<Talk.DayLog> Days { get; set; } = new();
+    public List<Talk.DiaryEntry> Diaries { get; set; } = new();
+    public List<Talk.StoryEntry> Stories { get; set; } = new();
 }
 
 public sealed class WeatherSettingsSave

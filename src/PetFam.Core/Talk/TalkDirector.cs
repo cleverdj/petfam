@@ -47,6 +47,9 @@ public sealed class TalkDirector
 
     public bool Waiting => _pending is not null;
 
+    /// <summary>The AI is still writing (its task has not finished).</summary>
+    public bool AnswerPending => _pending is { } p && !p.Task.IsCompleted;
+
     /// <summary>Tray test: the next free pair talks as soon as possible, near each other or not.</summary>
     public void RequestNow()
     {
@@ -173,6 +176,9 @@ public sealed class TalkDirector
         if (!sim.Pets.Contains(d.A) || !sim.Pets.Contains(d.B)) return false;
         if (!SocialDirector.Available(d.A) || !SocialDirector.Available(d.B) || d.A.CellId != d.B.CellId) return false;
         sim.Director.Start(new TalkSession(d));
+        var said = d.Lines.Select(l => $"{l.Speaker.Name}: {l.Text}").ToList();
+        sim.Journal.Talked(d.A, said, sim.Now);
+        sim.Journal.Talked(d.B, said, sim.Now);
         Log(sim, $"Talk: {d.A.Name} walks over to {d.B.Name} to talk");
         return true;
     }

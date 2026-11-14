@@ -47,6 +47,15 @@ public sealed class PetPanelWindow : Window
     /// <summary>Opens the dress-up window.</summary>
     public Action<Pet>? OnOutfit { get; set; }
 
+    /// <summary>The pet's latest diary line (null: none), and opening the diary.</summary>
+    public Func<Pet, string?>? DiaryLine { get; set; }
+    public Action<Pet>? OnDiary { get; set; }
+    private readonly TextBlock _diary = new()
+    {
+        FontFamily = PieMenuWindow.UiFont, FontSize = 12, Cursor = new Cursor(StandardCursorType.Hand), TextWrapping = TextWrapping.Wrap,
+        Margin = new Thickness(0, 8, 0, 0), Foreground = new SolidColorBrush(Color.FromRgb(0x6A, 0x58, 0x30)), IsVisible = false,
+    };
+
     /// <summary>Puts back on what the pet shook off.</summary>
     public Action<Pet>? OnPutBack { get; set; }
     private readonly TextBlock _putBack = new()
@@ -134,6 +143,8 @@ public sealed class PetPanelWindow : Window
         stack.Children.Add(_queue);
         stack.Children.Add(_putBack);
         _putBack.PointerPressed += (_, e) => { if (Pet is { } p) OnPutBack?.Invoke(p); e.Handled = true; };
+        stack.Children.Add(_diary);
+        _diary.PointerPressed += (_, e) => { if (Pet is { } p) OnDiary?.Invoke(p); e.Handled = true; };
         stack.Children.Add(_outfit);
         _outfit.PointerPressed += (_, e) => { if (Pet is { } p) OnOutfit?.Invoke(p); e.Handled = true; };
         stack.Children.Add(_colours);
@@ -207,6 +218,11 @@ public sealed class PetPanelWindow : Window
     public void Refresh()
     {
         if (Pet is not { } pet) return;
+
+        var diary = DiaryLine?.Invoke(pet);
+        var diaryText = diary is null ? null : "📔 " + (diary.Length > 90 ? diary[..90] + "…" : diary);
+        if (_diary.Text != diaryText) _diary.Text = diaryText;
+        _diary.IsVisible = diaryText is not null;
 
         var level = MoodCalc.Level(pet);
         _moodDot.Background = MoodBrush(level);

@@ -17,6 +17,12 @@ public interface IDialogueWriter
     string Name { get; }
 
     Task<string?> WriteAsync(string system, string prompt, CancellationToken ct);
+
+    /// <summary>Can it look at a picture (a wallpaper, a photo of the user's pet)?</summary>
+    bool CanSee => false;
+
+    /// <summary>Like WriteAsync, with an image file to look at. Only when CanSee.</summary>
+    Task<string?> SeeAsync(string system, string prompt, string imagePath, CancellationToken ct) => Task.FromResult<string?>(null);
 }
 
 public sealed record DialogueLine(Pet Speaker, string Text, string? Act);

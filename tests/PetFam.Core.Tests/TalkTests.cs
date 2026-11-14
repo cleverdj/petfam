@@ -51,6 +51,13 @@ public class TalkTests
         return (sim, cell);
     }
 
+    /// <summary>The writer runs on the thread pool; a test's simulated seconds pass far faster than that.</summary>
+    private static void WaitForWriter(Simulation sim)
+    {
+        var until = DateTime.UtcNow.AddSeconds(5);
+        while (sim.Talk.Waiting && sim.Talk.AnswerPending && DateTime.UtcNow < until) Thread.Sleep(2);
+    }
+
     [Fact]
     public void Each_pet_gets_its_own_persona_in_the_prompt()
     {
@@ -114,6 +121,7 @@ public class TalkTests
         for (var i = 0; i < 900 && said.Count < 3; i++)
         {
             sim.Tick(0.1f, T0.AddSeconds(i * 0.1));
+            WaitForWriter(sim);
             foreach (var p in sim.Pets)
                 if (p.Bubble is { } b && (said.Count == 0 || said[^1].Text != b) && p.Session is TalkSession)
                     said.Add((p.Name, b));
@@ -153,7 +161,7 @@ public class TalkTests
         var writer = new FakeWriter { Answer = "nope" };
         sim.Talk.Writer = writer;
         sim.Talk.RequestNow();
-        for (var i = 0; i < 300; i++) sim.Tick(0.1f, T0);
+        for (var i = 0; i < 300; i++) { sim.Tick(0.1f, T0); WaitForWriter(sim); }
         Assert.Single(writer.Prompts);
         Assert.Contains(log, l => l.StartsWith("Talk: no usable answer"));
     }

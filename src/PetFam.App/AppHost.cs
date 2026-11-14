@@ -6,6 +6,7 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using PetFam.Core;
 using PetFam.Core.Geometry;
+using PetFam.Core.Interactions;
 using PetFam.Core.Persistence;
 using PetFam.Core.Pets;
 using PetFam.Core.Platform;
@@ -23,7 +24,7 @@ namespace PetFam.Desktop;
 /// each monitor has its own backyard and overlay window showing that monitor's cell of the current desktop.
 /// The main monitor's cell (<see cref="_cell"/>) is where tray actions (food, houses, new pets) happen.
 /// </summary>
-public sealed class AppHost
+public sealed partial class AppHost
 {
     private const double ActiveFrameSeconds = 1.0 / 30.0;
     private const double CalmFrameSeconds = 1.0 / 12.0;
@@ -91,11 +92,14 @@ public sealed class AppHost
 
         _sim = new Simulation(_platform);
         _sim.Debug.Log = AppLog.Write;
-        // Pets talk to each other in their own personas, written by the user's own Claude (if installed).
-        _talkWriter = ClaudeCliWriter.Detect();
-        _sim.Talk.Writer = _talkWriter;
+        // The user's own AI (a signed-in CLI, Ollama or an API key) writes what pets say; without one nothing changes.
+        Ai.Load();
+        Ai.Changed += () =>
+        {
+            _sim.Talk.Writer = Ai.Writer;
+            PetsMenuChanged?.Invoke();
+        };
         if (Environment.GetEnvironmentVariable("PETFAM_FAST_TALK") == "1") { _sim.Talk.MinGap = 30f; _sim.Talk.MaxGap = 45f; }
-        AppLog.Write(_talkWriter is null ? "AI talk: no Claude CLI found (pets keep their usual lines)" : $"AI talk: Claude CLI at {_talkWriter.ExePath}");
         // Test option: a made-up cursor resting on the first pet on screen (hover checks without moving the mouse).
         // PETFAM_FAKE_HOVER=1, or =<monitor id> (primary, mon-2560-0, ...) for a pet on that monitor.
         if (Environment.GetEnvironmentVariable("PETFAM_FAKE_HOVER") is { Length: > 0 } fakeHover)
@@ -130,6 +134,8 @@ public sealed class AppHost
             : $"Virtual desktops: {desktops.Desktops.Count}, on {_sim.World.DescribeDesktop(cell)} ({cell.DesktopId})");
 
         LoadOrCreatePets(cell);
+        _ = StartAiAsync();
+        StartAiServices();
         StartWeather();
 
         // Test option: PETFAM_ADOPT=cat,dog,shiba,ragdoll brings extra pets at startup (same-species play).
@@ -1207,8 +1213,15 @@ public sealed class AppHost
         var center = new PixelPoint(box.X + box.Width / 2, box.Y + (int)(box.Height * 0.3));
         var scaling = ScalingAt(center);
 
-        var menu = new PieMenuWindow(pet, _sim.MenuFor(pet, DateTime.UtcNow), center, scaling, interaction =>
+        var items = _sim.MenuFor(pet, DateTime.UtcNow).ToList();
+        if (Ai.Available) items.Add((ChatInteraction.Instance, Availability.Ok));
+        var menu = new PieMenuWindow(pet, items, center, scaling, interaction =>
         {
+            if (interaction is ChatInteraction)
+            {
+                OpenChat(pet);
+                return;
+            }
             if (_sim.Enqueue(pet, interaction, DateTime.UtcNow))
                 AppLog.Write($"Queued {interaction.Id} for {pet.Name}");
             _sinceSelectionActivity = 0f;
@@ -1243,6 +1256,8 @@ public sealed class AppHost
                 OnDelete = DeletePet,
                 OnColours = OpenCoatEditor,
                 OnOutfit = OpenOutfitEditor,
+                DiaryLine = p => _sim.Journal.DiariesOf(p).FirstOrDefault()?.Text,
+                OnDiary = p => OpenDiary(p),
                 OnPutBack = p => { var n = _sim.PutBack(p); AppLog.Write($"Put back on {p.Name}: {n} piece(s)"); },
             };
         }
@@ -1464,10 +1479,17 @@ public sealed class AppHost
 
     // ---------------------------------------------------------------- AI talk between pets
 
-    private readonly ClaudeCliWriter? _talkWriter;
+    /// <summary>The user's AI: what is installed, the settings, the writer in use.</summary>
+    public AiHub Ai { get; } = new();
 
-    /// <summary>A Claude CLI was found, so pets can talk with AI-written lines.</summary>
-    public bool AiTalkAvailable => _talkWriter is not null;
+    private async Task StartAiAsync()
+    {
+        try { await Ai.DetectAsync(); }
+        catch (Exception ex) { AppLog.Write("AI detection failed: " + ex.Message); }
+    }
+
+    /// <summary>Some AI is set up, so pets can talk with AI-written lines.</summary>
+    public bool AiTalkAvailable => Ai.Available;
 
     public bool AiTalkEnabled => _sim.Talk.Enabled;
 
@@ -1482,7 +1504,7 @@ public sealed class AppHost
     /// <summary>Tray test: two free pets have a chat as soon as the lines arrive.</summary>
     public void DebugTalk()
     {
-        if (_talkWriter is null) { AppLog.Write("Debug talk: no Claude CLI"); return; }
+        if (!Ai.Available) { AppLog.Write("Debug talk: no AI"); return; }
         _sim.Talk.Enabled = true;
         _sim.Talk.RequestNow();
         AppLog.Write("Debug talk: asked for a conversation");
@@ -1827,6 +1849,12 @@ public sealed class AppHost
             _weather.Enabled = ws.Enabled;
         }
         _sim.Talk.Enabled = save?.AiTalk ?? true;
+        if (save is not null)
+        {
+            _sim.Journal.Days.AddRange(save.Days);
+            _sim.Journal.Diaries.AddRange(save.Diaries);
+            _sim.Journal.Stories.AddRange(save.Stories);
+        }
 
         foreach (var hs in save?.Houses ?? new())
         {
@@ -1868,6 +1896,9 @@ public sealed class AppHost
             data = SaveStore.ToSave(_sim.Pets, DateTime.UtcNow, _sim.Social, _sim.World.Cells);
             data.Language = L.Code(L.Current);
             data.AiTalk = _sim.Talk.Enabled;
+            data.Days = _sim.Journal.Days.ToList();
+            data.Diaries = _sim.Journal.Diaries.ToList();
+            data.Stories = _sim.Journal.Stories.ToList();
             data.Weather = new WeatherSettingsSave
             {
                 Place = _weather.Location.Id, Latitude = _weather.Location.Latitude, Longitude = _weather.Location.Longitude,

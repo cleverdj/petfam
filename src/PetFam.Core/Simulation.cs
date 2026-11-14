@@ -39,6 +39,18 @@ public sealed class Simulation
     /// <summary>Pets chatting with each other in their own personas, written by the user's AI (if there is one).</summary>
     public Talk.TalkDirector Talk { get; } = new();
 
+    /// <summary>What each pet did today, and the diaries and stories written from it.</summary>
+    public Talk.Journal Journal { get; } = new();
+
+    private DateTime _now;
+
+    /// <summary>The time of the last tick.</summary>
+    public DateTime Now => _now;
+    private readonly Dictionary<Guid, string> _lastDoing = new();
+    private readonly Dictionary<Guid, Social.SocialSession?> _lastSession = new();
+    private float _sinceWeatherNote = 999f;
+    private bool _noteWeather;
+
     // ---------------------------------------------------------------- weather
 
     /// <summary>The real weather (set by the app from a weather service, or a test override).</summary>
@@ -346,6 +358,7 @@ public sealed class Simulation
         if (dt <= 0f) return;
         dt = System.Math.Min(dt, 0.25f); // never let a hitch teleport pets
         _time += dt;
+        _now = nowUtc;
 
         User.Cursor = Debug.CursorOverride?.Invoke() ?? _platform.GetCursorPosition();
         TrackCursor(dt);
@@ -363,6 +376,9 @@ public sealed class Simulation
 
         Director.Tick(Pets, p => World.Find(p.CellId) ?? World.AnyCell(), Social, _rng, nowUtc, dt);
         Talk.Tick(this, _rng, dt);
+        _sinceAgentLine += dt;
+        _noteWeather = _sinceWeatherNote >= 60f;
+        _sinceWeatherNote = _noteWeather ? 0f : _sinceWeatherNote + dt;
 
         foreach (var c in World.Cells) c.Ball?.Step(dt, c.Map);
         Travel.Tick(this, dt, _rng);
@@ -423,6 +439,7 @@ public sealed class Simulation
             if (pet.Hovered && pet.Engine.Current is WanderBehavior) pet.Engine.ForceStop(ctx);
             pet.Engine.Update(ctx, dt);
             Unstick(pet, ctx, dt);
+            NoteDay(pet, nowUtc);
             pet.AnimationTime += dt;
             pet.TickBubble(dt);
             TurnToward(pet, dt);
@@ -491,6 +508,7 @@ public sealed class Simulation
     {
         if (!Pets.Contains(pet)) return false;
         pet.Session?.Abort();
+        Journal.Forget(pet);
         if (World.Find(pet.CellId) is { } cell && pet.Queue.Any(q => q.Interaction.Id == "ball")) cell.Ball = null;
         foreach (var c in World.Cells)
             if (c.Ball?.CarriedBy == pet.Id) c.Ball = null;
@@ -608,6 +626,7 @@ public sealed class Simulation
     {
         var cell = World.Find(pet.CellId) ?? World.AnyCell()!;
         var spot = cell.Map.ClampToRoam(pet.Position + new Vec2(pet.Facing * 140f, 0f));
+        Journal.Owner(pet, "fed", nowUtc);
         return PlaceBowl(cell, spot);
     }
 
@@ -640,6 +659,7 @@ public sealed class Simulation
         // A Shiba screams, a Ragdoll goes limp, a Pomeranian enjoys the view.
         pet.SayAs(v => v.Held, _rng, 2f);
         pet.Hold = HoldState.Carried;
+        Journal.Owner(pet, "carried", _now);
         pet.LookAt = null;
         pet.TargetHeading = 90f;   // dangling pets face the person holding them
     }
@@ -659,7 +679,79 @@ public sealed class Simulation
         pet.Hold = HoldState.None;
     }
 
-    public void BeginStroke(Pet pet) => pet.Hold = HoldState.Petted;
+    public void BeginStroke(Pet pet)
+    {
+        pet.Hold = HoldState.Petted;
+        Journal.Owner(pet, "petted", _now);
+    }
+
+    /// <summary>For the diary: what the pet is doing now (when it changes), who it plays with, the weather.</summary>
+    private void NoteDay(Pet pet, DateTime nowUtc)
+    {
+        var doing = (pet.Engine.Current?.Name ?? "idle").Split(':')[0];
+        if (!_lastDoing.TryGetValue(pet.Id, out var last) || last != doing)
+        {
+            _lastDoing[pet.Id] = doing;
+            Journal.Did(pet, doing, nowUtc);
+        }
+        var session = pet.Session;
+        if (!ReferenceEquals(_lastSession.GetValueOrDefault(pet.Id), session))
+        {
+            _lastSession[pet.Id] = session;
+            if (session is not null)
+                Journal.With(pet, ReferenceEquals(session.Initiator, pet) ? session.Partner : session.Initiator, session.Name.Split(':')[0], nowUtc);
+        }
+        if (_noteWeather && IsVisible(pet)) Journal.SawWeather(pet, Weather.Kind.ToString().ToLowerInvariant(), nowUtc);
+    }
+
+    // --- the user's coding agent (Claude Code hooks through the app's local server) ---
+
+    private float _sinceAgentLine = 999f;
+
+    /// <summary>
+    /// The user's coding agent says what it is up to; the closest, awake pet on screen reacts:
+    /// working (a cheer now and then), done (delighted), waiting (calls the owner), failed (comforts).
+    /// Returns who reacted, or null.
+    /// </summary>
+    public Pet? AgentEvent(string kind)
+    {
+        var buddy = Pets.Where(p => IsVisible(p) && !p.Hidden && p.Hold == HoldState.None && p.Engine.Current is not SleepBehavior)
+            .OrderByDescending(p => p.Bond.Value).FirstOrDefault();
+        if (buddy is null) return null;
+        var cat = buddy.Species == PetSpecies.Cat;
+        string[] lines;
+        switch (kind)
+        {
+            case "working" or "prompt" or "start":
+                if (_sinceAgentLine < 90f) return null;           // not every tool call
+                lines = cat
+                    ? new[] { L.S("…I'm supervising.", "…감독 중이다냥."), L.S("Mrrp. Busy busy.", "냥. 바쁘다 바빠."), L.S("Is that a bug? Can I eat it?", "버그? 먹어도 돼냥?") }
+                    : new[] { L.S("Go go go! Woof!", "힘내라 힘! 왈!"), L.S("Sniff sniff… smells like code!", "킁킁… 코드 냄새!"), L.S("We're working hard!", "우리 열일 중이야!") };
+                break;
+            case "done" or "stop" or "finished":
+                lines = cat
+                    ? new[] { L.S("Done. Now pet me.", "끝났다냥. 이제 쓰다듬어."), L.S("Hmph, not bad.", "흥, 나쁘지 않네.") }
+                    : new[] { L.S("All done! Woof woof!", "다 됐대! 왈왈!"), L.S("We did it!", "해냈다!") };
+                break;
+            case "waiting" or "notification" or "input":
+                lines = cat
+                    ? new[] { L.S("Human. You're needed.", "집사. 너 부른다냥.") }
+                    : new[] { L.S("Hey! It's calling you!", "집사! 불러! 불러!") };
+                break;
+            case "failed" or "error":
+                lines = cat
+                    ? new[] { L.S("…It happens.", "…그럴 수도 있지.") }
+                    : new[] { L.S("It's okay! Try again!", "괜찮아! 다시 해 보자!") };
+                break;
+            default:
+                return null;
+        }
+        _sinceAgentLine = 0f;
+        buddy.Say(lines[_rng.Next(lines.Length)], kind is "waiting" or "notification" or "input" ? 4.5f : 3f);
+        buddy.LookAt = User.Cursor;
+        Journal.Owner(buddy, "cheered the owner's work", _now);
+        return buddy;
+    }
 
     // --- ball held and thrown by the person (driven by the host's ball window) ---
 
@@ -705,6 +797,7 @@ public sealed class Simulation
         if (pet.Queue.Count >= Pet.MaxQueue) return false;
         if (!interaction.Check(pet, cell, nowUtc).Enabled) return false;
         pet.Queue.Add(new QueuedAction { Interaction = interaction });
+        Journal.Owner(pet, interaction.Id, nowUtc);
         return true;
     }
 
