@@ -344,7 +344,7 @@ public sealed class Simulation
         dt = System.Math.Min(dt, 0.25f); // never let a hitch teleport pets
         _time += dt;
 
-        User.Cursor = _platform.GetCursorPosition();
+        User.Cursor = Debug.CursorOverride?.Invoke() ?? _platform.GetCursorPosition();
         TrackCursor(dt);
         _sincePoll += dt;
         if (_sincePoll >= UserPollInterval)
@@ -778,7 +778,7 @@ public sealed class Simulation
         NoticeNewWindow(User.Foreground);
         User.Idle = _platform.GetIdleTime();
         User.DoNotDisturb = _platform.IsDoNotDisturb();
-        User.CursorOnDesktop = _platform.IsDesktopAt(User.Cursor);
+        User.CursorOnDesktop = Debug.CursorOverride?.Invoke() is not null || _platform.IsDesktopAt(User.Cursor);
     }
 
     /// <summary>

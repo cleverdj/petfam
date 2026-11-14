@@ -38,6 +38,9 @@ public sealed class DebugOptions
 
     /// <summary>Where the simulation writes notes worth keeping (the app's log file).</summary>
     public Action<string>? Log { get; set; }
+
+    /// <summary>Test option: a made-up cursor position used instead of the real one.</summary>
+    public Func<Vec2?>? CursorOverride { get; set; }
 }
 
 public sealed class BehaviorContext

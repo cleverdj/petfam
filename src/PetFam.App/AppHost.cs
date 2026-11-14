@@ -90,6 +90,12 @@ public sealed class AppHost
 
         _sim = new Simulation(_platform);
         _sim.Debug.Log = AppLog.Write;
+        // Test option: a made-up cursor resting on the first pet on screen (hover checks without moving the mouse).
+        // PETFAM_FAKE_HOVER=1, or =<monitor id> (primary, mon-2560-0, ...) for a pet on that monitor.
+        if (Environment.GetEnvironmentVariable("PETFAM_FAKE_HOVER") is { Length: > 0 } fakeHover)
+            _sim.Debug.CursorOverride = () => _sim.Pets.FirstOrDefault(p => !p.Hidden && _sim.VisibleCellIds.Contains(p.CellId)
+                                                                         && (fakeHover == "1" || p.CellId.EndsWith(":" + fakeHover))) is { } p
+                ? new Vec2(p.Position.X + (Environment.TickCount64 / 1000 % 2 == 0 || Environment.GetEnvironmentVariable("PETFAM_FAKE_HOVER_BLINK") != "1" ? 0f : 600f), p.Position.Y - 30f) : null;
 
         // Spike diagnostics.
         if (Environment.GetEnvironmentVariable("PETFAM_NO_PEEK") == "1") _sim.Debug.AllowPeekAlways = false;
@@ -1056,32 +1062,66 @@ public sealed class AppHost
             if (pet.Hidden)
             {
                 // Inside the house: not touchable.
-                if (pet.Layer == PetLayer.Front) { pet.Layer = PetLayer.Backyard; front?.Hide(); }
+                if (pet.Layer == PetLayer.Front) pet.Layer = PetLayer.Backyard;
+                if (front?.IsVisible == true) front.Hide();
+                _handover.Remove(pet.Id);
                 continue;
             }
             var held = pet.Hold != HoldState.None || (front?.IsHolding ?? false);
             var depth = petCell.Map.DepthScale(pet.Position.Y);
-            var box = Expand(PetRenderer.HitBox(pet, depth), 20);
+            // A wider box to leave than to come in, so a cursor resting near the edge of a pet that sways or turns its
+            // head doesn't flip it back and forth between the two windows.
+            var inFront = pet.Layer == PetLayer.Front || (front?.IsVisible ?? false);
+            var box = Expand(PetRenderer.HitBox(pet, depth), inFront ? 40 : 20);
             var hovering = _sim.User.CursorOnDesktop && box.Contains(cursor);
+            var want = held || hovering;
 
-            if (held || hovering)
+            // Handing the pet from one window to the other, both draw it for a few frames, so it is never missing
+            // while the newly shown window (or the backyard behind the icons) catches up.
+            if (want)
             {
                 if (front is null)
                 {
                     front = new FrontWindow(pet, _sim, petCell, _platform, _layering, OpenMenu);
                     _fronts[pet.Id] = front;
                 }
-                if (!front.IsVisible) front.Show();
-                pet.Layer = PetLayer.Front;
                 front.Follow();
+                if (!front.IsVisible)
+                {
+                    front.Show();
+                    _handover[pet.Id] = HandoverFrames;
+                }
+                if (pet.Layer != PetLayer.Front)
+                {
+                    // Still in the backyard as well until the front window has drawn.
+                    if (_handover.TryGetValue(pet.Id, out var n) && n > 0) _handover[pet.Id] = n - 1;
+                    else { pet.Layer = PetLayer.Front; _handover.Remove(pet.Id); }
+                }
+                else _handover.Remove(pet.Id);
+            }
+            else if (front?.IsVisible == true)
+            {
+                if (pet.Layer == PetLayer.Front)
+                {
+                    // Back to the backyard first; the front window goes a few frames later, once the backyard has drawn.
+                    pet.Layer = PetLayer.Backyard;
+                    _handover[pet.Id] = HandoverFrames;
+                }
+                front.Follow();
+                if (_handover.TryGetValue(pet.Id, out var n) && n > 0) _handover[pet.Id] = n - 1;
+                else { front.Hide(); _handover.Remove(pet.Id); }
             }
             else if (pet.Layer == PetLayer.Front)
             {
                 pet.Layer = PetLayer.Backyard;
-                front?.Hide();
             }
         }
     }
+
+    /// <summary>Frames a pet is drawn in both windows while it moves between the backyard and its front window.</summary>
+    private const int HandoverFrames = 3;
+
+    private readonly Dictionary<Guid, int> _handover = new();
 
     private BallFrontWindow? _ballFront;
 

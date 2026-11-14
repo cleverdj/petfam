@@ -238,6 +238,7 @@ docs/PLANNING.md             제품·기술 기획(영어)
 | `PETFAM_MOTION_SHEET=cat\|dog` | 돌아서기, 출발, 걷기, 멈추기, 앉기, 일어나 달리기를 30fps로 움직여 차례로 그린 `motion-sheet.png` 저장(동작 전환 확인용) |
 | `PETFAM_DEMO=ball` | 실행 3초 뒤 첫 강아지와 공놀이 시작(던지기 확인용) |
 | `PETFAM_DEMO=house` | 실행 3초 뒤 새 집 짓기 창을 엶 |
+| `PETFAM_FAKE_HOVER=1` / `primary` / `mon-X-Y` | 마우스를 움직이지 않고, 가상 커서를 화면의 첫 펫(또는 그 모니터의 펫) 위에 올려 둠. `PETFAM_FAKE_HOVER_BLINK=1`이면 1초마다 펫 위에 올렸다 뗐다 함 (마우스 올리기 확인용) |
 | `PETFAM_DEMO=habitat` / `habitat2` | 실행 4초 뒤 주(또는 두 번째) 모니터에 서식지 편집기를 열고 그 모습을 `habitat-editor.png`로 저장 |
 | `PETFAM_DEMO=dropped` | 실행 3초 뒤 모자와 안경을 종류별로 바닥에 놓음(모습 확인용) |
 | `PETFAM_DEMO=outfit` | 실행 4초 뒤 첫 펫의 꾸미기 창을 열고 그 모습을 `outfit-editor.png`로 저장 |
