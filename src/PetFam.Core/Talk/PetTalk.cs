@@ -51,7 +51,8 @@ public static class PetTalk
 
     public static IReadOnlyList<string> ActsFor(PetSpecies species) => species == PetSpecies.Cat ? CatActs : DogActs;
 
-    public static string Prompt(Pet a, Pet b, SocialState social, WeatherNow weather, DayPhase phase, IReadOnlyList<string>? lastTime = null)
+    public static string Prompt(Pet a, Pet b, SocialState social, WeatherNow weather, DayPhase phase, IReadOnlyList<string>? lastTime = null,
+                                Scenery? scene = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine("Two pets who live together on their owner's computer desktop meet and talk.");
@@ -66,20 +67,89 @@ public static class PetTalk
         sb.AppendLine($"Now: {PhaseText(phase)}, {WeatherText(weather)}. A is {Doing(a)}; B is {Doing(b)}.");
         if (lastTime is { Count: > 0 })
             sb.AppendLine("Last time they talked: " + string.Join(" / ", lastTime) + " (don't repeat it; it may carry on from it).");
+        sb.AppendLine(SceneText(scene, two: true));
         sb.AppendLine();
         sb.AppendLine($"Write their conversation: {MinLines + 1} to {MaxLines} lines, A speaks first, mostly taking turns.");
-        sb.AppendLine(L.Ko
-            ? "Language: Korean, casual speech (반말) the way pets would talk. Call the owner 집사."
-            : "Language: English, casual. Call the owner \"my human\".");
-        sb.AppendLine($"Each line at most {MaxChars} characters. Keep to their little world: the desktop, the owner, food, naps, " +
+        sb.AppendLine(Language);
+        sb.AppendLine($"Each line at most {MaxChars} characters. Keep to their little world: the place they live in, the owner, food, naps, " +
                       "their house, the weather, toys, outfits, each other. Stay in character: a cat and a dog sound different, " +
-                      "and each pet's personality, age and mood show. Pet sounds are welcome. Only the spoken words: no stage directions or actions in brackets (use act), no emoji. Never mention AI, apps, or anything on the screen.");
+                      "and each pet's personality, age and mood show. Pet sounds are welcome. Only the spoken words: no stage directions or actions in brackets (use act), no emoji. " + NeverMention);
         sb.AppendLine("Reply with JSON only, like:");
         sb.AppendLine("{\"lines\":[{\"who\":\"A\",\"text\":\"...\",\"act\":\"sit\"},{\"who\":\"B\",\"text\":\"...\"}],\"tone\":\"warm\"}");
         sb.AppendLine($"act is optional, what the speaker does while saying it: for A one of {string.Join(", ", ActsFor(a.Species))}; " +
                       $"for B one of {string.Join(", ", ActsFor(b.Species))}.");
         sb.AppendLine("tone is how the talk left them feeling about each other: warm, neutral or tense.");
         return sb.ToString();
+    }
+
+    private static string Language => L.Ko
+        ? "Language: Korean, casual speech (반말) the way pets would talk. Call the owner 집사."
+        : "Language: English, casual. Call the owner \"my human\".";
+
+    private const string NeverMention =
+        "Never mention AI, apps, computers, screens or wallpapers: to the pets the scenery is simply the place they live in.";
+
+    /// <summary>
+    /// The place they live in (the wallpaper, as the AI described it). Just changed: they notice, say what is new, and
+    /// may compare it with the old place. Otherwise it is there to mention when it fits.
+    /// </summary>
+    public static string SceneText(Scenery? scene, bool two)
+    {
+        if (scene is null) return "";
+        string their = two ? "Their" : "Its", they = two ? "they" : "it", live = two ? "live" : "lives", talk = two ? "talk" : "talks",
+               notice = two ? "notice" : "notices", may = two ? "They may" : "It may";
+        if (scene is { Fresh: true, Before: { } before })
+            return $"{their} world has just changed! Before, {they} lived in: {before}. Now {they} {live} in: {scene.Now}. " +
+                   $"This is what {they} {talk} about: what {they} {notice} in the new place (name real things in it), how it feels, " +
+                   "and whether the old place was better or the new one is (honest and in character: missing the old place is fine).";
+        return $"The place {they} {live} in (the scenery around {(two ? "them" : "it")}): {scene.Now}. " +
+               $"{may} mention something there (a mountain, the water, a tree, the light) when it fits.";
+    }
+
+    /// <summary>One pet thinking out loud, mostly about the place around it (one or two short lines).</summary>
+    public static string RemarkPrompt(Pet pet, WeatherNow weather, DayPhase phase, Scenery? scene)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("A pet who lives on its owner's computer desktop says something to itself.");
+        sb.AppendLine();
+        sb.AppendLine(Persona(pet));
+        sb.AppendLine($"Now: {PhaseText(phase)}, {WeatherText(weather)}. It is {Doing(pet)}.");
+        sb.AppendLine(SceneText(scene, two: false));
+        sb.AppendLine();
+        sb.AppendLine("Write what it says: 1 or 2 short lines, about the place around it (something it sees there), in character.");
+        sb.AppendLine(Language);
+        sb.AppendLine($"Each line at most {MaxChars} characters. Pet sounds welcome. Only the spoken words: no stage directions, no emoji. " + NeverMention);
+        sb.AppendLine("Reply with JSON only, like: {\"lines\":[\"...\"],\"act\":\"sit\"}");
+        sb.AppendLine($"act is optional, what it does while saying it: one of {string.Join(", ", ActsFor(pet.Species))}.");
+        return sb.ToString();
+    }
+
+    /// <summary>The lines of a remark, or null if the answer isn't usable.</summary>
+    public static (IReadOnlyList<string> Lines, string? Act)? ParseRemark(string? raw, Pet pet)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var start = raw.IndexOf('{');
+        var end = raw.LastIndexOf('}');
+        if (start < 0 || end <= start) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(raw[start..(end + 1)]);
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("lines", out var arr) || arr.ValueKind != JsonValueKind.Array) return null;
+            var lines = arr.EnumerateArray()
+                .Select(e => e.ValueKind == JsonValueKind.String ? StripDirections(e.GetString())
+                           : e.ValueKind == JsonValueKind.Object && e.TryGetProperty("text", out var t) ? StripDirections(t.GetString()) : null)
+                .Where(t => !string.IsNullOrEmpty(t) && t.Length <= MaxChars * 2)
+                .Take(2).Select(t => t!).ToList();
+            if (lines.Count == 0) return null;
+            var act = root.TryGetProperty("act", out var ac) && ac.ValueKind == JsonValueKind.String ? ac.GetString()?.Trim().ToLowerInvariant() : null;
+            if (act is not null && !ActsFor(pet.Species).Contains(act)) act = null;
+            return (lines, act);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Who the pet is: breed temperament, personality, age, how it feels now and what it wears.</summary>

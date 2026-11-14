@@ -749,6 +749,7 @@ public sealed partial class AppHost
         if (OfficialHabitat.FromPath(path) is { } official && OfficialRows(official.Id) is { } rows)
         {
             ApplyHabitat(cell, OfficialHabitat.MaskFor(rows, official.Width, official.Height, cell.Bounds, fit), $"official wallpaper '{official.Id}' habitat");
+            if (OfficialScene(official.Id) is { } scene) ShowScene(cell, key, scene);
             return true;
         }
 

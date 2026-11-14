@@ -17,6 +17,9 @@ public sealed class TalkDirector
     /// <summary>A written conversation keeps this long while the two are busy; then it is dropped.</summary>
     public const float KeepReadyFor = 60f;
 
+    /// <summary>A talk about their new place is worth waiting longer for.</summary>
+    public const float KeepSceneryTalkFor = 180f;
+
     /// <summary>After this many failures in a row, wait <see cref="BackOff"/> before asking again.</summary>
     public const int FailuresBeforeBackOff = 3;
     public const float BackOff = 900f;
@@ -31,18 +34,23 @@ public sealed class TalkDirector
     private sealed class Pending
     {
         public required Pet A;
-        public required Pet B;
+        public Pet? B;                                       // null: A says something to itself
         public required Task<string?> Task;
         public required CancellationTokenSource Cts;
         public float Age;
+        public bool AboutScenery;
     }
 
     private Pending? _pending;
     private Dialogue? _ready;
     private float _readyAge;
+    private float _keepReady;
     private float _wait = 60f;
     private bool _force;
     private int _failures;
+    private Pet? _speaker;
+    private readonly Queue<string> _remark = new();
+    private float _remarkWait;
     private readonly Dictionary<(Guid, Guid), List<string>> _memory = new();
 
     public bool Waiting => _pending is not null;
@@ -71,11 +79,17 @@ public sealed class TalkDirector
             return;
         }
 
+        if (_speaker is { } sp)
+        {
+            PlayRemark(sim, sp, dt);
+            return;
+        }
+
         if (_ready is { } ready)
         {
             _readyAge += dt;
             if (TryStart(sim, ready)) _ready = null;
-            else if (_readyAge > KeepReadyFor)
+            else if (_readyAge > _keepReady)
             {
                 Log(sim, $"Talk: {ready.A.Name} & {ready.B.Name} got busy, dropped the conversation");
                 _ready = null;
@@ -90,6 +104,11 @@ public sealed class TalkDirector
             {
                 _pending = null;
                 var raw = p.Task.Status == TaskStatus.RanToCompletion ? p.Task.Result : null;
+                if (p.B is null)
+                {
+                    Remarked(sim, p, raw);
+                    return;
+                }
                 var dialogue = PetTalk.Parse(raw, p.A, p.B);
                 if (dialogue is null)
                 {
@@ -104,6 +123,7 @@ public sealed class TalkDirector
                 _memory[Key(p.A, p.B)] = memory;
                 _ready = dialogue;
                 _readyAge = 0f;
+                _keepReady = p.AboutScenery ? KeepSceneryTalkFor : KeepReadyFor;
             }
             else if (p.Age > Timeout)
             {
@@ -114,29 +134,108 @@ public sealed class TalkDirector
             return;
         }
 
+        // The wallpaper has just changed: the pets there talk about their new world straight away.
+        if (NoticeNewScenery(sim, rng)) return;
+
         _wait -= dt;
         if (_wait > 0f) return;
         _wait = MinGap + (float)rng.NextDouble() * (MaxGap - MinGap);
 
-        var pair = PickPair(sim, rng, _force);
+        var pair = PickPair(sim, rng, _force, null);
         if (pair is not { } pr)
         {
-            _wait = _force ? 3f : 10f;                       // nobody free together: look again soon
+            // Nobody free together (or only one pet): now and then one says something about the place it is in.
+            if (!_force && rng.NextDouble() < RemarkChance &&
+                sim.Pets.Where(Free).Where(x => sim.Scenery.For(x.CellId) is not null).OrderBy(_ => rng.Next()).FirstOrDefault() is { } alone)
+            {
+                AskRemark(sim, alone);
+                return;
+            }
+            _wait = _force ? 3f : 10f;                       // look again soon
             return;
         }
         _force = false;
         Ask(sim, pr.A, pr.B);
     }
 
+    /// <summary>When nobody can talk together, the chance one pet says something to itself instead.</summary>
+    public const float RemarkChance = 0.35f;
+
+    private bool NoticeNewScenery(Simulation sim, Random rng)
+    {
+        foreach (var cellId in sim.Scenery.FreshCells)
+        {
+            if (!sim.Pets.Any(p => p.CellId == cellId))
+            {
+                sim.Scenery.Noticed(cellId);                 // nobody lives there to notice
+                continue;
+            }
+            if (PickPair(sim, rng, true, cellId) is { } pr) Ask(sim, pr.A, pr.B);
+            else if (sim.Pets.Where(p => p.CellId == cellId && Free(p)).OrderBy(_ => rng.Next()).FirstOrDefault() is { } alone) AskRemark(sim, alone);
+            else continue;                                   // all busy: notice it a bit later
+            sim.Scenery.Noticed(cellId);
+            return true;
+        }
+        return false;
+    }
+
     private void Ask(Simulation sim, Pet a, Pet b)
     {
         var writer = Writer!;
         // The prompt is built here, on the simulation thread; only the finished text goes to the other thread.
-        var prompt = PetTalk.Prompt(a, b, sim.Social, sim.Weather, sim.Phase, LastTime(a, b));
+        var scene = sim.Scenery.For(a.CellId);
+        var prompt = PetTalk.Prompt(a, b, sim.Social, sim.Weather, sim.Phase, LastTime(a, b), scene);
         var cts = new CancellationTokenSource();
         var task = Task.Run(() => writer.WriteAsync(PetTalk.System, prompt, cts.Token));
-        _pending = new Pending { A = a, B = b, Task = task, Cts = cts };
-        Log(sim, $"Talk: asking {writer.Name} for {a.Name} & {b.Name}");
+        _pending = new Pending { A = a, B = b, Task = task, Cts = cts, AboutScenery = scene is { Fresh: true } };
+        Log(sim, $"Talk: asking {writer.Name} for {a.Name} & {b.Name}{(scene is { Fresh: true } ? " (about their new scenery)" : "")}");
+    }
+
+    private void AskRemark(Simulation sim, Pet pet)
+    {
+        var writer = Writer!;
+        var scene = sim.Scenery.For(pet.CellId);
+        var prompt = PetTalk.RemarkPrompt(pet, sim.Weather, sim.Phase, scene);
+        var cts = new CancellationTokenSource();
+        var task = Task.Run(() => writer.WriteAsync(PetTalk.System, prompt, cts.Token));
+        _pending = new Pending { A = pet, Task = task, Cts = cts };
+        Log(sim, $"Talk: asking {writer.Name} for something {pet.Name} says{(scene is { Fresh: true } ? " about the new scenery" : "")}");
+    }
+
+    private void Remarked(Simulation sim, Pending p, string? raw)
+    {
+        if (PetTalk.ParseRemark(raw, p.A) is not { } remark)
+        {
+            Failed(sim, $"no usable remark from {Writer!.Name} after {p.Age:0.0}s" + (raw is null ? "" : ": " + Short(raw)));
+            return;
+        }
+        _failures = 0;
+        Log(sim, $"Talk: {p.A.Name} ({Writer!.Name}, {p.Age:0.0}s): " + string.Join(" / ", remark.Lines));
+        if (!sim.Pets.Contains(p.A)) return;
+        _speaker = p.A;
+        _remark.Clear();
+        foreach (var l in remark.Lines) _remark.Enqueue(l);
+        _remarkWait = 0f;
+        if (remark.Act is { } act && SocialDirector.Available(p.A)) p.A.SetAnimation(act);
+        sim.Journal.Talked(p.A, remark.Lines.Select(l => $"{p.A.Name}: {l}"), sim.Now);
+    }
+
+    /// <summary>The remark's lines one after the other, each when the last bubble is gone.</summary>
+    private void PlayRemark(Simulation sim, Pet pet, float dt)
+    {
+        _remarkWait -= dt;
+        if (!sim.Pets.Contains(pet) || _remark.Count == 0)
+        {
+            _speaker = null;
+            _remark.Clear();
+            return;
+        }
+        if (_remarkWait > 0f || pet.Bubble is not null) return;
+        var text = _remark.Dequeue();
+        var seconds = TalkSession.ReadSeconds(text);
+        pet.Say(text, seconds);
+        _remarkWait = seconds + 0.4f;
+        if (_remark.Count == 0) _speaker = null;
     }
 
     private void Failed(Simulation sim, string why)
@@ -149,9 +248,9 @@ public sealed class TalkDirector
     private static bool Free(Pet p) =>
         SocialDirector.Available(p) && p.Needs.Energy > 15f && p.Bubble is null;
 
-    private static (Pet A, Pet B)? PickPair(Simulation sim, Random rng, bool anyDistance)
+    private static (Pet A, Pet B)? PickPair(Simulation sim, Random rng, bool anyDistance, string? cellId)
     {
-        var free = sim.Pets.Where(Free).OrderBy(_ => rng.Next()).ToList();
+        var free = sim.Pets.Where(Free).Where(p => cellId is null || p.CellId == cellId).OrderBy(_ => rng.Next()).ToList();
         foreach (var a in free)
         foreach (var b in free)
         {
@@ -188,6 +287,8 @@ public sealed class TalkDirector
         _pending?.Cts.Cancel();
         _pending = null;
         _ready = null;
+        _speaker = null;
+        _remark.Clear();
     }
 
     private static string Short(string s) => s.Length <= 120 ? s.ReplaceLineEndings(" ") : s[..120].ReplaceLineEndings(" ") + "…";

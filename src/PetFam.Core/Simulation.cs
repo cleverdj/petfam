@@ -42,6 +42,9 @@ public sealed class Simulation
     /// <summary>What each pet did today, and the diaries and stories written from it.</summary>
     public Talk.Journal Journal { get; } = new();
 
+    /// <summary>What the pets see on each screen (the wallpaper, described by the user's AI) and the view before it.</summary>
+    public Talk.SceneryBook Scenery { get; } = new();
+
     private DateTime _now = DateTime.UtcNow;
 
     /// <summary>The time of the last tick.</summary>

@@ -40,6 +40,7 @@ public sealed class AiSettings
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(AiSettings))]
+[JsonSerializable(typeof(SceneryFile))]
 internal partial class AiJsonContext : JsonSerializerContext
 {
 }

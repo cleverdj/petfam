@@ -165,4 +165,64 @@ public class TalkTests
         Assert.Single(writer.Prompts);
         Assert.Contains(log, l => l.StartsWith("Talk: no usable answer"));
     }
+
+    [Fact]
+    public void A_new_wallpaper_is_a_change_but_the_same_one_read_again_is_not()
+    {
+        var book = new SceneryBook();
+        Assert.False(book.Set("c", "w1", "snowy mountains"));
+        Assert.False(book.Set("c", "w1", "snowy mountains and a lake"));            // re-read: no change
+        Assert.True(book.Set("c", "w2", "a sandy beach"));
+        Assert.Equal(new Scenery("a sandy beach", "snowy mountains and a lake", true), book.For("c"));
+        book.Noticed("c");
+        Assert.False(book.For("c")!.Fresh);
+        Assert.True(new SceneryBook().Set("c", "w3", "a forest", before: "a beach"));  // changed while the app was closed
+    }
+
+    [Fact]
+    public void When_the_wallpaper_changes_the_pets_there_talk_about_the_new_place_and_the_old()
+    {
+        var (sim, cell) = Make();
+        var cat = sim.AddPet(PetSpecies.Cat, "Momo", cell, T0);
+        var dog = sim.AddPet(PetSpecies.Dog, "Peanut", cell, T0);
+        cat.Position = new Vec2(200, 900);
+        dog.Position = new Vec2(1700, 900);                                         // far apart: still talk about it
+        foreach (var p in sim.Pets) { p.Needs.Energy = 90f; p.Needs.Hunger = 90f; p.Needs.Fun = 90f; }
+        var writer = new FakeWriter();
+        sim.Talk.Writer = writer;
+        sim.Scenery.Set(cell.Id, "w1", "snowy mountains above a lake");
+        sim.Scenery.Set(cell.Id, "w2", "a sandy beach with palm trees");
+
+        for (var i = 0; i < 20; i++) { sim.Tick(0.1f, T0.AddSeconds(i * 0.1)); WaitForWriter(sim); }
+
+        var prompt = Assert.Single(writer.Prompts);
+        Assert.Contains("just changed", prompt);
+        Assert.Contains("snowy mountains above a lake", prompt);
+        Assert.Contains("a sandy beach with palm trees", prompt);
+        Assert.False(sim.Scenery.For(cell.Id)!.Fresh);
+    }
+
+    [Fact]
+    public void A_pet_on_its_own_says_something_about_its_new_place()
+    {
+        var (sim, cell) = Make();
+        var cat = sim.AddPet(PetSpecies.Cat, "Momo", cell, T0);
+        cat.Needs.Energy = 90f; cat.Needs.Hunger = 90f; cat.Needs.Fun = 90f;
+        var writer = new FakeWriter { Answer = """{"lines":["(sniffs) Mountains! So big.","I miss the sea."],"act":"sit"}""" };
+        sim.Talk.Writer = writer;
+        sim.Scenery.Set(cell.Id, "w1", "a sandy beach");
+        sim.Scenery.Set(cell.Id, "w2", "snowy mountains");
+
+        var said = new List<string>();
+        for (var i = 0; i < 300 && said.Count < 2; i++)
+        {
+            sim.Tick(0.1f, T0.AddSeconds(i * 0.1));
+            WaitForWriter(sim);
+            if (cat.Bubble is { } b && (said.Count == 0 || said[^1] != b)) said.Add(b);
+        }
+
+        Assert.Contains("snowy mountains", Assert.Single(writer.Prompts));
+        Assert.Equal(new[] { "Mountains! So big.", "I miss the sea." }, said);
+        Assert.Contains(sim.Journal.Day(cat, Journal.Today(sim.Now)).Talk, l => l.Contains("Mountains"));
+    }
 }

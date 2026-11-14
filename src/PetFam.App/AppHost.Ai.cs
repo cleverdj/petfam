@@ -297,6 +297,7 @@ public sealed partial class AppHost
             .AppendLine("Its day:")
             .AppendLine(log.Empty ? "A quiet day: mostly lazing about." : log.Describe(_ => null))
             .AppendLine(before is null ? "" : $"Its previous entry ({before.Date:yyyy-MM-dd}): {before.Text}")
+            .AppendLine(_sim.Scenery.For(pet.CellId) is { } place ? $"Where it lives now (the scenery around it): {place.Now}" : "")
             .AppendLine()
             .AppendLine("First person, in its own voice and personality (a cat and a dog write very differently; a baby writes clumsily). " +
                         "2 to 4 short sentences about one or two real things from its day. " +
@@ -390,6 +391,9 @@ public sealed partial class AppHost
         sb.AppendLine($"Your bond with the owner is '{pet.Bond.Stage}' ({pet.Bond.Value:0}/100): " +
                       (pet.Bond.Value < 30 ? "you are still wary of them; short answers." : pet.Bond.Value < 70 ? "you like them." : "they are your whole world."));
         if (_sim.Journal.DiariesOf(pet).FirstOrDefault() is { } diary) sb.AppendLine($"Your latest diary entry: {diary.Text}");
+        if (_sim.Scenery.For(pet.CellId) is { } place)
+            sb.AppendLine($"Where you live (the scenery around you): {place.Now}" + (place.Before is null ? "" : $" (before, you lived in: {place.Before})") +
+                          ". To you it is simply your world, not a wallpaper.");
         if (memory.Count > 0) sb.AppendLine("The conversation so far:\n" + string.Join("\n", memory.TakeLast(10)));
         sb.AppendLine();
         sb.AppendLine("Things you could do now if you want to (or not): " + (options.Count == 0 ? "nothing" : string.Join(", ", options.Select(i => $"{i.Id} ({i.Label})"))));
@@ -572,6 +576,39 @@ public sealed partial class AppHost
     private readonly Dictionary<string, string> _cellWallpaper = new();
     private readonly HashSet<string> _aiReading = new();
 
+    private static string AiSceneryPath => Path.Combine(AppLog.DataDirectory, "scenery-ai.json");
+    private SceneryFile? _scenery;
+
+    /// <summary>The AI's few words about each wallpaper, and what each screen showed last (to notice a change after a restart).</summary>
+    private SceneryFile Sceneries => _scenery ??= SceneryFile.Read(AiSceneryPath);
+
+    private static string? OfficialScene(string id) => id switch
+    {
+        "sunny-meadow" => "a sunny green meadow of soft grass and wildflowers under a wide blue sky",
+        "seaside" => "a seaside: a sandy beach, gentle blue waves and a bright sky",
+        "cozy-garden" => "a cozy garden with flowerbeds, a little path, shady trees and a pond",
+        _ => null,
+    };
+
+    /// <summary>
+    /// The pets on this screen now live in this scenery. A different wallpaper from the last one (even across a restart)
+    /// is a change they will notice and talk about.
+    /// </summary>
+    private void ShowScene(Cell cell, string wallpaperKey, string text)
+    {
+        var last = Sceneries.Last.GetValueOrDefault(cell.Id);
+        var before = last is not null && last.Key != wallpaperKey ? last.Text : null;
+        if (_sim.Scenery.Set(cell.Id, wallpaperKey, text, before))
+        {
+            AppLog.Write($"Scenery on {_sim.World.DescribeCell(cell)} changed: {_sim.Scenery.For(cell.Id)?.Before} -> {text}");
+            foreach (var pet in _sim.Pets.Where(p => p.CellId == cell.Id))
+                _sim.Journal.Owner(pet, "moved us to a new place: " + text, DateTime.UtcNow);
+        }
+        else AppLog.Write($"Scenery on {_sim.World.DescribeCell(cell)}: {text}");
+        Sceneries.Last[cell.Id] = new SceneryFile.Seen { Key = wallpaperKey, Text = text };
+        Sceneries.Write(AiSceneryPath);
+    }
+
     /// <summary>Every analysed wallpaper the AI hasn't read yet (the AI has just been set up, or changed).</summary>
     private void ReadAllWallpapers()
     {
@@ -583,6 +620,7 @@ public sealed partial class AppHost
     {
         var key = EditKey(cell);
         _aiReading.Remove(key);
+        if (Sceneries.Scenes.Remove(key)) Sceneries.Write(AiSceneryPath);
         if (AiEdits.For(key).Count == 0) return;
         AiEdits.Set(key, Array.Empty<HabitatStroke>());
         try { AiEdits.Write(AiHabitatPath); } catch (IOException) { }
@@ -594,29 +632,41 @@ public sealed partial class AppHost
     /// </summary>
     private void MaybeReadWallpaper(Cell cell)
     {
-        if (!Ai.Settings.AutoHabitat || Ai.Writer?.CanSee != true) return;
         if (!_cellWallpaper.TryGetValue(cell.Id, out var path) || !File.Exists(path)) return;
         var key = EditKey(cell);
-        if (AiEdits.For(key).Count > 0 || !_aiReading.Add(key)) return;
+        // Read before: the pets know where they are without asking again.
+        if (Sceneries.Scenes.GetValueOrDefault(key) is { } known)
+        {
+            ShowScene(cell, _analyzedKeys.GetValueOrDefault(cell.Id) ?? key, known);
+            return;
+        }
+        if (!Ai.Settings.AutoHabitat || Ai.Writer?.CanSee != true) return;
+        if (!_aiReading.Add(key)) return;
         _ = ReadAndApplyAsync(cell, path, key);
     }
 
     private async Task ReadAndApplyAsync(Cell cell, string path, string key)
     {
         IReadOnlyList<HabitatStroke>? strokes;
+        string? scene = null;
         try
         {
             using var picture = new Avalonia.Media.Imaging.Bitmap(path);
             AppLog.Write($"AI habitat: reading the wallpaper on {_sim.World.DescribeCell(cell)}");
-            strokes = await ReadWallpaperAsync(cell, picture);
+            strokes = await ReadWallpaperAsync(cell, picture, s => scene = s);
         }
         catch (Exception ex)
         {
             AppLog.Write("AI habitat: " + ex.Message);
             return;
         }
-        if (strokes is null) return;
         if (EditKey(cell) != key) { AppLog.Write("AI habitat: the wallpaper changed meanwhile; dropped"); return; }
+        if (scene is not null)
+        {
+            Sceneries.Scenes[key] = scene;
+            ShowScene(cell, _analyzedKeys.GetValueOrDefault(cell.Id) ?? key, scene);
+        }
+        if (strokes is null) return;
         AiEdits.Set(key, strokes);
         try { AiEdits.Write(AiHabitatPath); }
         catch (IOException ex) { AppLog.Write("AI habitat not saved: " + ex.Message); }
@@ -629,7 +679,7 @@ public sealed partial class AppHost
     /// Habitat editor: the AI looks at the wallpaper as this screen shows it and labels a grid (floor, water, sand,
     /// mud, sun, shade, not-floor, sky); the grid becomes brush dabs the user can check and fix before saving.
     /// </summary>
-    public async Task<IReadOnlyList<HabitatStroke>?> ReadWallpaperAsync(Cell cell, Avalonia.Media.Imaging.Bitmap picture)
+    public async Task<IReadOnlyList<HabitatStroke>?> ReadWallpaperAsync(Cell cell, Avalonia.Media.Imaging.Bitmap picture, Action<string>? scene = null)
     {
         var b = cell.Bounds;
         var aspect = b.Height / (float)Math.Max(1, b.Width);
@@ -654,10 +704,15 @@ public sealed partial class AppHost
                 If the picture has no obvious ground (a seascape, a cityscape, a close-up, an abstract picture), pick the most
                 plausible surfaces as floor: a shore, the tops of rocks, a road or pier, a window sill, or else the bottom
                 strip of the picture. Water a pet could swim in stays W.
-                Reply with JSON only: {"rows":["{{new string('G', GridCols)}}", ...]} with exactly {{rows}} strings of exactly {{GridCols}} letters, top row first.
+                Also describe the place in "scene": 10 to 25 words of plain English, as the place the pets live in, naming the main
+                things a small animal would notice (mountains, sea, a lake, trees, flowers, buildings, snow, the sky, the light,
+                the season or time of day). No mention of a picture, wallpaper or screen.
+                Reply with JSON only: {"scene":"...","rows":["{{new string('G', GridCols)}}", ...]} with exactly {{rows}} strings of exactly {{GridCols}} letters, top row first.
                 """;
             var answer = await Ai.AskAsync("You label pictures for a desktop pet game's habitat map. Reply with JSON only.", prompt, TimeSpan.FromSeconds(120), file);
-            if (Json(answer)?["rows"] is not JsonArray arr) return null;
+            var json = Json(answer);
+            if (Clean(json?["scene"] is JsonValue sv && sv.TryGetValue<string>(out var st) ? st : null, 200) is { } words) scene?.Invoke(words);
+            if (json?["rows"] is not JsonArray arr) return null;
             var grid = arr.Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToList();
             if (grid.Count < rows / 2) return null;
             // Pets need somewhere to stand: a reading with hardly any floor is a misreading, not a habitat.
