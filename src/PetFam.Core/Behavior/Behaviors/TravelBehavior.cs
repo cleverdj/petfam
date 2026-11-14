@@ -132,7 +132,14 @@ public sealed class TravelBehavior : Behavior
             return true;
         }
         var next = pet.Position + delta.Normalized * step;
-        pet.Position = clamp ? map.ClampToRoam(next) : next;
+        if (clamp)
+        {
+            // Kept on the floor, unless that pulls it back instead of on (something that isn't floor is in the way):
+            // then it would tread on the spot for ever. It's leaving anyway: straight on, over it.
+            var onFloor = map.ClampToRoam(next);
+            if (Vec2.Distance(onFloor, target) < dist - step * 0.25f) next = onFloor;
+        }
+        pet.Position = next;
         pet.FaceToward(delta);
         return false;
     }

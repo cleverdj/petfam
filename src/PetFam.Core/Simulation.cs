@@ -416,11 +416,48 @@ public sealed class Simulation
             }
 
             pet.Engine.Update(ctx, dt);
+            Unstick(pet, ctx, dt);
             pet.AnimationTime += dt;
             pet.TickBubble(dt);
             TurnToward(pet, dt);
             pet.Motion.EndFrame(pet, dt, cell.Map.DepthScale(pet.Position.Y));
         }
+    }
+
+    /// <summary>How long a pet may walk on the spot before it is helped out.</summary>
+    public const float StuckAfter = 5f;
+
+    private readonly Dictionary<Guid, (Vec2 Anchor, float Time)> _stuck = new();
+
+    /// <summary>
+    /// Watchdog: a pet that has been walking or running for <see cref="StuckAfter"/> seconds without getting anywhere
+    /// is caught on something (the edge of the floor, a spot it can't reach). Put it back on the floor and let it
+    /// pick something else to do, so it never treads on the spot for good.
+    /// </summary>
+    private void Unstick(Pet pet, BehaviorContext ctx, float dt)
+    {
+        var walking = pet.Animation is "walk" or "run" && pet.Hold == HoldState.None && !pet.Hidden
+                      && pet.Layer == PetLayer.Backyard && pet.Session is null && pet.Doorway is null;
+        if (!walking)
+        {
+            _stuck.Remove(pet.Id);
+            return;
+        }
+        var map = ctx.Cell.Map;
+        if (!_stuck.TryGetValue(pet.Id, out var s) || Vec2.Distance(pet.Position, s.Anchor) > 12f * map.DepthScale(pet.Position.Y))
+        {
+            _stuck[pet.Id] = (pet.Position, 0f);
+            return;
+        }
+        s.Time += dt;
+        _stuck[pet.Id] = s;
+        if (s.Time < StuckAfter) return;
+        _stuck.Remove(pet.Id);
+        var was = pet.Engine.Current?.Name;
+        pet.Engine.ForceStop(ctx);
+        pet.Position = map.ClampToRoam(pet.Position);
+        pet.SetAnimation("idle");
+        Debug.Log?.Invoke($"Unstuck: {pet.Name} was walking on the spot ({was}) at {pet.Position}");
     }
 
     private void TrackCursor(float dt)

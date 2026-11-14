@@ -89,6 +89,7 @@ public sealed class AppHost
         }
 
         _sim = new Simulation(_platform);
+        _sim.Debug.Log = AppLog.Write;
 
         // Spike diagnostics.
         if (Environment.GetEnvironmentVariable("PETFAM_NO_PEEK") == "1") _sim.Debug.AllowPeekAlways = false;
@@ -614,7 +615,14 @@ public sealed class AppHost
             }
             _lastBehavior[pet.Id] = name;
         }
+        // Where everybody is and what they're doing, once a minute: for "it's stuck" reports.
+        if (DateTime.UtcNow - _lastPetDump < TimeSpan.FromMinutes(1)) return;
+        _lastPetDump = DateTime.UtcNow;
+        AppLog.Write("Pets: " + string.Join(" | ", _sim.Pets.Select(p =>
+            $"{p.Name} {p.Engine.Current?.Name} {p.Animation} at {p.Position} in {p.CellId.Split(':').Last()}{(p.Hidden ? " hidden" : "")}{(p.Trip is null ? "" : " trip")}")));
     }
+
+    private DateTime _lastPetDump;
 
     /// <summary>Tray: adopt another cat or dog (up to six pets) so same-species play can happen.</summary>
     public void AdoptPet(PetSpecies species) => ShowAdoption(firstRun: false, species);

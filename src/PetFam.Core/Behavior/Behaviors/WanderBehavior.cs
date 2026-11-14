@@ -77,7 +77,11 @@ public sealed class WanderBehavior : Behavior
             return true;
         }
 
-        pet.Position = map.ClampToRoam(pet.Position + delta.Normalized * step);
+        // Kept on the floor: if that pulls the pet back instead of on (the edge of the floor is in the way), it would
+        // walk on the spot for ever. Give up on this spot instead.
+        var next = map.ClampToRoam(pet.Position + delta.Normalized * step);
+        if (Vec2.Distance(next, _target) >= dist - step * 0.25f) return true;
+        pet.Position = next;
         pet.FaceToward(delta);
         return false;
     }

@@ -35,6 +35,9 @@ public sealed class DebugOptions
 
     /// <summary>Paint the recognised floor over the screen (test option).</summary>
     public bool ShowHabitat { get; set; }
+
+    /// <summary>Where the simulation writes notes worth keeping (the app's log file).</summary>
+    public Action<string>? Log { get; set; }
 }
 
 public sealed class BehaviorContext
