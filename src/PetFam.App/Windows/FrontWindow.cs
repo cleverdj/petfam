@@ -73,6 +73,16 @@ public sealed class FrontWindow : Window
 
     public bool IsHolding => _pressed;
 
+    /// <summary>
+    /// False while the pet is only hovered: the window is invisible and just takes the mouse, the pet stays drawn in
+    /// the backyard. True while it is carried (drawn here, above other windows).
+    /// </summary>
+    public bool DrawPet
+    {
+        get => _control.DrawPet;
+        set => _control.DrawPet = value;
+    }
+
     /// <summary>The window is big enough for the pet up to this depth scale (at this render scaling).</summary>
     private float _roomFor;
     private double _roomScale;
@@ -209,12 +219,15 @@ public sealed class FrontPetControl : Control
 
     public IBrush? Background { get; set; }
 
+    public bool DrawPet { get; set; }
+
     public override void Render(DrawingContext context)
     {
         base.Render(context);
         // Takes the mouse over the pet's own box only, not the spare room the window keeps for growing.
         if (Background is not null)
             context.FillRectangle(Background, new Rect(0, 0, PetSprite.BoxWidth * Depth / Scale, PetSprite.BoxHeight * Depth / Scale));
+        if (!DrawPet) return;
         using var _ = context.PushTransform(Matrix.CreateScale(Depth / Scale, Depth / Scale));
         PetSprite.Paint(context, _pet, Depth);
     }

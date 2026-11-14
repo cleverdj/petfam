@@ -583,7 +583,7 @@ public sealed class AppHost
             target = _cell.Houses.OrderByDescending(h => h.Position.Y)
                 .FirstOrDefault(h => HouseFrontWindow.BodyOnScreen(_cell, h).Contains(_sim.User.Cursor));
             // A pet in front of the house gets the click instead.
-            if (target is not null && _sim.Pets.Any(p => p.Layer == PetLayer.Front && p.Position.Y > target.Position.Y)) target = null;
+            if (target is not null && _sim.Pets.Any(p => _fronts.TryGetValue(p.Id, out var f) && f.IsVisible && p.Position.Y > target.Position.Y)) target = null;
         }
 
         if (target is not null && _cell.Houses.Contains(target))
@@ -1070,8 +1070,8 @@ public sealed class AppHost
             var held = pet.Hold != HoldState.None || (front?.IsHolding ?? false);
             var depth = petCell.Map.DepthScale(pet.Position.Y);
             // A wider box to leave than to come in, so a cursor resting near the edge of a pet that sways or turns its
-            // head doesn't flip it back and forth between the two windows.
-            var inFront = pet.Layer == PetLayer.Front || (front?.IsVisible ?? false);
+            // head doesn't flip its mouse window on and off.
+            var inFront = front?.IsVisible ?? false;
             var box = Expand(PetRenderer.HitBox(pet, depth), inFront ? 40 : 20);
             var hovering = _sim.User.CursorOnDesktop && box.Contains(cursor);
             var want = held || hovering;
@@ -1079,8 +1079,11 @@ public sealed class AppHost
                 AppLog.Write($"Hover: {pet.Name} {(want ? "in" : "out")} held={held} onDesktop={_sim.User.CursorOnDesktop} inBox={box.Contains(cursor)} cursor={cursor} box={box} layer={pet.Layer} frontVisible={front?.IsVisible}");
             _lastWant[pet.Id] = want;
 
-            // Handing the pet from one window to the other, both draw it for a few frames, so it is never missing
-            // while the newly shown window (or the backyard behind the icons) catches up.
+            // Hovering only puts an invisible window over the pet to take the mouse: the pet stays drawn in the backyard,
+            // so nothing changes on screen (moving the drawing between windows made it blink). Only a carried pet is
+            // drawn in the front window, above other windows. Handing it from one window to the other, both draw it
+            // for a few frames, so it is never missing while the other window catches up.
+            var carried = pet.Hold == HoldState.Carried;
             if (want)
             {
                 if (front is null)
@@ -1088,31 +1091,37 @@ public sealed class AppHost
                     front = new FrontWindow(pet, _sim, petCell, _platform, _layering, OpenMenu);
                     _fronts[pet.Id] = front;
                 }
+                if (carried && pet.Layer != PetLayer.Front && !_handover.ContainsKey(pet.Id)) _handover[pet.Id] = HandoverFrames;
+                else if (!carried && pet.Layer == PetLayer.Front) { pet.Layer = PetLayer.Backyard; _handover[pet.Id] = HandoverFrames; }
+                var handing = _handover.TryGetValue(pet.Id, out var n);
+                if (handing)
+                {
+                    if (n > 0) _handover[pet.Id] = n - 1;
+                    else
+                    {
+                        _handover.Remove(pet.Id);
+                        handing = false;
+                        if (carried) pet.Layer = PetLayer.Front;
+                    }
+                }
+                front.DrawPet = pet.Layer == PetLayer.Front || handing;
                 front.Follow();
-                if (!front.IsVisible)
-                {
-                    front.Show();
-                    _handover[pet.Id] = HandoverFrames;
-                }
-                if (pet.Layer != PetLayer.Front)
-                {
-                    // Still in the backyard as well until the front window has drawn.
-                    if (_handover.TryGetValue(pet.Id, out var n) && n > 0) _handover[pet.Id] = n - 1;
-                    else { pet.Layer = PetLayer.Front; _handover.Remove(pet.Id); }
-                }
-                else _handover.Remove(pet.Id);
+                if (!front.IsVisible) front.Show();
             }
             else if (front?.IsVisible == true)
             {
-                if (pet.Layer == PetLayer.Front)
+                if (pet.Layer == PetLayer.Front) { pet.Layer = PetLayer.Backyard; _handover[pet.Id] = HandoverFrames; }
+                if (_handover.TryGetValue(pet.Id, out var n) && n > 0)
                 {
-                    // Back to the backyard first; the front window goes a few frames later, once the backyard has drawn.
-                    pet.Layer = PetLayer.Backyard;
-                    _handover[pet.Id] = HandoverFrames;
+                    _handover[pet.Id] = n - 1;
+                    front.Follow();
                 }
-                front.Follow();
-                if (_handover.TryGetValue(pet.Id, out var n) && n > 0) _handover[pet.Id] = n - 1;
-                else { front.Hide(); _handover.Remove(pet.Id); }
+                else
+                {
+                    _handover.Remove(pet.Id);
+                    front.DrawPet = false;
+                    front.Hide();
+                }
             }
             else if (pet.Layer == PetLayer.Front)
             {
