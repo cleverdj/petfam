@@ -410,7 +410,48 @@ float noise(float3 x) {
 // World (screen-aligned) -> body space, so fur and stripes stick to the animal when it turns.
 // Cartoon eye: a coloured iris that brightens toward the bottom, a big round dark pupil, a dark lid line
 // along the top and two white catchlights.
-float3 toonEye(float3 p, float3 hc, float er, float4 head, float3 ef, float3 iris) {
+// Cat eye: a jewel-like iris (deep at the top, glowing toward the bottom, fine radial fibres and a soft ring round
+// the pupil), a tall soft slit-oval pupil, a lash line that thickens toward the outer corner for an almond look,
+// only a soft line underneath, and a big catchlight with a sparkle beside it.
+float3 catEye(float3 en, float3 ca, float3 rt, float3 upv, float span, float e, float y, float px, float py, float3 ef, float3 iris) {
+    float x = dot(en, rt) / span;
+    float3 dark = float3(0.07, 0.05, 0.08);
+    // The outer corner: the side of the cap that points away from the nose.
+    float3 lat = ca - ef * dot(ca, ef);
+    float outer = dot(rt, lat) >= 0.0 ? 1.0 : -1.0;
+    float xo = x * outer;
+    float3 deep = iris * 0.42;
+    float3 glow = min(iris * 1.45 + float3(0.16), float3(1.0));
+    float3 col = mix(deep, glow, sstep(0.55, -0.65, y));
+    // Fine fibres radiating from the pupil.
+    float ang = atan(py / max(abs(px), 0.0001));
+    float fib = sin(ang * 22.0 + sin(ang * 7.0) * 1.5) * 0.5 + 0.5;
+    col *= 1.0 + (fib - 0.5) * 0.08 * sstep(0.22, 0.45, e);
+    // A warm bright crescent of light low in the iris.
+    float cres = sstep(-0.1, -0.55, y) * sstep(0.2, 0.42, e) * sstep(0.95, 0.6, e);
+    col = mix(col, min(iris * 2.0 + float3(0.35), float3(1.0)), cres * 0.55);
+    // Darker rim round the iris, softer at the bottom.
+    col = mix(col, iris * 0.3, sstep(0.3, 0.14, e) * (0.55 + 0.35 * sstep(-0.4, 0.4, y)));
+    // Pupil: tall soft oval with a deep halo round it.
+    float pr = (px * px) / (0.3 * 0.3) + (py * py) / (0.58 * 0.58);
+    col = mix(col, iris * 0.38, sstep(2.4, 1.3, pr) * 0.6);
+    col = mix(col, dark, sstep(1.08, 0.9, pr));
+    // Lid line: thin underneath (iris-tinted, not black), a thick lash line on top that grows toward the outer corner.
+    float top = sstep(-0.15, 0.6, y);
+    float lid = 0.06 + top * (0.14 + 0.12 * sstep(-0.3, 0.8, xo));
+    float3 lineCol = mix(mix(iris * 0.25, dark, 0.55), dark, top);
+    col = mix(col, lineCol, sstep(lid + 0.035, lid, e));
+    // Catchlights: a big soft oval up on one side, a little round one low on the other, and a tiny sparkle.
+    float h1 = dot(en, normalize(ca + upv * 0.4 - rt * 0.33));
+    float h2 = dot(en, normalize(ca - upv * 0.32 + rt * 0.3));
+    float h3 = dot(en, normalize(ca + upv * 0.45 + rt * 0.26));
+    col = mix(col, float3(1.0), sstep(0.948, 0.956, h1));
+    col = mix(col, float3(1.0), sstep(0.984, 0.988, h2) * 0.95);
+    col = mix(col, float3(1.0), sstep(0.994, 0.9965, h3) * 0.85);
+    return col;
+}
+
+float3 toonEye(float3 p, float3 hc, float er, float4 head, float3 ef, float3 iris, float cat) {
     float3 en = normalize(p - hc);
     // The eye is a ball sunk into the head; only a cap of it shows. Lay the eye out on that cap, so the outline is
     // even all round however deep the ball sits: e = 0 at the rim of the visible cap, 1 at its middle.
@@ -436,6 +477,9 @@ float3 toonEye(float3 p, float3 hc, float er, float4 head, float3 ef, float3 iri
     float3 pup = cross(pc, prt);
     float px = dot(en, prt) / span;
     float py = dot(en, pup) / span;
+    if (cat > 0.5) {
+        return catEye(en, ca, rt, upv, span, e, y, px, py, ef, iris);
+    }
     float pr = (px * px) / (0.34 * 0.34) + (py * py) / (0.5 * 0.5);
     col = mix(col, dark, sstep(1.1, 0.9, pr));
     // Outline: thin all round, a thicker lash line along the top.
@@ -536,7 +580,7 @@ float4 material(float3 p0) {
     float fd = coatDisp(q, dh);
     if (dh < ds - fd) {
         if (hx.x < -0.5 && uToon > 0.5) {
-            return float4(toonEye(p, hc, hr, hq, normalize(hx.yzw), hcol), 3.0);
+            return float4(toonEye(p, hc, hr, hq, normalize(hx.yzw), hcol, hx.x < -1.1 ? 1.0 : 0.0), 3.0);
         }
         if (hx.x < -0.5) {
             // Eye: sclera, iris with a dark limbal ring and radial fibres, big round pupil.

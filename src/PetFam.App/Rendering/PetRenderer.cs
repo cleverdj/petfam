@@ -266,15 +266,16 @@ public static class PetRenderer
         /// Adds a round cone. Aux carries the stripe strength, or for eyes (gloss = -1) the eye's forward direction,
         /// which the shader uses to draw iris, pupil and catchlights.
         /// </summary>
-        public void AddSdf(V3 a, V3 b, double r1, double r2, Color c, double? k = null, double? gloss = null, V3? eyeDir = null)
+        public void AddSdf(V3 a, V3 b, double r1, double r2, Color c, double? k = null, double? gloss = null, V3? eyeDir = null, bool catEye = false)
         {
             var wa = Cam.World(a);
             var wb = Cam.World(b);
             float g = (float)(gloss ?? Gloss), a1 = (float)Stripe, a2 = 0, a3 = 0;
             if (eyeDir is { } e)
             {
+                // -1 marks an eye, -1.25 a cat's eye (slit pupil, almond lash line); below -1.5 would be an ellipsoid.
                 var we = Cam.World(e.Normalized);
-                g = -1f; a1 = (float)we.xr; a2 = (float)we.y; a3 = (float)we.zr;
+                g = catEye ? -1.25f : -1f; a1 = (float)we.xr; a2 = (float)we.y; a3 = (float)we.zr;
             }
             Sdf.Add(new SdfPrim((float)wa.xr, (float)wa.y, (float)wa.zr, (float)r1,
                 (float)wb.xr, (float)wb.y, (float)wb.zr, (float)r2,
@@ -3010,7 +3011,7 @@ public static class PetRenderer
                     // Clip to the head surface so the eye sits flush in the face like a drawn-on eye, not a bulging ball.
                     // Odd eyes (Turkish Angora): the other eye has its own colour.
                     var iris = sign > 0 && pet.Coat?.Eyes is null && look.OddEye is { } odd ? BreedLook.C(odd) : style.Iris;
-                    s.AddSdf(ec, h, er, r * 1.01, iris, k: 0, eyeDir: gaze);
+                    s.AddSdf(ec, h, er, r * 1.01, iris, k: 0, eyeDir: gaze, catEye: pet.Species == PetSpecies.Cat);
                     break;
                 }
             }
