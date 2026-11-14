@@ -86,6 +86,18 @@ public partial class App : Application
             _menu.Items.Add(Item(fixLabel, () => h.OpenHabitatEditor(0)));
         _menu.Items.Add(Item(L.S("Pet everyone", "쓰다듬기"), h.StrokeAll));
         _menu.Items.Add(Item(L.S("Towel dry", "수건으로 닦아주기"), h.TowelAll));
+        if (h.AiTalkAvailable)
+        {
+            _aiTalkToggle = new NativeMenuItem(L.S("Pets chat with each other (written by your Claude)", "펫끼리 대화하기 (내 Claude가 대사 작성)"))
+                { ToggleType = NativeMenuItemToggleType.CheckBox, IsChecked = h.AiTalkEnabled };
+            _aiTalkToggle.Click += (_, _) => h.ToggleAiTalk();
+            _menu.Items.Add(_aiTalkToggle);
+        }
+        else
+        {
+            _aiTalkToggle = null;
+            _menu.Items.Add(new NativeMenuItem(L.S("Pets chat with each other (needs Claude Code installed)", "펫끼리 대화하기 (Claude Code 설치 필요)")) { IsEnabled = false });
+        }
         _menu.Items.Add(Sub(L.S("Add a pet", "펫 추가하기"),
             Item(L.S("Adopt a dog (choose a breed)", "강아지 데려오기 (품종 고르기)"), () => h.AdoptPet(PetSpecies.Dog)),
             Item(L.S("Adopt a cat (choose a breed)", "고양이 데려오기 (품종 고르기)"), () => h.AdoptPet(PetSpecies.Cat))));
@@ -114,6 +126,7 @@ public partial class App : Application
             Item(L.S("Next life stage", "다음 단계로"), () => h.DebugAge(AppHost.AgeStep.Stage)),
             Item(L.S("Back to a baby", "새끼로 되돌리기"), () => h.DebugAge(AppHost.AgeStep.Baby))));
         _menu.Items.Add(Item(L.S("(Test) Make the pets play", "(테스트) 펫끼리 놀게 하기"), h.DebugPlay));
+        if (h.AiTalkAvailable) _menu.Items.Add(Item(L.S("(Test) Make the pets talk now (AI)", "(테스트) 지금 펫끼리 대화시키기 (AI)"), h.DebugTalk));
         _menu.Items.Add(Item(L.S("(Test) Show habitat detection", "(테스트) 서식지 인식 결과 보기"), h.ToggleHabitat));
         _menu.Items.Add(Item(L.S("(Test) Re-detect habitat", "(테스트) 서식지 다시 인식"), () => h.AnalyzeHabitat(force: true)));
         _menu.Items.Add(Item(L.S("Show/hide debug info", "디버그 정보 표시/숨기기"), h.ToggleHud));
@@ -199,6 +212,7 @@ public partial class App : Application
     private NativeMenuItem? _weatherNow;
     private NativeMenuItem? _sunNow;
     private NativeMenuItem? _weatherToggle;
+    private NativeMenuItem? _aiTalkToggle;
     private readonly List<(WeatherService.Place Place, NativeMenuItem Item)> _placeItems = new();
 
     private NativeMenuItem BuildWeatherMenu()
@@ -255,6 +269,7 @@ public partial class App : Application
         var head = L.S($"Weather: {line}", $"날씨: {line}");
         if (_weatherItem is not null && _weatherItem.Header != head) _weatherItem.Header = head;
         if (_weatherToggle.IsChecked != _host.WeatherEnabled) _weatherToggle.IsChecked = _host.WeatherEnabled;
+        if (_aiTalkToggle is not null && _aiTalkToggle.IsChecked != _host.AiTalkEnabled) _aiTalkToggle.IsChecked = _host.AiTalkEnabled;
         foreach (var (place, item) in _placeItems)
             if (item.IsChecked != (place.Id == _host.WeatherPlaceId)) item.IsChecked = place.Id == _host.WeatherPlaceId;
     }

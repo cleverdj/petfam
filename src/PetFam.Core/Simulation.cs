@@ -36,6 +36,9 @@ public sealed class Simulation
 
     public SocialDirector Director { get; } = new();
 
+    /// <summary>Pets chatting with each other in their own personas, written by the user's AI (if there is one).</summary>
+    public Talk.TalkDirector Talk { get; } = new();
+
     // ---------------------------------------------------------------- weather
 
     /// <summary>The real weather (set by the app from a weather service, or a test override).</summary>
@@ -359,6 +362,7 @@ public sealed class Simulation
         var isDaytime = Daylight >= 0.5f;
 
         Director.Tick(Pets, p => World.Find(p.CellId) ?? World.AnyCell(), Social, _rng, nowUtc, dt);
+        Talk.Tick(this, _rng, dt);
 
         foreach (var c in World.Cells) c.Ball?.Step(dt, c.Map);
         Travel.Tick(this, dt, _rng);

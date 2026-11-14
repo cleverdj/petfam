@@ -33,6 +33,9 @@ public abstract class SocialSession
 
     public const float MaxSeconds = 40f;
 
+    /// <summary>Longest this kind of encounter may run (a conversation takes longer than a scuffle).</summary>
+    protected virtual float Limit => MaxSeconds;
+
     protected SocialSession(Pet initiator, Pet partner)
     {
         Initiator = initiator;
@@ -50,7 +53,7 @@ public abstract class SocialSession
         if (Done) return;
         T += dt;
         Total += dt;
-        if (Total > MaxSeconds) { End(); return; }
+        if (Total > Limit) { End(); return; }
         Step(ctx, dt);
     }
 

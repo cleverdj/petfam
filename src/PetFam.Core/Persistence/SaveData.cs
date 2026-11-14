@@ -107,6 +107,9 @@ public sealed class SaveData
 
     /// <summary>Where to get the real weather for (null: the default city).</summary>
     public WeatherSettingsSave? Weather { get; set; }
+
+    /// <summary>False: the user turned AI pet talk off. Null (older saves): on.</summary>
+    public bool? AiTalk { get; set; }
 }
 
 public sealed class WeatherSettingsSave

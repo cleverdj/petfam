@@ -10,6 +10,7 @@ using PetFam.Core.Persistence;
 using PetFam.Core.Pets;
 using PetFam.Core.Platform;
 using PetFam.Core.World;
+using PetFam.Desktop.Ai;
 using PetFam.Desktop.Rendering;
 using PetFam.Desktop.Windows;
 using PetFam.Platform.MacOS;
@@ -90,6 +91,11 @@ public sealed class AppHost
 
         _sim = new Simulation(_platform);
         _sim.Debug.Log = AppLog.Write;
+        // Pets talk to each other in their own personas, written by the user's own Claude (if installed).
+        _talkWriter = ClaudeCliWriter.Detect();
+        _sim.Talk.Writer = _talkWriter;
+        if (Environment.GetEnvironmentVariable("PETFAM_FAST_TALK") == "1") { _sim.Talk.MinGap = 30f; _sim.Talk.MaxGap = 45f; }
+        AppLog.Write(_talkWriter is null ? "AI talk: no Claude CLI found (pets keep their usual lines)" : $"AI talk: Claude CLI at {_talkWriter.ExePath}");
         // Test option: a made-up cursor resting on the first pet on screen (hover checks without moving the mouse).
         // PETFAM_FAKE_HOVER=1, or =<monitor id> (primary, mon-2560-0, ...) for a pet on that monitor.
         if (Environment.GetEnvironmentVariable("PETFAM_FAKE_HOVER") is { Length: > 0 } fakeHover)
@@ -1456,6 +1462,32 @@ public sealed class AppHost
         PetsMenuChanged?.Invoke();
     }
 
+    // ---------------------------------------------------------------- AI talk between pets
+
+    private readonly ClaudeCliWriter? _talkWriter;
+
+    /// <summary>A Claude CLI was found, so pets can talk with AI-written lines.</summary>
+    public bool AiTalkAvailable => _talkWriter is not null;
+
+    public bool AiTalkEnabled => _sim.Talk.Enabled;
+
+    public void ToggleAiTalk()
+    {
+        _sim.Talk.Enabled = !_sim.Talk.Enabled;
+        AppLog.Write($"AI talk: {(_sim.Talk.Enabled ? "on" : "off")}");
+        Save();
+        PetsMenuChanged?.Invoke();
+    }
+
+    /// <summary>Tray test: two free pets have a chat as soon as the lines arrive.</summary>
+    public void DebugTalk()
+    {
+        if (_talkWriter is null) { AppLog.Write("Debug talk: no Claude CLI"); return; }
+        _sim.Talk.Enabled = true;
+        _sim.Talk.RequestNow();
+        AppLog.Write("Debug talk: asked for a conversation");
+    }
+
     public void ToggleRealWeather()
     {
         _weather.Enabled = !_weather.Enabled;
@@ -1794,6 +1826,7 @@ public sealed class AppHost
                                 ?? (ws.Place.Length > 0 ? new WeatherService.Place(ws.Place, new Loc(ws.Place, ws.Place), ws.Latitude, ws.Longitude) : WeatherService.DefaultPlace());
             _weather.Enabled = ws.Enabled;
         }
+        _sim.Talk.Enabled = save?.AiTalk ?? true;
 
         foreach (var hs in save?.Houses ?? new())
         {
@@ -1834,6 +1867,7 @@ public sealed class AppHost
         {
             data = SaveStore.ToSave(_sim.Pets, DateTime.UtcNow, _sim.Social, _sim.World.Cells);
             data.Language = L.Code(L.Current);
+            data.AiTalk = _sim.Talk.Enabled;
             data.Weather = new WeatherSettingsSave
             {
                 Place = _weather.Location.Id, Latitude = _weather.Location.Latitude, Longitude = _weather.Location.Longitude,
