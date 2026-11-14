@@ -83,6 +83,35 @@ public sealed class HabitatEdits
         return new WalkMask(cols, rows, b, kinds);
     }
 
+    /// <summary>Letters an AI uses to label a wallpaper grid, and what each one paints.</summary>
+    public static readonly IReadOnlyDictionary<char, ZoneType> GridLetters = new Dictionary<char, ZoneType>
+    {
+        ['G'] = ZoneType.Ground, ['W'] = ZoneType.Water, ['M'] = ZoneType.Mud, ['S'] = ZoneType.Sand,
+        ['U'] = ZoneType.Sun, ['H'] = ZoneType.Hide, ['B'] = ZoneType.Blocked, ['K'] = ZoneType.Sky,
+    };
+
+    /// <summary>
+    /// Turns a labelled grid (one string per row, one letter per cell, top row first) over the whole screen into
+    /// brush dabs that cover each cell. Unknown letters are skipped. <paramref name="aspect"/> = screen height / width.
+    /// </summary>
+    public static List<HabitatStroke> FromGrid(IReadOnlyList<string> rows, float aspect)
+    {
+        var strokes = new List<HabitatStroke>();
+        if (rows.Count == 0) return strokes;
+        var cols = rows.Max(r => r.Length);
+        if (cols == 0) return strokes;
+        var cw = 1f / cols;                                  // in widths
+        var ch = aspect / rows.Count;                        // in widths too
+        var r = 0.5f * MathF.Sqrt(cw * cw + ch * ch) * 1.02f;
+        for (var y = 0; y < rows.Count; y++)
+        for (var x = 0; x < rows[y].Length; x++)
+        {
+            if (!GridLetters.TryGetValue(char.ToUpperInvariant(rows[y][x]), out var kind)) continue;
+            strokes.Add(new HabitatStroke((x + 0.5f) / cols, (y + 0.5f) / rows.Count, r, kind));
+        }
+        return strokes;
+    }
+
     // ---------------------------------------------------------------- file
 
     private static readonly JsonSerializerOptions Json = new()

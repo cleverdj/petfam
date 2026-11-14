@@ -478,12 +478,13 @@ public sealed partial class AppHost
             _sim.Pets.FirstOrDefault(_sim.IsVisible)?.Say(L.S($"Our home fits {Simulation.MaxPets} pets", $"우리 집은 {Simulation.MaxPets}마리까지예요"), 2.5f);
             return;
         }
-        _onboarding = new OnboardingWindow((breed, name) =>
+        _onboarding = new OnboardingWindow((breed, name, coat) =>
         {
             if (_cell is null) return;
             var pet = _sim.AdoptPet(breed, _cell, DateTime.UtcNow);
             if (pet is null) { AppLog.Write("Adopt: already at the maximum number of pets"); return; }
             pet.Name = name;
+            pet.Coat = coat;
             var roam = _cell.Map.RoamArea;
             pet.Position = _cell.Map.ClampToRoam(new Vec2(roam.X + roam.Width / 2f, roam.Bottom - roam.Height * 0.25f));
             pet.TargetHeading = 90f;
@@ -492,7 +493,7 @@ public sealed partial class AppHost
             AppLog.Write($"Adopted {name} ({breed.Name}, {breed.Id}){(firstRun ? " at onboarding" : "")}");
             Save();
             PetsMenuChanged?.Invoke();
-        }, firstRun, species);
+        }, firstRun, species, Ai.Available ? PickPetAsync : null);
         _onboarding.Closed += (_, _) => _onboarding = null;
         _onboarding.Show();
         _onboarding.Activate();
@@ -577,7 +578,8 @@ public sealed partial class AppHost
                 AppLog.Write($"Demolished house '{house.Name}'");
                 Save();
             },
-            pets: _sim.Pets.Select(p => (p.Id, p.Name, p.Species)).ToList());
+            pets: _sim.Pets.Select(p => (p.Id, p.Name, p.Species)).ToList(),
+            fromWords: Ai.Available ? DesignHouseAsync : null);
         _houseEditor.Closed += (_, _) => _houseEditor = null;
         _houseEditor.Show();
         _houseEditor.Activate();
@@ -887,7 +889,7 @@ public sealed partial class AppHost
             try { Edits.Write(EditsPath); }
             catch (Exception ex) { AppLog.Write("Habitat edits not saved: " + ex.Message); }
             ApplyHabitat(cell, _autoMasks.GetValueOrDefault(cell.Id), $"hand fixes saved ({strokes.Count} dabs)");
-        });
+        }, Ai.Available && Ai.Writer?.CanSee == true && picture is not null ? () => ReadWallpaperAsync(cell, picture!) : null);
         _habitatEditor.Closed += (_, _) => { _habitatEditor = null; picture?.Dispose(); };
         _habitatEditor.Show();
         _habitatEditor.Activate();
@@ -1288,7 +1290,7 @@ public sealed partial class AppHost
             }
             AppLog.Write($"Outfit of {pet.Name}: {(outfit.Pieces.Count == 0 ? "nothing" : string.Join(", ", outfit.Pieces.Select(kv => $"{kv.Key}={kv.Value.ItemId}#{kv.Value.Color:X6}")))}{(outfit.DressForWeather ? " (dresses for the weather)" : "")}");
             Save();
-        });
+        }, Ai.Available ? (words, work) => DressFromWordsAsync(pet, words, work) : null);
         _outfitEditor.Closed += (_, _) => _outfitEditor = null;
         _outfitEditor.Show();
         _outfitEditor.Activate();
@@ -1305,7 +1307,7 @@ public sealed partial class AppHost
             pet.Coat = coat;
             AppLog.Write($"Colours of {pet.Name}: {(coat is null ? "breed colours" : $"coat={coat.Fur:X6} light={coat.Light:X6} marking={coat.Marking:X6} eyes={coat.Eyes:X6}")}");
             Save();
-        });
+        }, Ai.Available ? (words, photo) => CoatFromAsync(pet, words, photo) : null);
         _coatEditor.Closed += (_, _) => _coatEditor = null;
         _coatEditor.Show();
         _coatEditor.Activate();
@@ -1486,6 +1488,7 @@ public sealed partial class AppHost
     {
         try { await Ai.DetectAsync(); }
         catch (Exception ex) { AppLog.Write("AI detection failed: " + ex.Message); }
+        if (Environment.GetEnvironmentVariable("PETFAM_AI_SELFTEST") == "1") await AiSelfTestAsync();
     }
 
     /// <summary>Some AI is set up, so pets can talk with AI-written lines.</summary>

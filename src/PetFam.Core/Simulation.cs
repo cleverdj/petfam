@@ -42,7 +42,7 @@ public sealed class Simulation
     /// <summary>What each pet did today, and the diaries and stories written from it.</summary>
     public Talk.Journal Journal { get; } = new();
 
-    private DateTime _now;
+    private DateTime _now = DateTime.UtcNow;
 
     /// <summary>The time of the last tick.</summary>
     public DateTime Now => _now;

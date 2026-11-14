@@ -30,7 +30,8 @@ public sealed class HouseEditorWindow : Window
     /// <param name="isNew">Shows Build instead of Save, and no Demolish.</param>
     /// <param name="pets">Who the house can belong to (id, name, species).</param>
     public HouseEditorWindow(PetHouse house, bool isNew, Action<PetHouse> onSave, Action? onDemolish,
-        IReadOnlyList<(Guid Id, string Name, PetFam.Core.Pets.PetSpecies Species)>? pets = null)
+        IReadOnlyList<(Guid Id, string Name, PetFam.Core.Pets.PetSpecies Species)>? pets = null,
+        Func<string, PetHouse, Task<string?>>? fromWords = null)
     {
         _work = house.Clone();
         Title = isNew ? L.S("Build a new house", "새 집 짓기") : L.S("Decorate the house", "집 꾸미기");
@@ -51,6 +52,15 @@ public sealed class HouseEditorWindow : Window
         name.TextChanged += (_, _) => { _work.Name = name.Text ?? ""; _preview.InvalidateVisual(); };
 
         var options = new StackPanel { Spacing = 10 };
+        if (fromWords is not null)
+            options.Children.Add(new AiAskRow(L.S("Describe it: \"a cosy cabin with a lantern\"", "말로 해 보세요: \"등불 달린 아늑한 통나무집\""), L.S("Design", "AI로 꾸미기"),
+                async (words, _) =>
+                {
+                    var why = await fromWords(words!, _work);
+                    name.Text = _work.Name;
+                    Refresh();
+                    return why;
+                }));
 
         // Whose house: that pet goes in (to sleep, out of the rain); other pets leave it alone. Everybody's house: anyone.
         options.Children.Add(Label(L.S("Whose house is it?", "누구 집인가요?")));

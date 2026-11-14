@@ -58,7 +58,8 @@ public sealed class HabitatEditorWindow : Window
     private bool _painting;
 
     public HabitatEditorWindow(Screen screen, RectI bounds, WalkMask auto, IReadOnlyList<HabitatStroke> strokes, Bitmap? wallpaper,
-        WallpaperFit fit, string where, Action<IReadOnlyList<HabitatStroke>> onSave)
+        WallpaperFit fit, string where, Action<IReadOnlyList<HabitatStroke>> onSave,
+        Func<Task<IReadOnlyList<HabitatStroke>?>>? askAi = null)
     {
         _bounds = bounds;
         _auto = auto;
@@ -136,6 +137,29 @@ public sealed class HabitatEditorWindow : Window
                 size, undo, clear, cancel, save,
             },
         };
+        if (askAi is not null)
+        {
+            var ai = new Button { Content = L.S("✨ Let AI read the wallpaper", "✨ AI로 바탕화면 읽기"), Padding = new Thickness(12, 6), CornerRadius = new CornerRadius(10), Background = new SolidColorBrush(Color.FromRgb(0xEE, 0xE6, 0xFF)) };
+            ToolTip.SetTip(ai, L.S("Your AI looks at the wallpaper and paints floor, water, sand, sun and shade. Your own fixes stay on top. Check, then Save.",
+                "AI가 바탕화면을 보고 바닥, 물, 모래, 햇볕, 그늘을 칠해요. 직접 고친 것은 그대로 위에 남아요. 확인하고 저장하세요."));
+            ai.Click += async (_, _) =>
+            {
+                ai.IsEnabled = false;
+                ai.Content = L.S("Looking…", "보는 중…");
+                var painted = await askAi();
+                if (painted is { Count: > 0 })
+                {
+                    var mine = _strokes.ToList();
+                    _strokes.Clear();
+                    _strokes.AddRange(painted);
+                    _strokes.AddRange(mine);
+                    Refresh();
+                }
+                ai.Content = painted is { Count: > 0 } ? L.S("✨ Read again", "✨ 다시 읽기") : L.S("✨ No answer, try again", "✨ 대답 없음, 다시 시도");
+                ai.IsEnabled = true;
+            };
+            row2.Children.Insert(0, ai);
+        }
         var hint = new TextBlock
         {
             Text = L.S($"{where}: paint where your pets can walk, swim or nap. Green is floor; uncoloured parts are not floor. "

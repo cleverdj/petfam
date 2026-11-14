@@ -31,7 +31,8 @@ public sealed class OutfitWindow : Window
 
     private readonly HashSet<Pet> _partners = new();
 
-    public OutfitWindow(Pet pet, IReadOnlyList<Pet> others, Action<Outfit, IReadOnlyList<Pet>> onSave)
+    public OutfitWindow(Pet pet, IReadOnlyList<Pet> others, Action<Outfit, IReadOnlyList<Pet>> onSave,
+        Func<string, Outfit, Task<string?>>? fromWords = null)
     {
         _pet = pet;
         _work = pet.Outfit.Clone();
@@ -139,6 +140,14 @@ public sealed class OutfitWindow : Window
             couple.Children.Add(list);
         }
         var right = new StackPanel { Spacing = 14, Margin = new Thickness(18, 0, 0, 0), Children = { rows, weather, couple, buttons } };
+        if (fromWords is not null)
+            right.Children.Insert(0, new AiAskRow(L.S("Describe a look: \"Christmas party\", \"rainy day in Paris\"", "말로 해 보세요: \"크리스마스 파티\", \"비 오는 날 산책\""), L.S("Style it", "AI 코디"),
+                async (words, _) =>
+                {
+                    var why = await fromWords(words!, _work);
+                    Refresh();
+                    return why;
+                }));
         Grid.SetColumn(right, 1);
         grid.Children.Add(right);
         Content = grid;

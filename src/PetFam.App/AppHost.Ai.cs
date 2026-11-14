@@ -8,6 +8,8 @@ using PetFam.Core.Interactions;
 using PetFam.Core.Pets;
 using PetFam.Core.Talk;
 using PetFam.Desktop.Ai;
+using PetFam.Desktop.Rendering;
+using PetFam.Core.World;
 using PetFam.Desktop.Windows;
 
 namespace PetFam.Desktop;
@@ -412,6 +414,207 @@ public sealed partial class AppHost
             did = $"  ({act.Icon} {act.Label})";
         AppLog.Write($"Chat with {pet.Name}: \"{message}\" -> \"{reply}\"{did}");
         return reply + did;
+    }
+
+    // ---------------------------------------------------------------- making things from words (and photos)
+
+    private static string Lang => L.Ko ? "Korean" : "English";
+
+    /// <summary>House editor: shape, colours, decorations (and a name) from a description. Applies to <paramref name="work"/>.</summary>
+    public async Task<string?> DesignHouseAsync(string words, PetHouse work)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"The owner wants a pet house like this: \"{words}\"");
+        sb.AppendLine("Choose from what exists:");
+        sb.AppendLine("shape: " + string.Join(", ", HouseArt.Shapes.Select(x => $"{x.Shape} ({x.Name.En})")));
+        sb.AppendLine("roof (index): " + string.Join(", ", HouseArt.RoofColors.Select((c, i) => $"{i} {c.Name.En}")));
+        sb.AppendLine("wall (index): " + string.Join(", ", HouseArt.WallColors.Select((c, i) => $"{i} {c.Name.En}")));
+        sb.AppendLine("decorations (any number): " + string.Join(", ", HouseArt.Decorations.Select(d => $"{d.Id} ({d.Name.En})")));
+        sb.AppendLine($"Also a cute house name in {Lang}, at most 8 characters, or null to keep \"{work.Name}\".");
+        sb.AppendLine("Reply with JSON only: {\"shape\":\"Gable\",\"roof\":0,\"wall\":0,\"decorations\":[\"flowers\"],\"name\":null,\"why\":\"one short sentence\"}");
+        if (Json(await Ai.AskAsync("You design pet houses for a cozy desktop pet game from a fixed set of parts. Reply with JSON only.", sb.ToString(), TimeSpan.FromSeconds(60))) is not JsonObject o) return null;
+        if (Enum.TryParse<HouseShape>(o["shape"]?.ToString(), true, out var shape)) work.Shape = shape;
+        if (o["roof"] is JsonValue r && r.TryGetValue<int>(out var roof)) work.RoofColor = Math.Clamp(roof, 0, HouseArt.RoofColors.Length - 1);
+        if (o["wall"] is JsonValue w && w.TryGetValue<int>(out var wall)) work.WallColor = Math.Clamp(wall, 0, HouseArt.WallColors.Length - 1);
+        if (o["decorations"] is JsonArray decos)
+            work.Decorations = decos.Select(d => d?.ToString() ?? "").Where(id => HouseArt.Decorations.Any(x => x.Id == id)).ToHashSet();
+        if (o["name"] is JsonValue n && n.TryGetValue<string>(out var name) && name.Trim().Length is > 0 and <= 12) work.Name = name.Trim();
+        AppLog.Write($"AI house from \"{words}\": {work.Shape}, roof {work.RoofColor}, wall {work.WallColor}, {string.Join(",", work.Decorations)}");
+        return o["why"]?.ToString() ?? L.S("Done!", "골랐어요!");
+    }
+
+    /// <summary>Dress-up: picks unlocked pieces and their colours from a description ("Christmas look"). Applies to <paramref name="work"/>.</summary>
+    public async Task<string?> DressFromWordsAsync(Pet pet, string words, Outfit work)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"The owner wants to dress {pet.Name} ({pet.Breed.Name.En}, {(pet.Species == PetSpecies.Cat ? "cat" : "dog")}) like this: \"{words}\"");
+        sb.AppendLine("Pieces it can wear now, per slot (id: name, colours):");
+        foreach (var slot in Enum.GetValues<OutfitSlot>())
+        {
+            var items = OutfitCatalog.Of(slot).Where(i => OutfitCatalog.IsUnlocked(pet, i)).ToList();
+            sb.AppendLine($"{slot.ToString().ToLowerInvariant()}: " + (items.Count == 0 ? "(nothing yet)" :
+                string.Join("; ", items.Select(i => $"{i.Id}: {i.Name.En} [{string.Join(" ", i.Colors.Select(c => $"#{c:X6}"))}]"))));
+        }
+        sb.AppendLine("For each slot pick one piece and one of its colours, or null for nothing. Only use ids and colours listed above.");
+        sb.AppendLine($"Reply with JSON only: {{\"head\":{{\"id\":\"...\",\"color\":\"#RRGGBB\"}},\"neck\":null,\"body\":null,\"face\":null,\"why\":\"one short sentence in {Lang}\"}}");
+        if (Json(await Ai.AskAsync("You are a pet stylist in a cozy desktop pet game, choosing from a fixed wardrobe. Reply with JSON only.", sb.ToString(), TimeSpan.FromSeconds(60))) is not JsonObject o) return null;
+        var picked = 0;
+        foreach (var slot in Enum.GetValues<OutfitSlot>())
+        {
+            if (!o.TryGetPropertyValue(slot.ToString().ToLowerInvariant(), out var node)) continue;
+            if (node is not JsonObject piece) { work.Set(slot, null); continue; }
+            var item = OutfitCatalog.Find(piece["id"]?.ToString());
+            if (item is null || item.Slot != slot || !OutfitCatalog.IsUnlocked(pet, item)) continue;
+            var color = Hex(piece["color"]?.ToString()) is { } c ? Nearest(item.Colors, c) : item.Colors[0];
+            work.Set(slot, new OutfitPiece(item.Id, color));
+            picked++;
+        }
+        AppLog.Write($"AI outfit for {pet.Name} from \"{words}\": {picked} piece(s)");
+        return picked == 0 ? L.S("Nothing it has unlocked fits that yet.", "아직 열린 아이템 중엔 어울리는 게 없어요.") : o["why"]?.ToString() ?? L.S("Done!", "골랐어요!");
+    }
+
+    /// <summary>Coat colours from a description ("cream with brown ears") or a photo of the user's own pet.</summary>
+    public async Task<(PetCoat Coat, string Why)?> CoatFromAsync(Pet pet, string? words, string? photo)
+    {
+        if (photo is not null && Ai.Writer?.CanSee != true) return null;
+        var prompt = new StringBuilder()
+            .AppendLine($"Pick coat colours for {pet.Name}, a {pet.Breed.Name.En} ({(pet.Species == PetSpecies.Cat ? "cat" : "dog")}) drawn as a cute 3D toy.")
+            .AppendLine(photo is not null ? "Match the pet in the photo as closely as you can." : "")
+            .AppendLine(words is not null ? $"The owner says: \"{words}\"" : "")
+            .AppendLine("fur = main coat; light = belly, chest, muzzle and paws; marking = patches, ears, tail tip, stripes; eyes = iris colour.")
+            .AppendLine($"Reply with JSON only: {{\"fur\":\"#RRGGBB\",\"light\":\"#RRGGBB\",\"marking\":\"#RRGGBB\",\"eyes\":\"#RRGGBB\",\"why\":\"one short sentence in {Lang}\"}}")
+            .ToString();
+        if (Json(await Ai.AskAsync("You choose colours for pets in a cozy desktop pet game. Reply with JSON only.", prompt, TimeSpan.FromSeconds(90), photo)) is not JsonObject o) return null;
+        var coat = new PetCoat(Hex(o["fur"]?.ToString()), Hex(o["light"]?.ToString()), Hex(o["marking"]?.ToString()), Hex(o["eyes"]?.ToString()));
+        if (coat.IsEmpty) return null;
+        AppLog.Write($"AI coat for {pet.Name} from {(photo is null ? $"\"{words}\"" : "a photo")}: {coat}");
+        return (coat, o["why"]?.ToString() ?? L.S("Done!", "골랐어요!"));
+    }
+
+    /// <summary>Adoption: a breed, a name and coat colours from a description and/or a photo of the user's real pet.</summary>
+    public async Task<(Breed Breed, string Name, PetCoat? Coat, string Why)?> PickPetAsync(string? words, string? photo)
+    {
+        if (photo is not null && Ai.Writer?.CanSee != true) return null;
+        var sb = new StringBuilder();
+        sb.AppendLine("Help the owner adopt a pet for a desktop pet game.");
+        if (photo is not null) sb.AppendLine("The photo shows their real pet: pick the closest breed and match its colours.");
+        if (words is not null) sb.AppendLine($"The owner says: \"{words}\"");
+        sb.AppendLine("Breeds (id: name, species - temperament):");
+        foreach (var b in Breed.All) sb.AppendLine($"{b.Id}: {b.Name.En}, {(b.Species == PetSpecies.Cat ? "cat" : "dog")} - {b.Tagline.En}");
+        sb.AppendLine($"Also a name in {Lang} (at most 8 characters) and coat colours (fur = main coat; light = belly and paws; marking = patches, ears, tail; eyes = iris), or null to keep the breed's.");
+        sb.AppendLine($"Reply with JSON only: {{\"breed\":\"id\",\"name\":\"...\",\"fur\":null,\"light\":null,\"marking\":null,\"eyes\":null,\"why\":\"one short sentence in {Lang}\"}}");
+        if (Json(await Ai.AskAsync("You match people with pets in a cozy desktop pet game. Reply with JSON only.", sb.ToString(), TimeSpan.FromSeconds(90), photo)) is not JsonObject o) return null;
+        var breed = Breed.All.FirstOrDefault(b => b.Id == o["breed"]?.ToString());
+        if (breed is null) return null;
+        var name = o["name"]?.ToString()?.Trim();
+        if (string.IsNullOrEmpty(name) || name.Length > 12) name = breed.Names[0].Text;
+        var coat = new PetCoat(Hex(o["fur"]?.ToString()), Hex(o["light"]?.ToString()), Hex(o["marking"]?.ToString()), Hex(o["eyes"]?.ToString())).OrNull();
+        AppLog.Write($"AI adoption pick from {(photo is null ? $"\"{words}\"" : "a photo")}: {breed.Id} '{name}'{(coat is null ? "" : $" {coat}")}");
+        return (breed, name, coat, o["why"]?.ToString() ?? "");
+    }
+
+    private static uint? Hex(string? s)
+    {
+        if (s is null) return null;
+        s = s.Trim().TrimStart('#');
+        return s.Length == 6 && uint.TryParse(s, System.Globalization.NumberStyles.HexNumber, null, out var v) ? v : null;
+    }
+
+    private static uint Nearest(uint[] colors, uint want)
+    {
+        static int D(uint a, uint b)
+        {
+            int dr = (int)((a >> 16) & 0xFF) - (int)((b >> 16) & 0xFF), dg = (int)((a >> 8) & 0xFF) - (int)((b >> 8) & 0xFF), db = (int)(a & 0xFF) - (int)(b & 0xFF);
+            return dr * dr + dg * dg + db * db;
+        }
+        return colors.OrderBy(c => D(c, want)).First();
+    }
+
+    /// <summary>PETFAM_AI_SELFTEST=1: runs each "from words" job once against the real AI and logs what came back (nothing is applied).</summary>
+    private async Task AiSelfTestAsync()
+    {
+        if (!Ai.Available || _sim.Pets.Count == 0) { AppLog.Write("AI self-test: no AI or no pets"); return; }
+        var pet = _sim.Pets[0];
+        var house = new PetHouse { Name = "test" };
+        AppLog.Write("AI self-test house: " + await DesignHouseAsync(L.Ko ? "등불 달린 아늑한 통나무집" : "a cosy log cabin with a lantern", house) + $" -> {house.Shape} {house.RoofColor} {house.WallColor} {string.Join(",", house.Decorations)} '{house.Name}'");
+        var outfit = new Outfit();
+        AppLog.Write("AI self-test outfit: " + await DressFromWordsAsync(pet, L.Ko ? "크리스마스 파티" : "Christmas party", outfit) + " -> " + string.Join(", ", outfit.Pieces.Select(kv => $"{kv.Key}={kv.Value.ItemId}#{kv.Value.Color:X6}")));
+        AppLog.Write("AI self-test coat: " + (await CoatFromAsync(pet, L.Ko ? "크림색에 귀만 갈색" : "cream with brown ears", null))?.ToString());
+        AppLog.Write("AI self-test adopt: " + (await PickPetAsync(L.Ko ? "겁 많고 조용한 하얀 고양이" : "a shy quiet white cat", null))?.ToString());
+        if (Environment.GetEnvironmentVariable("PETFAM_AI_SELFTEST_PHOTO") is { } photo && File.Exists(photo)) AppLog.Write("AI self-test coat from a picture: " + (await CoatFromAsync(pet, null, photo))?.ToString());
+        if (_cell is { } cell && WallpaperPath() is { } wp && File.Exists(wp))
+        {
+            using var picture = new Avalonia.Media.Imaging.Bitmap(wp);
+            var strokes = await ReadWallpaperAsync(cell, picture);
+            AppLog.Write($"AI self-test wallpaper: {strokes?.Count.ToString() ?? "no answer"} dabs");
+        }
+        AppLog.Write("AI self-test done");
+    }
+
+    // ---------------------------------------------------------------- reading the wallpaper
+
+    public const int GridCols = 24;
+
+    /// <summary>
+    /// Habitat editor: the AI looks at the wallpaper as this screen shows it and labels a grid (floor, water, sand,
+    /// mud, sun, shade, not-floor, sky); the grid becomes brush dabs the user can check and fix before saving.
+    /// </summary>
+    public async Task<IReadOnlyList<HabitatStroke>?> ReadWallpaperAsync(Cell cell, Avalonia.Media.Imaging.Bitmap picture)
+    {
+        var b = cell.Bounds;
+        var aspect = b.Height / (float)Math.Max(1, b.Width);
+        var rows = Math.Clamp((int)Math.Round(GridCols * aspect), 6, 30);
+        string file;
+        try { file = ScreenView(picture, b.Width, b.Height); }
+        catch (Exception ex) { AppLog.Write("Read wallpaper: " + ex.Message); return null; }
+        try
+        {
+            var prompt = $$"""
+                This is a computer's desktop wallpaper. Small pets will live on it: they walk on floors, swim in water, nap in sunny spots and hide in shade.
+                Divide the picture into a grid of {{GridCols}} columns and {{rows}} rows and label every cell with one letter:
+                G = floor or ground they can walk on (grass, earth, paths, floors, the top of flat surfaces seen from above)
+                W = water (sea, lake, river, pool)
+                S = sand or beach
+                M = mud
+                U = a sunny, warm patch of ground
+                H = shade or shelter on the ground (under trees, porches, bushes)
+                B = not walkable (walls, buildings, trunks, rocks faces, furniture fronts, anything upright)
+                K = sky or far-away background
+                Reply with JSON only: {"rows":["{{new string('G', GridCols)}}", ...]} with exactly {{rows}} strings of exactly {{GridCols}} letters, top row first.
+                """;
+            var answer = await Ai.AskAsync("You label pictures for a desktop pet game's habitat map. Reply with JSON only.", prompt, TimeSpan.FromSeconds(120), file);
+            if (Json(answer)?["rows"] is not JsonArray arr) return null;
+            var grid = arr.Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToList();
+            if (grid.Count < rows / 2) return null;
+            var strokes = HabitatEdits.FromGrid(grid, aspect);
+            AppLog.Write($"AI read the wallpaper on {_sim.World.DescribeCell(cell)}: {grid.Count}x{grid.Max(r => r.Length)} grid, {strokes.Count} dabs\n  " + string.Join("\n  ", grid));
+            return strokes;
+        }
+        finally
+        {
+            try { File.Delete(file); } catch (IOException) { }
+        }
+    }
+
+    /// <summary>The wallpaper as the screen shows it (cover-fit, centred), at most 1280 px wide, saved as a PNG.</summary>
+    private static string ScreenView(Avalonia.Media.Imaging.Bitmap picture, int screenW, int screenH)
+    {
+        var pw = picture.PixelSize.Width;
+        var ph = picture.PixelSize.Height;
+        var k = Math.Max(screenW / (double)pw, screenH / (double)ph);   // cover
+        var srcW = screenW / k;
+        var srcH = screenH / k;
+        var src = new Avalonia.Rect((pw - srcW) / 2, (ph - srcH) / 2, srcW, srcH);
+        var outW = Math.Min(1280, screenW);
+        var outH = Math.Max(1, (int)(outW * screenH / (double)screenW));
+        using var target = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(outW, outH));
+        using (var ctx = target.CreateDrawingContext())
+            ctx.DrawImage(picture, src, new Avalonia.Rect(0, 0, outW, outH));
+        var dir = Path.Combine(Path.GetTempPath(), "PetFam");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, $"wallpaper-{Guid.NewGuid():N}.png");
+        target.Save(path);
+        return path;
     }
 
     // ---------------------------------------------------------------- helpers

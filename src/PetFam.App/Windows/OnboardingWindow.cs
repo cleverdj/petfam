@@ -42,7 +42,11 @@ public sealed class OnboardingWindow : Window
 
     /// <param name="firstRun">Welcome text for the very first pet; otherwise "Welcome a new family member".</param>
     /// <param name="species">Which tab to open on.</param>
-    public OnboardingWindow(Action<Breed, string> onAdopt, bool firstRun = true, PetSpecies species = PetSpecies.Dog)
+    /// <summary>Colours the AI matched (to a description or a photo of the user's pet); null: the breed's own.</summary>
+    private PetCoat? _coat;
+
+    public OnboardingWindow(Action<Breed, string, PetCoat?> onAdopt, bool firstRun = true, PetSpecies species = PetSpecies.Dog,
+        Func<string?, string?, Task<(Breed Breed, string Name, PetCoat? Coat, string Why)?>>? pick = null)
     {
         Title = firstRun ? L.S("PetFam — Adopt your first friend", "PetFam — 첫 친구 데려오기") : L.S("PetFam — Welcome a new family member", "PetFam — 새 가족 맞이하기");
         Width = 900;
@@ -100,7 +104,7 @@ public sealed class OnboardingWindow : Window
             if (_chosen is not { } breed) return;
             var name = string.IsNullOrWhiteSpace(_name.Text) ? Suggest(breed) : _name.Text!.Trim();
             _done = true;
-            onAdopt(breed, name);
+            onAdopt(breed, name, _coat);
             Close();
         };
 
@@ -136,7 +140,7 @@ public sealed class OnboardingWindow : Window
             Margin = new Thickness(24, 20),
             Spacing = 12,
             // The breed cards scroll, so the window still fits a small laptop screen with every breed listed.
-            Children = { title, subtitle, tabs, new ScrollViewer { Content = _grid, MaxHeight = 390, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled }, detail, later },
+            Children = { title, subtitle, AiRow(pick), tabs, new ScrollViewer { Content = _grid, MaxHeight = 390, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled }, detail, later },
         };
 
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(40), DispatcherPriority.Render, (_, _) => Tick());
@@ -149,6 +153,28 @@ public sealed class OnboardingWindow : Window
     }
 
     private static string Suggest(Breed b) => b.Names[0];
+
+    /// <summary>"Tell us about the pet you'd like" (or show a photo of yours): the AI picks the breed, a name and colours.</summary>
+    private Control AiRow(Func<string?, string?, Task<(Breed Breed, string Name, PetCoat? Coat, string Why)?>>? pick)
+    {
+        if (pick is null) return new Border();
+        return new Border
+        {
+            HorizontalAlignment = HorizontalAlignment.Center, Width = 640,
+            Child = new AiAskRow(L.S("Describe the friend you want, or show a photo of your pet", "원하는 친구를 말해 주거나, 우리 아이 사진을 보여 주세요"), L.S("Find my pet", "AI로 찾기"),
+                async (words, photo) =>
+                {
+                    if (await pick(words, photo) is not { } r) return null;
+                    ShowSpecies(r.Breed.Species);
+                    Choose(r.Breed, greet: true);
+                    _name.Text = r.Name;
+                    _nameEdited = true;
+                    _coat = r.Coat;
+                    _bigPet.Coat = r.Coat;
+                    return r.Why;
+                }, photo: true),
+        };
+    }
 
     private void ShowSpecies(PetSpecies species)
     {
@@ -219,7 +245,8 @@ public sealed class OnboardingWindow : Window
         });
 
         // The big preview shows the chosen breed as the baby you will get; it greets you.
-        _bigPet = new Pet(breed.Species, "", DateTime.UtcNow, new Random(7), breed) { Heading = 50f, TargetHeading = 50f };
+        if (previous is not null && previous != breed) _coat = null;
+        _bigPet = new Pet(breed.Species, "", DateTime.UtcNow, new Random(7), breed) { Heading = 50f, TargetHeading = 50f, Coat = _coat };
         _bigPet.Growth = new Growth(DateTime.UtcNow, 8);
         _bigPet.SetAnimation(greet ? (breed.Species == PetSpecies.Dog ? "playbow" : "petted") : "idle");
         if (greet) _bigPet.Say(breed.Voice.Greeting[0], 4f);

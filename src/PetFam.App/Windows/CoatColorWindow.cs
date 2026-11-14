@@ -43,7 +43,7 @@ public sealed class CoatColorWindow : Window
     private readonly List<(Border Swatch, Part Part, uint? Rgb)> _swatches = new();
     private readonly Dictionary<Part, Border> _custom = new();
 
-    public CoatColorWindow(Pet pet, Action<PetCoat?> onSave)
+    public CoatColorWindow(Pet pet, Action<PetCoat?> onSave, Func<string?, string?, Task<(PetCoat Coat, string Why)?>>? fromAi = null)
     {
         (_fur, _light, _marking, _eyes) = (pet.Coat?.Fur, pet.Coat?.Light, pet.Coat?.Marking, pet.Coat?.Eyes);
         Title = L.S($"{pet.Name}'s colours", $"{pet.Name} 색 바꾸기");
@@ -109,6 +109,15 @@ public sealed class CoatColorWindow : Window
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), Margin = new Thickness(18) };
         grid.Children.Add(left);
         var right = new StackPanel { Spacing = 16, Margin = new Thickness(18, 0, 0, 0), Children = { rows, buttons } };
+        if (fromAi is not null)
+            right.Children.Insert(0, new AiAskRow(L.S("Describe it, or use a photo of your own pet", "말로 하거나, 우리 아이 사진을 올려 보세요"), L.S("Colour it", "AI로 칠하기"),
+                async (words, photo) =>
+                {
+                    if (await fromAi(words, photo) is not { } r) return null;
+                    (_fur, _light, _marking, _eyes) = (r.Coat.Fur ?? _fur, r.Coat.Light ?? _light, r.Coat.Marking ?? _marking, r.Coat.Eyes ?? _eyes);
+                    Refresh();
+                    return r.Why;
+                }, photo: true));
         Grid.SetColumn(right, 1);
         grid.Children.Add(right);
         Content = grid;

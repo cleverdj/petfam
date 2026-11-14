@@ -83,8 +83,15 @@ Build up to three houses with a choice of shapes, colours and decorations. Give 
 ### Weather
 Optional real weather from [Open-Meteo](https://open-meteo.com) for a city you choose: rain with splashes, thunder and lightning, snow that settles and melts, cloud and fog. Pets react in character.
 
-### Pets talk to each other (AI, optional)
-If [Claude Code](https://claude.com/claude-code) is installed and signed in, pets that meet now and then stop for a chat, each in its own persona: its breed's temperament, its personality, its age, how it feels right now, what it wears and how the two get on. Your own Claude writes the lines (a small fast model, a few minutes apart); the pets walk up to each other, take turns in speech bubbles, and a warm talk brings them closer. Turn it off in the tray. Without Claude Code nothing changes.
+### AI for your pets (optional)
+Pets can use an AI you already have: **Claude Code**, **Codex CLI** or **Gemini CLI** (signed in with your own subscription, no key in PetFam), a local model in **Ollama**, or a **Claude API key**. Pick one under *AI for your pets…* in the tray, with a test button. Without one nothing changes.
+- **Pets talk to each other** in their own personas: breed temperament, personality, age, mood, outfit and how the two get on. They walk up to each other and take turns in speech bubbles; a warm talk brings them closer.
+- **Talk to a pet**: click it → 💬 Talk. It answers in its own voice (also in a bubble on the desktop) and may do what you ask ("go have a rest") if it is willing.
+- **Diaries**: every night after 9 pm each pet writes about its day (what it did, who it played with, what you did together) in its own voice. The latest line shows on the pet's panel; *Pet diaries…* in the tray has them all, plus a **weekly story** about everyone.
+- **Make things from words**: describe a house ("a cosy cabin with a lantern"), an outfit ("Christmas party"), coat colours ("cream with brown ears") or the pet you'd like to adopt, or show a photo of your own pet, and the AI picks from what PetFam has.
+- **Let AI read the wallpaper**: in *Fix the habitat*, the AI labels floor, water, sand, sun, shade and sky on your wallpaper; check it, fix it, save it.
+- **MCP tools for your AI apps**: a local server on `127.0.0.1:47800` lets Claude Code, Claude Desktop (through `npx mcp-remote`) and other MCP apps list your pets, feed them, ask them to do things, make them say something, call them over and read their diaries.
+- **Coding agent buddy**: when your coding agent is working, finishes, needs you or fails, a pet cheers, celebrates, calls you or comforts you. *Connect Claude Code* in the AI settings adds the MCP server and the hooks (your settings are backed up first).
 
 ### Day and night
 Day and night follow your computer's clock and the real sunrise and sunset where you are (worked out on your computer for the weather city, no network needed). Dusk and dawn glow warm, nights turn the desktop deep blue with stars on clear nights, the house windows light up, and pets get sleepy after dark.
@@ -177,15 +184,16 @@ Pets are on every Space (desktop), and follow you when you switch. Your pets are
 `~/Library/Application Support/PetFam`.
 
 ### Using PetFam
-- **Tray menu:** My pets (where they are, call them over, travel mode), Weather, put out a food bowl, build a house, PetFam wallpapers, fix the habitat, add a pet, language, quit.
+- **Tray menu:** My pets (where they are, call them over, travel mode), Weather, AI for your pets, pet diaries, pets chat with each other, put out a food bowl, build a house, PetFam wallpapers, fix the habitat, add a pet, language, quit.
 - **Mouse:** hover a pet to bring it forward; click for its menu; press and rub to pet; drag to carry. Click a house to decorate it, drag it to move it.
 - **Panel:** clicking a pet opens its panel with mood, needs, bond, age and its to-do queue.
 
 ## Privacy
 - PetFam reads only window positions, the cursor position and idle time, never what is inside your windows.
 - The wallpaper is analysed on your computer. Nothing is uploaded.
-- The only network request is the optional weather lookup, which sends the coordinates of the city you picked (no IP lookup, no location permission). Turn it off in the tray.
-- AI talk (only if Claude Code is installed) sends your Claude the two pets' names, breeds, personalities, moods and outfits, the weather and time of day, and what they said last time. Nothing from your screen. Turn it off in the tray.
+- Apart from the AI you set up, the only network request is the optional weather lookup, which sends the coordinates of the city you picked (no IP lookup, no location permission). Turn it off in the tray.
+- AI features (only with an AI set up) send your AI pet information only: names, breeds, personalities, moods, outfits, what they did today, what they said, the weather and time of day, plus what you type to it. A picture is sent only when you ask (a photo of your pet, or the wallpaper when you click *Let AI read the wallpaper*). Never anything from your screen. With Ollama nothing leaves your computer.
+- The local server listens on 127.0.0.1 only and refuses requests from web pages. Turn it off in the AI settings.
 
 ## For developers
 
@@ -265,8 +273,11 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_FAKE_HOVER=1` / `primary` / `mon-X-Y` | A made-up cursor rests on the first pet on screen (or on that monitor) without moving the mouse; with `PETFAM_FAKE_HOVER_BLINK=1` it moves on and off the pet every second (for checking hover) |
 | `PETFAM_TRACE_HOVER=1` | Logs every time a pet goes into or out of its front window under the cursor, and when the cursor goes onto or off the bare desktop |
 | `PETFAM_FAST_TALK=1` | Pets chat (AI talk) every 30–45 s instead of every 4–8 min |
-| `PETFAM_AI=off` | Turns AI talk off: no Claude CLI is looked for |
-| `PETFAM_CLAUDE=<path>` | Uses this `claude` executable for AI talk instead of the one found on PATH |
+| `PETFAM_AI=off` | Turns every AI feature off |
+| `PETFAM_DIARY_NOW=1` | Pets write their diaries straight away instead of after 9 pm |
+| `PETFAM_AI_SELFTEST=1` | At start, runs each "from words" job (house, outfit, coat, adoption, wallpaper) once against your AI and logs the answers; nothing is applied. `PETFAM_AI_SELFTEST_PHOTO=<path>` adds a photo |
+| `ANTHROPIC_API_KEY` | Used for the Claude API provider when no key is set in the AI settings |
+| `PETFAM_CLAUDE=<path>` | Uses this `claude` executable instead of the one found on PATH |
 | `PETFAM_DEMO=habitat` / `habitat2` | Opens the habitat editor on the main (or second) monitor 4 seconds after launch and saves a picture of it to `habitat-editor.png` |
 | `PETFAM_DEMO=dropped` | Lays one of each hat and pair of glasses on the floor 3 seconds after launch (to see how they look) |
 | `PETFAM_DEMO=outfit` | Opens the dress-up window for the first pet 4 seconds after launch and saves a picture of it to `outfit-editor.png` |
