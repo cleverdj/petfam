@@ -41,6 +41,9 @@ public sealed class DebugOptions
 
     /// <summary>Test option: a made-up cursor position used instead of the real one.</summary>
     public Func<Vec2?>? CursorOverride { get; set; }
+
+    /// <summary>Logs every hover change (PETFAM_TRACE_HOVER=1).</summary>
+    public bool TraceHover { get; set; } = Environment.GetEnvironmentVariable("PETFAM_TRACE_HOVER") == "1";
 }
 
 public sealed class BehaviorContext

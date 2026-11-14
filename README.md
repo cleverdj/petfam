@@ -259,6 +259,7 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_DEMO=ball` | Starts ball play with the first dog 3 seconds after launch (for checking throwing) |
 | `PETFAM_DEMO=house` | Opens the build-a-new-house window 3 seconds after launch |
 | `PETFAM_FAKE_HOVER=1` / `primary` / `mon-X-Y` | A made-up cursor rests on the first pet on screen (or on that monitor) without moving the mouse; with `PETFAM_FAKE_HOVER_BLINK=1` it moves on and off the pet every second (for checking hover) |
+| `PETFAM_TRACE_HOVER=1` | Logs every time a pet goes into or out of its front window under the cursor, and when the cursor goes onto or off the bare desktop |
 | `PETFAM_DEMO=habitat` / `habitat2` | Opens the habitat editor on the main (or second) monitor 4 seconds after launch and saves a picture of it to `habitat-editor.png` |
 | `PETFAM_DEMO=dropped` | Lays one of each hat and pair of glasses on the floor 3 seconds after launch (to see how they look) |
 | `PETFAM_DEMO=outfit` | Opens the dress-up window for the first pet 4 seconds after launch and saves a picture of it to `outfit-editor.png` |

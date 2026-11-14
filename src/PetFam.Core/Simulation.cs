@@ -778,7 +778,9 @@ public sealed class Simulation
         NoticeNewWindow(User.Foreground);
         User.Idle = _platform.GetIdleTime();
         User.DoNotDisturb = _platform.IsDoNotDisturb();
-        User.CursorOnDesktop = Debug.CursorOverride?.Invoke() is not null || _platform.IsDesktopAt(User.Cursor);
+        var onDesktop = Debug.CursorOverride?.Invoke() is not null || _platform.IsDesktopAt(User.Cursor);
+        if (onDesktop != User.CursorOnDesktop && Debug.TraceHover) Debug.Log?.Invoke($"Hover: cursor on desktop {onDesktop} at {User.Cursor}");
+        User.CursorOnDesktop = onDesktop;
     }
 
     /// <summary>

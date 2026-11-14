@@ -1075,6 +1075,9 @@ public sealed class AppHost
             var box = Expand(PetRenderer.HitBox(pet, depth), inFront ? 40 : 20);
             var hovering = _sim.User.CursorOnDesktop && box.Contains(cursor);
             var want = held || hovering;
+            if (_sim.Debug.TraceHover && want != (_lastWant.TryGetValue(pet.Id, out var lw) && lw))
+                AppLog.Write($"Hover: {pet.Name} {(want ? "in" : "out")} held={held} onDesktop={_sim.User.CursorOnDesktop} inBox={box.Contains(cursor)} cursor={cursor} box={box} layer={pet.Layer} frontVisible={front?.IsVisible}");
+            _lastWant[pet.Id] = want;
 
             // Handing the pet from one window to the other, both draw it for a few frames, so it is never missing
             // while the newly shown window (or the backyard behind the icons) catches up.
@@ -1122,6 +1125,7 @@ public sealed class AppHost
     private const int HandoverFrames = 3;
 
     private readonly Dictionary<Guid, int> _handover = new();
+    private readonly Dictionary<Guid, bool> _lastWant = new();
 
     private BallFrontWindow? _ballFront;
 

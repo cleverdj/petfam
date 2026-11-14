@@ -73,6 +73,10 @@ public sealed class FrontWindow : Window
 
     public bool IsHolding => _pressed;
 
+    /// <summary>The window is big enough for the pet up to this depth scale (at this render scaling).</summary>
+    private float _roomFor;
+    private double _roomScale;
+
     /// <summary>The cell the pet is in now (it may have walked over to another monitor since this window was made).</summary>
     private Cell _cell => _sim.World.Find(_pet.CellId) ?? _startCell;
 
@@ -81,9 +85,17 @@ public sealed class FrontWindow : Window
     {
         var depth = _cell.Map.DepthScale(_pet.Position.Y);
         var scale = RenderScaling;
-        Position = new PixelPoint((int)(_pet.Position.X - PetSprite.FootX * depth), (int)(_pet.Position.Y - PetSprite.FootY * depth));
-        Width = PetSprite.BoxWidth * depth / scale;
-        Height = PetSprite.BoxHeight * depth / scale;
+        var pos = new PixelPoint((int)(_pet.Position.X - PetSprite.FootX * depth), (int)(_pet.Position.Y - PetSprite.FootY * depth));
+        if (Position != pos) Position = pos;
+        // Resizing a transparent window flickers, and a pet walking up or down the screen changes size every frame.
+        // So the window only ever grows (with room to spare); the pet is drawn at its size inside it.
+        if (depth > _roomFor || scale != _roomScale)
+        {
+            _roomFor = depth * 1.25f;
+            _roomScale = scale;
+            Width = PetSprite.BoxWidth * _roomFor / scale;
+            Height = PetSprite.BoxHeight * _roomFor / scale;
+        }
         _control.Depth = depth;
         _control.Scale = scale;
 
@@ -200,8 +212,9 @@ public sealed class FrontPetControl : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
+        // Takes the mouse over the pet's own box only, not the spare room the window keeps for growing.
         if (Background is not null)
-            context.FillRectangle(Background, new Rect(Bounds.Size));
+            context.FillRectangle(Background, new Rect(0, 0, PetSprite.BoxWidth * Depth / Scale, PetSprite.BoxHeight * Depth / Scale));
         using var _ = context.PushTransform(Matrix.CreateScale(Depth / Scale, Depth / Scale));
         PetSprite.Paint(context, _pet, Depth);
     }
