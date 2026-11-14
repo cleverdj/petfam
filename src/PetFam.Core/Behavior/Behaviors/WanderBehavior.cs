@@ -21,6 +21,7 @@ public sealed class WanderBehavior : Behavior
     public override float Score(BehaviorContext ctx)
     {
         var p = ctx.Pet;
+        if (p.Hovered) return 0f;                      // under the mouse: stays put to be picked up
         var funDeficit = (100f - p.Needs.Fun) / 100f;
         var snowJoy = ctx.Weather.Snowing && p.Species == PetSpecies.Dog ? 0.25f : 0f;   // dogs love snow
         return 0.25f + p.Personality.Activity * 0.3f + funDeficit * 0.15f + snowJoy;

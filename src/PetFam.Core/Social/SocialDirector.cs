@@ -33,7 +33,7 @@ public sealed class SocialDirector
     /// <summary>Is the pet free for a social encounter (not held, busy with a command, asleep, eating, swimming...)?</summary>
     public static bool Available(Pet pet) =>
         pet.Session is null && pet.Hold == HoldState.None && pet.Queue.Count == 0 && !pet.Hidden &&
-        pet.Layer == PetLayer.Backyard &&
+        pet.Layer == PetLayer.Backyard && !pet.Hovered &&
         pet.Engine.Current is null or IdleBehavior or WanderBehavior or SitBehavior or GroomBehavior or LieBehavior { Approaching: false };
 
     public void Tick(IReadOnlyList<Pet> pets, Func<Pet, Cell?> cellOf, SocialState social, Random rng, DateTime nowUtc, float dt)

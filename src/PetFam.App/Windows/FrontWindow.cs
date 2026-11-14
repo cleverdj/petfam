@@ -129,6 +129,7 @@ public sealed class FrontWindow : Window
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var point = e.GetCurrentPoint(_control);
+        if (_sim.Debug.TraceHover) AppLog.Write($"Hover: press on {_pet.Name} at {point.Position} (left={point.Properties.IsLeftButtonPressed})");
         if (point.Properties.IsRightButtonPressed)
         {
             _openMenu(_pet);

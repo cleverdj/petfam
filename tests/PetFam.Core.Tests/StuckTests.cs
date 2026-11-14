@@ -59,3 +59,44 @@ public class StuckTests
         Assert.Equal(there.Id, pet.CellId);
     }
 }
+
+public class HoverTests
+{
+    private static readonly DateTime T0 = new(2026, 11, 14, 12, 0, 0, DateTimeKind.Utc);
+
+    private sealed class FakePlatform : IPlatform
+    {
+        public void RegisterOwnWindow(IntPtr handle) { }
+        public ForegroundWindowInfo? GetForegroundWindow() => null;
+        public Vec2 GetCursorPosition() => new(-5000, -5000);
+        public TimeSpan GetIdleTime() => TimeSpan.Zero;
+        public bool IsDoNotDisturb() => false;
+        public string? GetWallpaperPath() => null;
+        public WallpaperFit GetWallpaperFit() => WallpaperFit.Fill;
+        public bool IsDesktopAt(Vec2 screenPoint) => true;
+    }
+
+    [Fact]
+    public void A_pet_under_the_mouse_stops_wandering_off_and_stays_to_be_picked_up()
+    {
+        var sim = new Simulation(new FakePlatform(), new Random(3));
+        var b = new RectI(0, 0, 1920, 1080);
+        var cell = sim.World.Upsert(new Cell { Id = "d:m", DesktopId = "d", MonitorId = "m", Bounds = b, WorkingArea = new RectI(0, 0, 1920, 1040), Map = HabitatMap.Flat(b, new RectI(0, 0, 1920, 1040)) });
+        var pet = sim.AddPet(Breed.Shiba, "Happy", cell, T0);
+        pet.Growth = new Growth(T0, Growth.AdultAt);
+        pet.Needs.Energy = 100f;
+        pet.Personality.Activity = 1f;
+
+        // Get it walking somewhere.
+        for (var t = 0f; t < 120f && pet.Engine.Current is not WanderBehavior; t += 0.25f) sim.Tick(0.25f, T0.AddSeconds(t));
+        Assert.IsType<WanderBehavior>(pet.Engine.Current);
+
+        pet.Hovered = true;
+        Assert.False(PetFam.Core.Social.SocialDirector.Available(pet));
+        Assert.False(TravelPlanner.CanLeave(pet));
+        var at = pet.Position;
+        for (var t = 0f; t < 20f; t += 0.25f) sim.Tick(0.25f, T0.AddSeconds(200 + t));
+        Assert.IsNotType<WanderBehavior>(pet.Engine.Current);
+        Assert.True(Vec2.Distance(at, pet.Position) < 40f, $"moved {Vec2.Distance(at, pet.Position):0} px while under the mouse");
+    }
+}

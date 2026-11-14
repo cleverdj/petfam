@@ -46,6 +46,12 @@ public sealed class Pet
 
     public PetLayer Layer { get; set; } = PetLayer.Backyard;
 
+    /// <summary>
+    /// The mouse is over the pet (set by the app). It stays put so it can be picked up: it stops wandering off and
+    /// doesn't go off to play with another pet or to another screen.
+    /// </summary>
+    public bool Hovered { get; set; }
+
     /// <summary>Animation clip name the renderer should play (idle, walk, sit, sleep, peek, shake...).</summary>
     public string Animation { get; set; } = "idle";
 

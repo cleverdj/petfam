@@ -63,7 +63,7 @@ public sealed class TravelPlanner
     /// <summary>Not busy with something that should not be cut short.</summary>
     public static bool CanLeave(Pet p) =>
         p.Trip is null && p.Session is null && p.Hold == HoldState.None && p.Queue.Count == 0 && !p.Hidden &&
-        p.Layer == PetLayer.Backyard &&
+        p.Layer == PetLayer.Backyard && !p.Hovered &&
         p.Engine.Current is not (SleepBehavior or ShelterBehavior or EatBehavior or HeldBehavior or QueuedInteractionBehavior or SocialBehavior or TravelBehavior);
 
     public void Tick(Simulation sim, float dt, Random rng)

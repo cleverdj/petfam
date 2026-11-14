@@ -1055,6 +1055,7 @@ public sealed class AppHost
 
         foreach (var pet in _sim.Pets)
         {
+            pet.Hovered = false;
             if (!_sim.VisibleCellIds.Contains(pet.CellId) || pet.Layer == PetLayer.WindowEdge) continue;
             if (_sim.World.Find(pet.CellId) is not { } petCell) continue;
 
@@ -1078,6 +1079,7 @@ public sealed class AppHost
             if (_sim.Debug.TraceHover && want != (_lastWant.TryGetValue(pet.Id, out var lw) && lw))
                 AppLog.Write($"Hover: {pet.Name} {(want ? "in" : "out")} held={held} onDesktop={_sim.User.CursorOnDesktop} inBox={box.Contains(cursor)} cursor={cursor} box={box} layer={pet.Layer} frontVisible={front?.IsVisible}");
             _lastWant[pet.Id] = want;
+            pet.Hovered = hovering;
 
             // Hovering only puts an invisible window over the pet to take the mouse: the pet stays drawn in the backyard,
             // so nothing changes on screen (moving the drawing between windows made it blink). Only a carried pet is

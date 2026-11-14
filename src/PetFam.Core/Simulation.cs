@@ -297,7 +297,7 @@ public sealed class Simulation
                 // Talkative breeds (playful, outgoing) talk more often; shy ones rarely.
                 var chatty = 0.4f + pet.Personality.Playfulness * 0.8f - pet.Personality.Shyness * 0.5f;
                 left = (50f + (float)_rng.NextDouble() * 90f) / System.Math.Max(0.25f, chatty);
-                if (IsVisible(pet) && !pet.Hidden && pet.Bubble is null && pet.Layer == PetLayer.Backyard &&
+                if (IsVisible(pet) && !pet.Hidden && pet.Bubble is null && pet.Layer == PetLayer.Backyard && !pet.Hovered &&
                     pet.Hold == HoldState.None && pet.Session is null && pet.Animation is not ("sleep" or "doze"))
                 {
                     var n = pet.Needs;
@@ -415,6 +415,8 @@ public sealed class Simulation
                 if (b is CooldownBehavior cooling) cooling.TickCooldown(dt);
             }
 
+            // Under the mouse: a pet out for a stroll stops (and looks at you), so it can be picked up.
+            if (pet.Hovered && pet.Engine.Current is WanderBehavior) pet.Engine.ForceStop(ctx);
             pet.Engine.Update(ctx, dt);
             Unstick(pet, ctx, dt);
             pet.AnimationTime += dt;
