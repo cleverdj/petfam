@@ -1,10 +1,9 @@
-// Soundtrack for the promo, synthesised from scratch (no samples, nothing to license): a light ukulele-like
-// strum over C-G-Am-F, a glockenspiel tune, soft drums, and the sound effects listed in timeline.js.
+// Soundtrack for the promo, synthesised from scratch (no samples, nothing to license): an original waltz for
+// piano and strings, and the sound effects listed in timeline.js.
 import fs from 'node:fs';
 import { DURATION, sfx } from './timeline.js';
 
 const RATE = 48000;
-const BPM = 120, BEAT = 60 / BPM, BAR = BEAT * 4;
 const hz = midi => 440 * Math.pow(2, (midi - 69) / 12);
 
 function rng(seed) {
@@ -21,21 +20,6 @@ export function writeSoundtrack(file, lang = 'ko') {
   };
   const noise = rng(1234);
 
-  // Karplus-Strong plucked string: sounds like a small nylon-string instrument.
-  const pluck = (f, dur, bright = 0.5) => {
-    const len = Math.round(dur * RATE), period = Math.max(2, Math.round(RATE / f)), ring = new Float32Array(period);
-    for (let i = 0; i < period; i++) ring[i] = noise() * 2 - 1;
-    const out = new Float32Array(len);
-    let p = 0, prev = 0;
-    for (let i = 0; i < len; i++) {
-      const cur = ring[p], next = ring[(p + 1) % period];
-      const v = (cur * (0.5 + bright * 0.25) + next * (0.5 - bright * 0.25)) * 0.996;
-      ring[p] = v; p = (p + 1) % period;
-      prev = prev * 0.3 + cur * 0.7;
-      out[i] = prev * Math.min(1, (len - i) / (RATE * 0.05));
-    }
-    return out;
-  };
   const tone = (f, dur, parts, decay, attack = 0.004) => {
     const len = Math.round(dur * RATE), out = new Float32Array(len);
     for (let i = 0; i < len; i++) {
@@ -47,11 +31,6 @@ export function writeSoundtrack(file, lang = 'ko') {
   };
   const glock = (f, dur = 1.2) => tone(f, dur, [[1, 1], [2.76, 0.28], [5.4, 0.1]], 0.38);
   const bass = (f, dur) => tone(f, dur, [[1, 1], [2, 0.25], [3, 0.08]], 0.35, 0.01);
-  const kick = () => {
-    const len = Math.round(0.3 * RATE), out = new Float32Array(len); let ph = 0;
-    for (let i = 0; i < len; i++) { const t = i / RATE; ph += 2 * Math.PI * (48 + 90 * Math.exp(-t / 0.03)) / RATE; out[i] = Math.sin(ph) * Math.exp(-t / 0.09); }
-    return out;
-  };
   const hiss = (dur, decay, hp = 0.9, lp = 1) => {
     const len = Math.round(dur * RATE), out = new Float32Array(len); let a = 0, b = 0;
     for (let i = 0; i < len; i++) {
@@ -67,46 +46,77 @@ export function writeSoundtrack(file, lang = 'ko') {
   };
 
   // ------------------------------------------------------------------------------------------- music
-  const chords = [[60, 64, 67], [55, 59, 62, 67], [57, 60, 64], [53, 57, 60, 65]];
-  const roots = [36, 43, 45, 41];
-  const tune = [
-    [76, null, 79, null, 81, 79, 76, null], [74, null, 79, null, 71, null, 74, null],
-    [72, null, 76, null, 81, null, 79, 76], [77, null, 81, null, 79, null, null, null],
-    [79, null, 76, null, 72, null, 76, 79], [86, null, 83, null, 79, null, 81, 83],
-    [84, null, 81, null, 76, null, 81, null], [79, null, 77, null, 76, null, 74, null],
-  ];
-  const strum = [1, 0, 0.6, 0.8, 0, 0.7, 0.9, 0.6];
-  const bars = Math.ceil(DURATION / BAR);
-  const musicEnd = 46.0;
-  for (let bar = 0; bar < bars; bar++) {
-    const t0 = bar * BAR;
-    if (t0 >= musicEnd) break;
-    const c = chords[bar % 4];
-    const intro = t0 < 6, quiet = t0 >= 34 && t0 < 38;
-    strum.forEach((a, s) => {
-      if (!a || (intro && s % 4)) return;
-      const ts = t0 + s * BEAT / 2;
-      if (ts >= musicEnd) return;
-      c.forEach((m, k) => mix(pluck(hz(m + 12), 1.4, 0.4), ts + k * 0.012 * (s % 2 ? -1 : 1) + (s % 2 ? 0.03 : 0), 0.16 * a * (intro ? 0.7 : 1), -0.25));
-    });
-    if (!intro) {
-      for (const b of [0, 2, 3]) if (t0 + b * BEAT < musicEnd) mix(bass(hz(roots[bar % 4] + (b === 3 ? 7 : 0)), BEAT * 1.6), t0 + b * BEAT, 0.34);
-      for (let b = 0; b < 4; b++) {
-        const tb = t0 + b * BEAT;
-        if (tb >= musicEnd - 0.1) continue;
-        if (b % 2 === 0) mix(kick(), tb, quiet ? 0.25 : 0.5);
-        else mix(hiss(0.18, 0.06, 0.5, 0.6), tb, quiet ? 0.08 : 0.16, 0.1);
-        mix(hiss(0.05, 0.015, 0.2), tb + BEAT / 2, 0.07, 0.3);
-      }
-      const line = tune[(bar - 3 + 8) % 8];
-      line.forEach((m, s) => { if (m && t0 + s * BEAT / 2 < musicEnd) mix(glock(hz(m)), t0 + s * BEAT / 2, quiet ? 0.1 : 0.17, 0.3); });
-    } else if (bar >= 1) {
-      tune[(bar + 3) % 8].forEach((m, s) => { if (m && s % 2 === 0) mix(glock(hz(m)), t0 + s * BEAT / 2, 0.12, 0.3); });
+  // An original waltz in 3/4 for piano and strings: bass on one, chords on two and three, a singing tune on top,
+  // and a string section that swells in the second half of each phrase.
+  const BEAT3 = 0.42, BAR3 = BEAT3 * 3;
+  const piano = (f, dur, vel = 1) => {
+    const len = Math.round(dur * RATE), out = new Float32Array(len);
+    const parts = [1, 2, 3, 4, 5, 6, 7].map(n => [n * Math.sqrt(1 + 0.0004 * n * n), Math.pow(n, -1.25) * (n === 1 ? 1 : 0.7), 1.8 * Math.pow(n, -0.7) * Math.min(1, 300 / f)]);
+    for (let i = 0; i < len; i++) {
+      const t = i / RATE;
+      let v = 0;
+      for (const [m, a, d] of parts) v += Math.sin(2 * Math.PI * f * m * t) * a * Math.exp(-t / d);
+      out[i] = v * vel * Math.min(1, t / 0.003) * Math.min(1, (len - i) / (RATE * 0.08));
     }
+    return out;
+  };
+  const SAW = new Float32Array(2048);
+  for (let i = 0; i < 2048; i++) { let v = 0; for (let n = 1; n <= 14; n++) v += Math.sin(2 * Math.PI * n * i / 2048) / n * (n % 2 ? 1 : 0.6); SAW[i] = v * 0.55; }
+  const strings = (f, dur, vel = 1, attack = 0.45) => {
+    const len = Math.round(dur * RATE), out = new Float32Array(len);
+    const det = [0.996, 1, 1.004];
+    const ph = [0, 0.33, 0.71];
+    let lp = 0;
+    for (let i = 0; i < len; i++) {
+      const t = i / RATE, vib = 1 + 0.0035 * Math.sin(2 * Math.PI * 5.2 * t);
+      let v = 0;
+      for (let k = 0; k < 3; k++) { ph[k] = (ph[k] + f * det[k] * vib / RATE) % 1; v += SAW[(ph[k] * 2048) | 0]; }
+      lp += 0.08 * (v / 3 - lp);
+      out[i] = lp * vel * Math.min(1, t / attack) * Math.min(1, (len - i) / (RATE * 0.5));
+    }
+    return out;
+  };
+  // [bass, chord tones] per bar; a 16-bar phrase in C.
+  const CH = [
+    [41, [57, 60, 64]], [43, [59, 62, 64]], [40, [55, 59, 62]], [45, [55, 59, 60]],
+    [38, [53, 57, 60, 64]], [43, [53, 55, 60]], [36, [55, 59, 62, 64]], [45, [55, 61, 64]],
+    [41, [57, 60, 64]], [43, [55, 59, 62]], [40, [55, 59, 62]], [45, [57, 60, 64]],
+    [38, [53, 57, 60]], [43, [53, 59, 62]], [36, [55, 60, 64]], [36, [55, 60, 64]],
+  ];
+  // [beat, note, beats] per bar.
+  const TUNE = [
+    [[0, 72, 1], [1, 76, 1], [2, 79, 1]], [[0, 81, 2], [2, 79, 1]], [[0, 79, 1.5], [1.5, 76, 0.5], [2, 74, 1]], [[0, 76, 3]],
+    [[0, 77, 1], [1, 76, 1], [2, 74, 1]], [[0, 72, 1], [1, 74, 2]], [[0, 76, 1.5], [1.5, 79, 0.5], [2, 83, 1]], [[0, 81, 3]],
+    [[0, 81, 1], [1, 84, 1], [2, 83, 1]], [[0, 81, 2], [2, 79, 1]], [[0, 79, 1], [1, 83, 1], [2, 79, 1]], [[0, 76, 3]],
+    [[0, 77, 1.5], [1.5, 76, 0.5], [2, 74, 1]], [[0, 74, 1], [1, 77, 1], [2, 71, 1]], [[0, 72, 3]], [],
+  ];
+  const BARS = 36; // the waltz ends on the last chord as the end card appears
+  const musicEnd = BARS * BAR3;
+  for (let bar = 0; bar < BARS; bar++) {
+    const t0 = bar * BAR3;
+    let idx = (bar - 4 + 16) % 16;
+    if (bar === BARS - 2) idx = 12;
+    if (bar === BARS - 1) idx = 13;
+    const [bass, chord] = CH[idx];
+    const intro = bar < 4, quiet = t0 >= 33.6 && t0 < 37.2, swell = !intro && idx >= 8;
+    const lh = intro ? 0.45 : quiet ? 0.5 : 0.75;
+    mix(piano(hz(bass), BAR3 * 1.2, 0.9 * lh), t0, 0.32, -0.15);
+    mix(piano(hz(bass + 12), BAR3 * 1.2, 0.35 * lh), t0, 0.32, -0.15);
+    for (const b of [1, 2]) chord.forEach((m, k) => mix(piano(hz(m), BEAT3 * 1.6, 0.55 * lh), t0 + b * BEAT3 + k * 0.006, 0.17, -0.1));
+    if (intro) {
+      chord.forEach((m, k) => mix(piano(hz(m + 12), BAR3, 0.5), t0 + k * BEAT3 * 0.75 + BEAT3 * 0.1, 0.12, 0.25));
+    } else {
+      for (const [b, m, d] of TUNE[idx]) mix(piano(hz(m), d * BEAT3 + 0.9, quiet ? 0.6 : 1), t0 + b * BEAT3, 0.3, 0.2);
+      if (swell && t0 > 10) for (const [b, m, d] of TUNE[idx]) mix(strings(hz(m - 12), d * BEAT3 + 0.25, 1, 0.12), t0 + b * BEAT3, quiet ? 0.05 : 0.11, 0.1);
+    }
+    const pad = intro ? 0.05 : quiet ? 0.05 : swell ? 0.11 : 0.075;
+    chord.forEach(m => mix(strings(hz(m - 12), BAR3 + 0.5), t0, pad, 0));
+    mix(strings(hz(bass), BAR3 + 0.5), t0, pad * 0.9, 0);
   }
-  // Last chord rings out under the end card.
-  [48, 60, 64, 67, 72].forEach((m, k) => mix(pluck(hz(m + 12), 3.8, 0.3), musicEnd + k * 0.03, 0.16));
-  mix(glock(hz(84), 3), musicEnd + 0.15, 0.2, 0.3);
+  // Final chord under the end card.
+  [36, 48, 55, 59, 64, 67, 71].forEach((m, k) => mix(piano(hz(m), 4.5, 0.8), musicEnd + k * 0.07, 0.2, k % 2 ? 0.2 : -0.2));
+  [48, 55, 59, 64].forEach(m => mix(strings(hz(m), 4.2, 1, 0.6), musicEnd, 0.08));
+  mix(piano(hz(84), 3.5, 0.7), musicEnd + 0.6, 0.18, 0.3);
 
   // ------------------------------------------------------------------------------------------- effects
   const fx = {
@@ -123,7 +133,7 @@ export function writeSoundtrack(file, lang = 'ko') {
     tada: () => { const o = new Float32Array(Math.round(2 * RATE)); [72, 76, 79, 84, 88].forEach((m, k) => { const g = glock(hz(m), 1.5); for (let i = 0; i < g.length; i++) { const j = i + Math.round(k * 0.06 * RATE); if (j < o.length) o[j] += g[i] * 0.55; } }); return o; },
     chime: () => { const a = tone(hz(84), 2.5, [[1, 1], [2.0, 0.35], [3.01, 0.15]], 0.9); const b = tone(hz(91), 2.5, [[1, 1], [2.0, 0.3]], 0.8); for (let i = 0; i < a.length; i++) a[i] = a[i] * 0.6 + b[i] * 0.4; return a; },
   };
-  const gains = { pop: 0.22, tick: 0.18, click: 0.3, whoosh: 0.35, scan: 0.1, splash: 0.5, 'splash-small': 0.3, shake: 0.22, thud: 0.6, sparkle: 0.35, tada: 0.4, chime: 0.35 };
+  const gains = { pop: 0.22, tick: 0.18, click: 0.3, whoosh: 0.22, scan: 0.1, splash: 0.5, 'splash-small': 0.3, shake: 0.22, thud: 0.6, sparkle: 0.35, tada: 0.4, chime: 0.25 };
   for (const e of sfx(lang)) mix(fx[e.k](), e.t, gains[e.k], e.k === 'pop' ? 0.15 : 0);
 
   // Rain on the desktop.

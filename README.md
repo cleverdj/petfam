@@ -301,9 +301,11 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_SAVE=<file>` | Uses a different save file (if the file doesn't exist, starts from first-run onboarding; your real pets are untouched) |
 
 ### Promo video
-`promo/` holds a 50-second promo video made with three.js: the pets on the real PetFam wallpapers, the AI reading
-the wallpaper, a wallpaper change, decorating a house from words, rain and snow, and growing up. The soundtrack is
-synthesised by `promo/audio.mjs`, so there is nothing to license. It needs Node.js, Chrome (or Edge) and ffmpeg.
+`promo/` holds a 50-second promo video made with three.js, in a hand-painted animation style: the real PetFam
+wallpapers baked into painted backgrounds (brush strokes, pigment and paper), cel-shaded pets, painted clouds and
+petals on the wind. It shows the AI reading the wallpaper, a wallpaper change, decorating a house from words, rain
+and snow, and growing up. The soundtrack, an original waltz for piano and strings, is synthesised by
+`promo/audio.mjs`, so there is nothing to license. It needs Node.js, Chrome (or Edge) and ffmpeg.
 
 ```
 cd promo

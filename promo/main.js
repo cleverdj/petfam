@@ -1,6 +1,12 @@
-// PetFam promo video: a three.js scene driven entirely by time, so every frame can be rendered on its own
+// PetFam promo video, in a hand-painted animation style: painted backgrounds (the wallpapers baked through a
+// brush-stroke filter), crisp cel-shaded pets, painted clouds, drifting petals. A three.js scene driven entirely by time, so every frame can be rendered on its own
 // (render.mjs steps through renderAt(t) and records each frame). Open index.html in a browser to watch it live.
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { DURATION, CAPTIONS, BUBBLES, CHIPS, SCAN, TYPE, PRESS, BUILD, LINEUP } from './timeline.js';
 
 const qs = new URLSearchParams(location.search);
@@ -38,6 +44,9 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDraw
 renderer.setPixelRatio(1);
 renderer.setSize(W, H, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.localClippingEnabled = true;
+// Sky effects stay inside the screen, also while the camera still looks at the monitor from afar.
+const SCREEN_CLIP = [new THREE.Plane(new THREE.Vector3(1, 0, 0), 8), new THREE.Plane(new THREE.Vector3(-1, 0, 0), 8), new THREE.Plane(new THREE.Vector3(0, 1, 0), 4.5), new THREE.Plane(new THREE.Vector3(0, -1, 0), 4.5)];
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 400);
@@ -62,7 +71,7 @@ function shapeRoundRect(s, x, y, w, h, r) {
 
 scene.background = canvasTex(16, 512, (g, w, h) => {
   const gr = g.createLinearGradient(0, 0, 0, h);
-  gr.addColorStop(0, '#34407a'); gr.addColorStop(0.55, '#1a2246'); gr.addColorStop(1, '#0e1329');
+  gr.addColorStop(0, '#3a4377'); gr.addColorStop(0.5, '#6d6595'); gr.addColorStop(1, '#c98f7a');
   g.fillStyle = gr; g.fillRect(0, 0, w, h);
 });
 
@@ -88,12 +97,73 @@ async function wallpaper(name) {
   t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   return t;
 }
-const [meadow, seaside, garden] = await Promise.all(['sunny-meadow', 'seaside', 'cozy-garden'].map(wallpaper));
+const NOISE = `
+  float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+  float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
+  float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ v += a * vnoise(p); p *= 2.03; a *= 0.5; } return v; }`;
+const fsCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const fsScene = new THREE.Scene();
+const fsQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
+fsScene.add(fsQuad);
+const FS_VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+const target = () => new THREE.WebGLRenderTarget(2560, 1440, { type: THREE.HalfFloatType, depthBuffer: false });
+function runPass(frag, uniforms, out) {
+  fsQuad.material = new THREE.ShaderMaterial({ uniforms: { res: { value: new THREE.Vector2(2560, 1440) }, ...uniforms }, vertexShader: FS_VERT, fragmentShader: frag });
+  renderer.setRenderTarget(out); renderer.render(fsScene, fsCam); renderer.setRenderTarget(null);
+  fsQuad.material.dispose();
+  return out.texture;
+}
+// Turns a flat vector wallpaper into a painted background: wobbly hand-drawn edges and uneven pigment, brush
+// strokes (a Kuwahara filter), pigment pooling at the edges, a little warmth, and paper grain.
+function paint(tex) {
+  const a = runPass(`uniform sampler2D map; uniform vec2 res; varying vec2 vUv; ${NOISE}
+    void main(){
+      vec2 p = vUv * res;
+      vec2 warp = vec2(fbm(p / 70.0), fbm(p / 70.0 + 17.3)) - 0.5;
+      vec3 c = texture2D(map, vUv + warp * 5.0 / res).rgb;
+      float pig = fbm(p / 160.0) - 0.5, fine = fbm(p / 22.0) - 0.5;
+      c *= 1.0 + pig * 0.14 + fine * 0.07;
+      c = mix(c, c * vec3(1.05, 1.0, 0.92), smoothstep(0.2, 0.8, dot(c, vec3(0.3, 0.6, 0.1))));
+      gl_FragColor = vec4(c, 1.0);
+    }`, { map: { value: tex } }, target());
+  const b = runPass(`uniform sampler2D map; uniform vec2 res; varying vec2 vUv;
+    void main(){
+      const int R = 6;
+      vec3 m0 = vec3(0), m1 = vec3(0), m2 = vec3(0), m3 = vec3(0), s0 = vec3(0), s1 = vec3(0), s2 = vec3(0), s3 = vec3(0);
+      for (int j = 0; j <= R; j++) for (int i = 0; i <= R; i++) {
+        vec3 c;
+        c = texture2D(map, vUv + vec2(-i, -j) / res).rgb; m0 += c; s0 += c * c;
+        c = texture2D(map, vUv + vec2( i, -j) / res).rgb; m1 += c; s1 += c * c;
+        c = texture2D(map, vUv + vec2(-i,  j) / res).rgb; m2 += c; s2 += c * c;
+        c = texture2D(map, vUv + vec2( i,  j) / res).rgb; m3 += c; s3 += c * c;
+      }
+      float n = float((R + 1) * (R + 1));
+      m0 /= n; m1 /= n; m2 /= n; m3 /= n;
+      vec4 v = vec4(dot(abs(s0 / n - m0 * m0), vec3(1)), dot(abs(s1 / n - m1 * m1), vec3(1)), dot(abs(s2 / n - m2 * m2), vec3(1)), dot(abs(s3 / n - m3 * m3), vec3(1)));
+      vec4 k = v * 200.0, w = 1.0 / (1.0 + k * k);
+      gl_FragColor = vec4(max((m0 * w.x + m1 * w.y + m2 * w.z + m3 * w.w) / (w.x + w.y + w.z + w.w), 0.0), 1.0);
+    }`, { map: { value: a } }, target());
+  return runPass(`uniform sampler2D map; uniform vec2 res; varying vec2 vUv; ${NOISE}
+    float L(vec2 o){ return dot(texture2D(map, vUv + o / res).rgb, vec3(0.3, 0.59, 0.11)); }
+    void main(){
+      vec3 c = texture2D(map, vUv).rgb;
+      float gx = L(vec2(2, 0)) - L(vec2(-2, 0)), gy = L(vec2(0, 2)) - L(vec2(0, -2));
+      float edge = clamp(length(vec2(gx, gy)) * 2.2, 0.0, 0.28);
+      c *= 1.0 - edge;
+      float paper = fbm(vUv * res / 3.0) * 0.6 + fbm(vUv * res / 40.0) * 0.4;
+      c *= 0.955 + paper * 0.07;
+      float l = dot(c, vec3(0.3, 0.59, 0.11));
+      c = mix(vec3(l), c, 1.12);
+      gl_FragColor = vec4(max(c, 0.0), 1.0);
+    }`, { map: { value: b } }, target());
+}
+const [meadow, seaside, garden] = (await Promise.all(['sunny-meadow', 'seaside', 'cozy-garden'].map(wallpaper))).map(paint);
 
 const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(SW, SH), new THREE.ShaderMaterial({
   uniforms: {
     a: { value: meadow }, b: { value: meadow }, wipe: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) },
-    brand: { value: 0 }, brandA: { value: new THREE.Color('#ffe7cf') }, brandB: { value: new THREE.Color('#ffc6b3') },
+    brand: { value: 0 }, brandA: { value: new THREE.Color('#8fc6ec') }, brandB: { value: new THREE.Color('#fdf1dc') },
   },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
   fragmentShader: `
@@ -118,11 +188,11 @@ scene.add(backdrop);
 
 // ---------------------------------------------------------------------------------------------------- toon look
 const gradMap = (() => {
-  const t = new THREE.DataTexture(new Uint8Array([110, 185, 255]), 3, 1, THREE.RedFormat);
+  const t = new THREE.DataTexture(new Uint8Array([150, 255]), 2, 1, THREE.RedFormat);
   t.minFilter = t.magFilter = THREE.NearestFilter; t.needsUpdate = true; return t;
 })();
 const toon = (c, extra = {}) => new THREE.MeshToonMaterial({ color: c, gradientMap: gradMap, ...extra });
-const OUT = new THREE.MeshBasicMaterial({ color: '#4a3428', side: THREE.BackSide });
+const OUT = new THREE.MeshBasicMaterial({ color: '#4b3326', side: THREE.BackSide });
 const SPH = new THREE.SphereGeometry(1, 32, 20);
 const CONE = new THREE.ConeGeometry(1, 1, 18);
 const LEG = new THREE.CapsuleGeometry(0.075, 0.24, 4, 12);
@@ -152,8 +222,8 @@ scene.add(monitor);
   add(monitor, new THREE.CylinderGeometry(3.2, 3.4, 0.3, 48), dark, [0, -7.6, -1.0], [1, 1, 0.55], false);
   const led = new THREE.Mesh(SPH, new THREE.MeshBasicMaterial({ color: '#7dd3fc' }));
   led.position.set(0, -5.0, 0.95); led.scale.setScalar(0.06); monitor.add(led);
-  add(scene, new THREE.BoxGeometry(80, 0.4, 30), toon('#6b5040'), [0, -7.95, -4], null, false);
-  const glow = new THREE.Mesh(PLANE, new THREE.MeshBasicMaterial({ map: blobTex, color: '#7ea2ff', transparent: true, opacity: 0.35, depthWrite: false }));
+  add(scene, new THREE.BoxGeometry(80, 0.4, 30), toon('#7a5640'), [0, -7.95, -4], null, false);
+  const glow = new THREE.Mesh(PLANE, new THREE.MeshBasicMaterial({ map: blobTex, color: '#ffc58f', transparent: true, opacity: 0.45, depthWrite: false }));
   glow.position.set(0, 0, -1.5); glow.scale.set(40, 26, 1); scene.add(glow);
 }
 
@@ -445,6 +515,89 @@ const beam = new THREE.Mesh(PLANE, new THREE.MeshBasicMaterial({
 }));
 beam.scale.set(2.4, SH, 1);
 scene.add(beam);
+
+// ---------------------------------------------------------------------------------------------------- painted sky
+// Tall cumulus clouds painted on a canvas in three layers (blue-grey shade, soft body, sunlit tops), drifting slowly.
+function cloudTexture(seed) {
+  return canvasTex(1024, 560, (g, w, h) => {
+    const r = rng(seed), blobs = [];
+    for (let i = 0; i < 30; i++) {
+      const x = 170 + r() * 690, hump = 1 - Math.abs(x - 515) / 430;
+      blobs.push([x, 420 - r() * 260 * hump, 55 + r() * 85 * (0.5 + hump)]);
+    }
+    const layer = (dx, dy, k, inner, outer) => {
+      for (const [x, y, rad] of blobs) {
+        const gr = g.createRadialGradient(x + dx - rad * 0.3, y + dy - rad * 0.35, rad * 0.1, x + dx, y + dy, rad * k);
+        gr.addColorStop(0, inner); gr.addColorStop(0.85, outer); gr.addColorStop(1, outer.replace(/[\d.]+\)$/, '0)'));
+        g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, rad * k, 0, Math.PI * 2); g.fill();
+      }
+    };
+    layer(10, 26, 1.0, 'rgba(176,190,218,1)', 'rgba(160,176,208,0.95)');
+    layer(0, 0, 0.92, 'rgba(250,251,255,1)', 'rgba(226,232,244,0.97)');
+    layer(-14, -20, 0.6, 'rgba(255,255,255,1)', 'rgba(255,253,246,0.9)');
+    g.globalCompositeOperation = 'destination-out';
+    const cut = g.createLinearGradient(0, 430, 0, 500);
+    cut.addColorStop(0, 'rgba(0,0,0,0)'); cut.addColorStop(1, 'rgba(0,0,0,1)');
+    g.fillStyle = cut; g.fillRect(0, 430, w, h - 430);
+  });
+}
+const cloudTex = [11, 23, 37].map(cloudTexture);
+const clouds = [
+  [0, -5.2, 3.75, 4.6], [1, 1.2, 4.0, 3.8], [2, 6.4, 3.6, 4.3], [0, 11.5, 3.9, 3.6],
+].map(([k, x, y, w]) => {
+  const m = new THREE.Mesh(PLANE, new THREE.MeshBasicMaterial({ map: cloudTex[k], transparent: true, depthWrite: false, clippingPlanes: SCREEN_CLIP }));
+  m.userData = { x, y, w }; m.scale.set(w, w * 0.547, 1); scene.add(m);
+  return m;
+});
+
+// Sun rays from the upper right, and petals and dandelion seeds on the wind.
+const rayTex = canvasTex(64, 512, (g, w, h) => {
+  const gr = g.createLinearGradient(0, 0, 0, h);
+  gr.addColorStop(0, 'rgba(255,246,214,0.9)'); gr.addColorStop(1, 'rgba(255,246,214,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  const side = g.createLinearGradient(0, 0, w, 0);
+  side.addColorStop(0, 'rgba(0,0,0,1)'); side.addColorStop(0.5, 'rgba(0,0,0,0)'); side.addColorStop(1, 'rgba(0,0,0,1)');
+  g.globalCompositeOperation = 'destination-out'; g.fillStyle = side; g.fillRect(0, 0, w, h);
+});
+const rays = [[5.6, 1.6, 0.9], [4.2, 1.1, 0.6], [6.9, 2.2, 0.7]].map(([x, wdt, o]) => {
+  const m = new THREE.Mesh(PLANE, new THREE.MeshBasicMaterial({ map: rayTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, clippingPlanes: SCREEN_CLIP }));
+  m.userData = { x, o }; m.scale.set(wdt, 13, 1); m.rotation.z = -0.42; scene.add(m);
+  return m;
+});
+const PETALS = 70;
+const petals = instanced(new THREE.CircleGeometry(1, 10), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, transparent: true, depthWrite: false, clippingPlanes: SCREEN_CLIP }), PETALS);
+{
+  const cols = ['#ffffff', '#ffd6e2', '#fff4d6', '#ffffff', '#ffc2d4'].map(c => new THREE.Color(c));
+  for (let i = 0; i < PETALS; i++) petals.setColorAt(i, cols[i % cols.length]);
+}
+
+// ---------------------------------------------------------------------------------------------------- post
+// Painted look over the whole frame: a soft bloom on the light, then a warm grade, gentle vignette and paper grain.
+const composer = new EffectComposer(renderer);
+composer.setPixelRatio(1);
+composer.setSize(W, H);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), 0.14, 0.5, 0.97));
+composer.addPass(new OutputPass());
+const grade = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, res: { value: new THREE.Vector2(W, H) }, amount: { value: 1 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform vec2 res; uniform float amount; varying vec2 vUv; ${NOISE}
+    void main(){
+      vec3 c = texture2D(tDiffuse, vUv).rgb, o = c;
+      float l = dot(c, vec3(0.3, 0.59, 0.11));
+      c = mix(c, c * vec3(1.04, 1.0, 0.93) + vec3(0.012, 0.008, 0.0), 0.9);
+      c = mix(vec3(l), c, 1.07);
+      c = mix(c, smoothstep(0.0, 1.0, c), 0.18);
+      vec2 q = (vUv - 0.5) * vec2(1.0, 0.8);
+      c *= mix(0.84, 1.0, smoothstep(0.62, 0.18, length(q)));
+      float paper = fbm(vUv * res / 2.5) * 0.6 + fbm(vUv * res / 30.0) * 0.4;
+      c *= 0.97 + paper * 0.045;
+      c += (hash(vUv * res + floor(time * 12.0)) - 0.5) * 0.018;
+      gl_FragColor = vec4(mix(o, c, amount), 1.0);
+    }`,
+});
+composer.addPass(grade);
 
 // ---------------------------------------------------------------------------------------------------- choreography
 const dogT = track([
@@ -801,6 +954,32 @@ function renderAt(t) {
     snow.instanceMatrix.needsUpdate = true;
   }
 
+  // Clouds drift; rain greys them. Sun rays and petals while the weather is fine.
+  const greyK = dark * (1 - snowy * 0.5);
+  clouds.forEach(c => {
+    const { x, y, w } = c.userData;
+    let cx = x + t * 0.11;
+    if (cx > 10.5) cx -= 22;
+    c.position.set(cx, y + Math.sin(t * 0.2 + x) * 0.05, 0.03);
+    c.material.color.setRGB(lerp(1, 0.62, greyK), lerp(1, 0.66, greyK), lerp(1, 0.76, greyK));
+  });
+  const fine = smooth(range(t, 5, 7)) * (1 - win(t, 33.3, 39.8, 0.6, 0.8));
+  rays.forEach((m, i) => {
+    m.position.set(m.userData.x + camera.position.x * 0.2, 3.2, 0.08);
+    m.material.opacity = m.userData.o * 0.22 * fine * (1 - u.brand.value * 0.6) * (0.75 + 0.25 * Math.sin(t * 0.7 + i * 2));
+  });
+  {
+    const r = rng(303), cx = camera.position.x, cy = camera.position.y;
+    for (let i = 0; i < PETALS; i++) {
+      const sp = 0.9 + r() * 0.9, off = r() * 21, y0 = -3.5 + r() * 7.5, z = 0.6 + r() * 3, ph = r() * 6.3, size = 0.035 + r() * 0.035, seed = r() < 0.4;
+      if (i >= fine * PETALS) { put(petals, i, 0, 0, 0, 0); continue; }
+      const x = -10.5 + ((t * sp + off) % 21);
+      const y = y0 + Math.sin(t * 0.9 + ph) * 0.45 + Math.sin(t * 2.3 + ph * 2) * 0.12;
+      put(petals, i, cx + x, cy + y, z, size, Math.sin(t * 2 + ph) * 1.2, t * 1.5 + ph, t * 0.8 + ph, seed ? size : size * 0.55);
+    }
+    petals.instanceMatrix.needsUpdate = true;
+  }
+
   // The AI scan line over the meadow.
   const sk = range(t, SCAN.t0, SCAN.t1);
   beam.visible = sk > 0 && sk < 1;
@@ -808,13 +987,21 @@ function renderAt(t) {
 
   scene.updateMatrixWorld();
   updateDom(t);
-  renderer.render(scene, camera);
+  grade.uniforms.time.value = t;
+  composer.render();
 }
 
 // ---------------------------------------------------------------------------------------------------- start
 async function ready() {
-  try { await Promise.race([Promise.all([document.fonts.load('40px Jua'), document.fonts.load('700 40px Fredoka')]), new Promise(r => setTimeout(r, 4000))]); } catch { /* fall back */ }
+  try { await Promise.race([Promise.all([document.fonts.load('700 40px "Gowun Batang"'), document.fonts.load('40px "Gowun Dodum"'), document.fonts.load('700 40px Fredoka'), document.fonts.load('600 40px Fraunces')]), new Promise(r => setTimeout(r, 4000))]); } catch { /* fall back */ }
   await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+  // Korean web fonts come in many small pieces that load only when a glyph is first drawn, which would leave
+  // text missing from recorded frames: run through the whole film once and load every piece it will need.
+  let text = '';
+  for (let t = 0; t <= DURATION; t += 0.25) { updateDom(t); text += ui.textContent; }
+  const chars = [...new Set(text)].join('');
+  try { await Promise.race([Promise.all(['700 40px "Gowun Batang"', '40px "Gowun Dodum"', '700 40px Fredoka', '500 40px Fredoka', '600 40px Fraunces', 'italic 500 40px Fraunces'].map(f => document.fonts.load(f, chars))), new Promise(r => setTimeout(r, 15000))]); } catch { /* fall back */ }
+  await document.fonts.ready;
 }
 window.renderAt = renderAt;
 window.DURATION = DURATION;
