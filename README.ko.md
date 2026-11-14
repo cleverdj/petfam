@@ -280,6 +280,21 @@ docs/PLANNING.md             제품·기술 기획(영어)
 | `PETFAM_GROWTH_SHEET=1` | 고양이와 강아지를 0일부터 500일까지 나이별로 그린 `growth-sheet.png` 저장 |
 | `PETFAM_SAVE=<파일>` | 다른 저장 파일을 씀(파일이 없으면 첫 실행 입양부터 시작, 실제 펫은 그대로) |
 
+### 홍보 영상
+`promo/`에는 three.js로 만든 50초짜리 홍보 영상이 있어요. 실제 PetFam 바탕화면 위의 펫, AI가 바탕화면을 읽는 모습,
+바탕화면 바꾸기, 말로 집 꾸미기, 비와 눈, 함께 자라기를 보여 줘요. 배경 음악은 `promo/audio.mjs`가 직접 합성해서
+저작권 걱정이 없어요. Node.js, Chrome(또는 Edge), ffmpeg가 필요해요.
+
+```
+cd promo
+npm install
+node render.mjs              # 한국어 -> promo/out/petfam-promo-ko.mp4
+node render.mjs --lang en    # 영어   -> promo/out/petfam-promo-en.mp4
+```
+
+`node render.mjs --serve`로 띄우면 http://127.0.0.1:5173/ 에서 실시간으로 재생돼요(영어는 `?lang=en`).
+`node render.mjs --stills 3,15`는 원하는 순간을 PNG로 저장해요.
+
 ## 앞으로의 계획
 - 실제 Mac에서 macOS 버전을 시험하고 다듬기(서로 다른 해상도 배율의 디스플레이, 디스플레이별 Space)
 - 서명·공증된 배포 파일(Windows와 macOS에서 첫 실행 경고 없애기)

@@ -300,6 +300,21 @@ docs/PLANNING.md             Product and technical plan
 | `PETFAM_GROWTH_SHEET=1` | Saves `growth-sheet.png` with the cat and dog drawn at ages from 0 to 500 days |
 | `PETFAM_SAVE=<file>` | Uses a different save file (if the file doesn't exist, starts from first-run onboarding; your real pets are untouched) |
 
+### Promo video
+`promo/` holds a 50-second promo video made with three.js: the pets on the real PetFam wallpapers, the AI reading
+the wallpaper, a wallpaper change, decorating a house from words, rain and snow, and growing up. The soundtrack is
+synthesised by `promo/audio.mjs`, so there is nothing to license. It needs Node.js, Chrome (or Edge) and ffmpeg.
+
+```
+cd promo
+npm install
+node render.mjs              # Korean  -> promo/out/petfam-promo-ko.mp4
+node render.mjs --lang en    # English -> promo/out/petfam-promo-en.mp4
+```
+
+`node render.mjs --serve` plays it live at http://127.0.0.1:5173/ (add `?lang=en` for English), and
+`node render.mjs --stills 3,15` saves single moments as PNGs.
+
 ## Roadmap
 - Try the macOS version on real Macs and polish it (Retina scaling across mixed displays, separate Spaces per display)
 - Signed and notarised downloads (no first-run warnings on Windows and macOS)

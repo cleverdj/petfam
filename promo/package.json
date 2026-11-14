@@ -1,0 +1,14 @@
+{
+  "name": "petfam-promo",
+  "private": true,
+  "type": "module",
+  "description": "PetFam promo video, made with three.js",
+  "scripts": {
+    "render": "node render.mjs",
+    "render:en": "node render.mjs --lang en"
+  },
+  "dependencies": {
+    "puppeteer-core": "25.17.0",
+    "three": "0.187.0"
+  }
+}
