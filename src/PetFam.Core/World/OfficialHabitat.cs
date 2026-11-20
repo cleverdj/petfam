@@ -26,7 +26,8 @@ public static class OfficialHabitat
     public static Wallpaper? FromPath(string? path)
     {
         if (path is null) return null;
-        var name = Path.GetFileName(path);
+        // Either kind of slash: a Windows path can turn up in a save file opened on a Mac.
+        var name = path[(path.LastIndexOfAny(['/', '\\']) + 1)..];
         return All.FirstOrDefault(w => string.Equals(name, FileName(w), StringComparison.OrdinalIgnoreCase));
     }
 

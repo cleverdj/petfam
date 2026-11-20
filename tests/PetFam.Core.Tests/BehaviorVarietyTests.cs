@@ -207,7 +207,10 @@ public class BehaviorVarietyTests
         var dog = sim.AddPet(Breed.Beagle, "Snoopy", cell, T0);
         var cat = sim.AddPet(Breed.Bengal, "Leo", cell, T0);
         foreach (var p in new[] { dog, cat }) { p.Growth = new Growth(T0, Growth.JuniorAt + 5); p.Bond.DebugSet(60f, T0); }
-        sim.Clock.Pretend = TimeSpan.FromHours(14);
+        // Early afternoon where the clock thinks it is: the sun follows the clock's place, the time of day follows
+        // the computer's time zone, and on a build machine those two need not match.
+        var (rise, set) = sim.Clock.SunToday(T0)!.Value;
+        sim.Clock.Pretend = (rise + (set - rise) / 2).TimeOfDay;
 
         var time = new Dictionary<string, float>();
         var seen = new HashSet<string>();
