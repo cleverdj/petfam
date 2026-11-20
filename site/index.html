@@ -7,470 +7,1192 @@
 <meta name="description" content="PetFam is a desktop pet for Windows and macOS: a puppy or a kitten that lives on your wallpaper, behind your windows.">
 <link rel="icon" href="assets/icon.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js" } }</script>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/" } }</script>
 <style>
-  :root { --bg: #fff8ee; --ink: #1f1a17; --soft: #6f655d; --line: #3a2a22; --card: #ffffff; --coral: #ff6b4a; --butter: #ffd45c; --mint: #9be3c3; --sky: #8ec9ff; --lilac: #c9b6ff; --r: 32px; }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
-         font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-  a { color: inherit; text-decoration: none; }
-  h1, h2, h3, p { margin: 0; }
-  h1 { font-size: clamp(44px, 8.4vw, 124px); font-weight: 850; letter-spacing: -0.045em; line-height: 0.98; }
-  h2 { font-size: clamp(32px, 5vw, 68px); font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; }
-  h3 { font-size: clamp(22px, 2.2vw, 30px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; }
-  .wrap { width: min(1240px, 100% - 40px); margin: 0 auto; }
-  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: #fff; border: 1.5px solid rgba(31,26,23,.12); font-size: 14px; font-weight: 600; }
-  .eyebrow i { width: 8px; height: 8px; border-radius: 50%; background: #2fbf71; box-shadow: 0 0 0 4px rgba(47,191,113,.2); }
-  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 16px 28px; border-radius: 999px; background: var(--ink); color: #fff; font-weight: 700; font-size: 17px; border: 0; cursor: pointer;
-         transition: transform .2s cubic-bezier(.2,.9,.3,1.4), background .2s; font-family: inherit; }
-  .btn:hover { transform: translateY(-3px) scale(1.03); }
-  .btn.coral { background: var(--coral); } .btn.light { background: #fff; color: var(--ink); border: 1.5px solid rgba(31,26,23,.14); }
-  .btn.sm { padding: 10px 18px; font-size: 15px; }
+:root { --ink: #1d1814; --cream: #fff8ec; --coral: #ff6b4a; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #0d0c10; color: #fff; font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif; -webkit-font-smoothing: antialiased; }
+body { overflow-x: hidden; }
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+#track { height: 800vh; }
+a { color: inherit; text-decoration: none; }
 
-  nav { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 4px; padding: 7px 7px 7px 16px; border-radius: 999px;
-        background: rgba(255,255,255,.72); backdrop-filter: blur(18px) saturate(1.4); border: 1px solid rgba(31,26,23,.1); box-shadow: 0 10px 40px rgba(60,40,20,.1); white-space: nowrap; }
-  nav .brand { display: flex; align-items: center; gap: 8px; font-weight: 850; font-size: 18px; letter-spacing: -0.03em; margin-right: 10px; }
-  nav .brand img { width: 28px; height: 28px; border-radius: 8px; }
-  nav a.l { padding: 8px 13px; border-radius: 999px; font-size: 15px; font-weight: 600; color: var(--soft); transition: background .2s, color .2s; }
-  nav a.l:hover { background: rgba(31,26,23,.06); color: var(--ink); }
-  #lang { padding: 8px 12px; border-radius: 999px; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; color: var(--soft); }
+#loader { position: fixed; inset: 0; z-index: 100; display: grid; place-content: center; justify-items: center; gap: 18px; background: #14121a; transition: opacity .9s ease, visibility .9s; }
+#loader.done { opacity: 0; visibility: hidden; }
+#loader img { width: 84px; height: 84px; border-radius: 22px; animation: bob 1.4s ease-in-out infinite; }
+#loader .bar { width: 180px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.14); overflow: hidden; }
+#loader .bar i { display: block; height: 100%; width: 40%; border-radius: 2px; background: var(--coral); animation: slide 1.1s ease-in-out infinite; }
+#loader p { margin: 0; font-size: 14px; opacity: .6; letter-spacing: .02em; }
+@keyframes bob { 50% { transform: translateY(-8px); } }
+@keyframes slide { from { transform: translateX(-110%); } to { transform: translateX(280%); } }
 
-  /* hero */
-  .hero { position: relative; padding: clamp(120px, 17vh, 190px) 0 40px; text-align: center; overflow: hidden; }
-  #glow { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; opacity: .9; }
-  .hero::before { content: ''; position: absolute; inset: 0; z-index: 0; background: radial-gradient(60% 50% at 20% 20%, #ffe1c9, transparent 70%), radial-gradient(50% 45% at 85% 15%, #d9ecff, transparent 70%), radial-gradient(60% 50% at 60% 70%, #e3dcff, transparent 70%); }
-  .hero::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 240px; background: linear-gradient(transparent, var(--bg)); z-index: 0; }
-  .hero > .wrap { position: relative; z-index: 1; }
-  .hero h1 em { font-style: normal; color: var(--coral); }
-  .hero .sub { max-width: 620px; margin: 26px auto 30px; font-size: clamp(17px, 1.6vw, 21px); color: var(--soft); font-weight: 500; }
-  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+nav { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 20; display: flex; align-items: center; gap: 6px; padding: 7px 7px 7px 16px; border-radius: 999px; white-space: nowrap;
+      background: rgba(255,255,255,.16); backdrop-filter: blur(18px) saturate(1.5); border: 1px solid rgba(255,255,255,.28); box-shadow: 0 10px 40px rgba(0,0,0,.18); }
+nav .brand { display: flex; align-items: center; gap: 8px; font-weight: 850; font-size: 18px; letter-spacing: -.03em; margin-right: 8px; }
+nav .brand img { width: 28px; height: 28px; border-radius: 8px; }
+#lang { padding: 8px 12px; border: 0; background: none; color: inherit; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; opacity: .85; }
+.btn { display: inline-flex; align-items: center; padding: 15px 28px; border-radius: 999px; background: var(--coral); color: #fff; font-weight: 750; font-size: 17px; pointer-events: auto;
+       transition: transform .2s cubic-bezier(.2,.9,.3,1.5), box-shadow .2s; box-shadow: 0 10px 30px rgba(255,107,74,.35); }
+.btn:hover { transform: translateY(-3px) scale(1.04); }
+.btn.sm { padding: 9px 18px; font-size: 15px; box-shadow: none; }
+.btn.ghost { background: rgba(255,255,255,.16); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.35); box-shadow: none; }
 
-  /* the desktop demo */
-  .desk { position: relative; margin: 56px auto 0; aspect-ratio: 16 / 9; max-height: 640px; border-radius: 28px; overflow: hidden; background: #8fc6ec url(assets/meadow.jpg) center / cover;
-          box-shadow: 0 40px 100px rgba(60,40,20,.25), 0 0 0 8px #fff, 0 0 0 9.5px rgba(31,26,23,.12); touch-action: pan-y; }
-  .desk .tip { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); padding: 7px 16px; border-radius: 999px; background: rgba(255,255,255,.85); backdrop-filter: blur(8px); font-size: 14px; font-weight: 600; z-index: 6; }
-  .actor { position: absolute; left: 0; bottom: 0; width: 13%; min-width: 74px; will-change: transform; z-index: 2; }
-  .actor .flip { transition: transform .25s; }
-  .win { position: absolute; z-index: 4; border-radius: 14px; background: #fff; box-shadow: 0 18px 50px rgba(30,20,10,.3); overflow: hidden; cursor: grab; user-select: none; touch-action: none; }
-  .win:active { cursor: grabbing; }
-  .win .bar { height: 30px; background: #f1ede7; display: flex; align-items: center; gap: 6px; padding: 0 12px; font-size: 12px; font-weight: 600; color: var(--soft); }
-  .win .bar b { width: 10px; height: 10px; border-radius: 50%; background: #ff6159; } .win .bar b:nth-child(2) { background: #ffbd2e; } .win .bar b:nth-child(3) { background: #28c941; margin-right: 6px; }
-  .win .body { padding: 14px; display: grid; gap: 9px; }
-  .win .body span { height: 9px; border-radius: 5px; background: #e6e1da; display: block; }
-  .win.dark { background: #1f2333; } .win.dark .bar { background: #2b3046; color: #c9d1e8; } .win.dark .body span { background: #7aa2f7; }
-  .bubble { position: absolute; left: 50%; bottom: 96%; transform: translateX(-50%) scale(0); transform-origin: 50% 100%; padding: 7px 14px; border-radius: 16px; background: #fff; font-size: clamp(12px, 1.2vw, 15px); font-weight: 700;
-            white-space: nowrap; box-shadow: 0 6px 18px rgba(30,20,10,.2); transition: transform .3s cubic-bezier(.2,.9,.3,1.5); }
-  .bubble.on { transform: translateX(-50%) scale(1); }
+#dots { position: fixed; right: 22px; top: 50%; transform: translateY(-50%); z-index: 20; display: grid; gap: 10px; }
+#dots i { width: 7px; height: 7px; border-radius: 4px; background: rgba(255,255,255,.4); transition: height .3s, background .3s; }
+#dots i.on { height: 26px; background: #fff; }
 
-  /* 2D pets */
-  .pet { display: block; width: 100%; overflow: visible; }
-  .pet * { stroke: var(--line); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
-  .pet .ns { stroke: none; }
-  .pet .leg, .pet .tail, .pet .head, .pet .eye, .pet .ear { transform-box: fill-box; }
-  .pet .leg { transform-origin: 50% 8%; }
-  .pet.walk .l1, .pet.walk .l4 { animation: legA .46s linear infinite; }
-  .pet.walk .l2, .pet.walk .l3 { animation: legB .46s linear infinite; }
-  .pet.walk .bodyg { animation: trot .23s ease-in-out infinite alternate; }
-  .pet .tail { transform-origin: 100% 100%; animation: wag .34s ease-in-out infinite alternate; }
-  .pet.cat .tail { animation: sway 1.9s ease-in-out infinite alternate; }
-  .pet .head { transform-origin: 30% 95%; animation: nod 2.6s ease-in-out infinite; }
-  .pet .eye { transform-origin: 50% 50%; animation: blink 4.2s infinite; }
-  .pet.cat .eye { animation-delay: 1.3s; }
-  .pet .ear { transform-origin: 50% 0; animation: flop 2.6s ease-in-out infinite; }
-  .pet .acc { display: none; }
-  .pet.hat .hat, .pet.scarf .scarf, .pet.glasses .glasses, .pet.crown .crown { display: block; }
-  .hop { animation: hop .5s cubic-bezier(.3,0,.5,1); }
-  @keyframes legA { 0%,100% { transform: rotate(26deg); } 50% { transform: rotate(-26deg); } }
-  @keyframes legB { 0%,100% { transform: rotate(-26deg); } 50% { transform: rotate(26deg); } }
-  @keyframes trot { to { transform: translateY(-2.5px); } }
-  @keyframes wag { from { transform: rotate(-16deg); } to { transform: rotate(22deg); } }
-  @keyframes sway { from { transform: rotate(-8deg); } to { transform: rotate(12deg); } }
-  @keyframes nod { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-3.5deg); } }
-  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
-  @keyframes flop { 0%,100% { transform: rotate(0); } 50% { transform: rotate(5deg); } }
-  @keyframes hop { 0%,100% { transform: translateY(0); } 45% { transform: translateY(-34%); } }
+#beats { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+.beat { position: absolute; max-width: min(520px, 86vw); opacity: 0; visibility: hidden; will-change: opacity, transform; text-shadow: 0 2px 22px rgba(8,16,30,.55), 0 1px 3px rgba(8,16,30,.5); }
+.beat::before { content: ''; position: absolute; inset: -70px -90px; z-index: -1; background: radial-gradient(closest-side, rgba(8,18,32,.5), rgba(8,18,32,.28) 55%, rgba(8,18,32,0)); filter: blur(6px); }
+.beat.left { left: clamp(20px, 6vw, 96px); top: 50%; }
+.beat.wide { max-width: min(680px, 88vw); }
+.beat.wide .lead { margin-left: 0; }
+.beat.right { right: clamp(20px, 6vw, 96px); top: 50%; text-align: right; }
+.beat.center { left: 50%; text-align: center; max-width: min(900px, 90vw); width: 100%; }
+.beat.top { top: clamp(92px, 15vh, 150px); }
+.beat.bottom { bottom: clamp(28px, 7vh, 72px); }
+.kicker { margin: 0 0 14px; font-size: 14px; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; opacity: .9; }
+h1, h2 { margin: 0; font-weight: 850; letter-spacing: -.045em; line-height: 1.02; }
+h1 { font-size: clamp(42px, 7.4vw, 112px); }
+h2 { font-size: clamp(32px, 4.4vw, 62px); }
+h2.big { font-size: clamp(38px, 6.4vw, 96px); }
+.beat p { margin: 18px 0 0; font-size: clamp(16px, 1.35vw, 19px); line-height: 1.6; font-weight: 500; }
+.beat .lead { max-width: 560px; margin-left: auto; margin-right: auto; font-size: clamp(17px, 1.5vw, 21px); }
+.beat .hint { margin-top: 26px; font-size: 14px; opacity: .85; animation: bob 2s ease-in-out infinite; }
+.beat .small { font-size: 13px; opacity: .8; }
+.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
 
-  /* marquee */
-  .marquee { overflow: hidden; padding: 34px 0; mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
-  .marquee div { display: flex; gap: 14px; width: max-content; animation: slide 46s linear infinite; }
-  .marquee span { padding: 10px 20px; border-radius: 999px; background: #fff; border: 1.5px solid rgba(31,26,23,.1); font-weight: 700; font-size: 16px; white-space: nowrap; }
-  .marquee span:nth-child(4n+1) { background: var(--butter); border-color: transparent; } .marquee span:nth-child(4n+3) { background: var(--mint); border-color: transparent; }
-  @keyframes slide { to { transform: translateX(-50%); } }
+#fxdom { position: fixed; inset: 0; z-index: 9; pointer-events: none; overflow: hidden; }
+.bubble { position: absolute; padding: 10px 20px; border-radius: 22px; background: #fff; color: var(--ink); font-size: clamp(15px, 1.4vw, 20px); font-weight: 700; white-space: nowrap;
+          transform: translate(-50%, -100%) scale(0); transform-origin: 50% 110%; transition: transform .35s cubic-bezier(.2,.9,.3,1.5); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.bubble.on { transform: translate(-50%, -100%) scale(1); }
+.bubble::after { content: ''; position: absolute; left: 50%; bottom: -8px; width: 16px; height: 16px; margin-left: -8px; background: #fff; transform: rotate(45deg); border-radius: 3px; }
 
-  /* bento */
-  section { padding: clamp(60px, 9vw, 120px) 0; }
-  .head { display: flex; align-items: end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 34px; }
-  .head p { max-width: 420px; color: var(--soft); font-weight: 500; }
-  .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
-  .tile { position: relative; grid-column: span 2; min-height: 380px; border-radius: var(--r); padding: 28px; overflow: hidden; background: var(--card); border: 1.5px solid rgba(31,26,23,.08);
-          display: flex; flex-direction: column; transition: transform .35s cubic-bezier(.2,.9,.3,1.2), box-shadow .35s; }
-  .tile:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(60,40,20,.14); }
-  .tile.w3 { grid-column: span 3; } .tile.w4 { grid-column: span 4; } .tile.w6 { grid-column: span 6; min-height: 0; }
-  .tile.w6 .art { position: absolute; right: 40px; bottom: 0; margin: 0; min-height: 0; }
-  .tile.w6 p { max-width: 620px; }
-  .tile p { color: var(--soft); margin-top: 8px; font-weight: 500; font-size: 16px; max-width: 440px; }
-  .tile .tag { font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .6; margin-bottom: 10px; }
-  .tile .art { position: relative; flex: 1; min-height: 190px; margin: 18px -28px -28px; }
-  .t-sky { background: linear-gradient(160deg, #dff0ff, #b9dcff); } .t-butter { background: linear-gradient(160deg, #fff1c2, #ffd98a); } .t-mint { background: linear-gradient(160deg, #dcf7ea, #b4ebd2); }
-  .t-lilac { background: linear-gradient(160deg, #ece5ff, #d2c4ff); } .t-coral { background: linear-gradient(160deg, #ffe0d6, #ffbfae); } .t-ink { background: #1f1a17; color: #fff; } .t-ink p { color: #b9aea4; }
-  .art .pet { position: absolute; width: 150px; }
-  /* peek */
-  .peek .w { position: absolute; left: 12%; right: 12%; bottom: -30px; height: 62%; border-radius: 16px 16px 0 0; background: #fff; box-shadow: 0 -10px 40px rgba(30,60,120,.18); z-index: 2; }
-  .peek .w::before { content: ''; position: absolute; left: 16px; top: 14px; width: 46px; height: 10px; border-radius: 5px; background: radial-gradient(circle at 5px 5px, #ff6159 4.5px, transparent 5px), radial-gradient(circle at 23px 5px, #ffbd2e 4.5px, transparent 5px), radial-gradient(circle at 41px 5px, #28c941 4.5px, transparent 5px); }
-  .peek .pet { left: 50%; margin-left: -75px; bottom: 44%; animation: peek 5.5s cubic-bezier(.4,0,.2,1) infinite; z-index: 1; }
-  @keyframes peek { 0%, 12%, 88%, 100% { transform: translateY(74%); } 28%, 72% { transform: translateY(0); } }
-  /* chat */
-  .chat { display: flex; flex-direction: column; gap: 10px; padding: 0 28px 28px; justify-content: flex-end; }
-  .chat div { max-width: 82%; padding: 11px 16px; border-radius: 20px; background: #fff; font-weight: 600; font-size: 15px; opacity: 0; animation: say 9s infinite; box-shadow: 0 4px 14px rgba(60,40,120,.1); }
-  .chat div:nth-child(even) { align-self: flex-end; background: var(--ink); color: #fff; }
-  .chat div:nth-child(2) { animation-delay: 1.4s; } .chat div:nth-child(3) { animation-delay: 2.8s; } .chat div:nth-child(4) { animation-delay: 4.2s; }
-  @keyframes say { 0% { opacity: 0; transform: translateY(14px) scale(.9); } 5%, 78% { opacity: 1; transform: none; } 86%, 100% { opacity: 0; transform: translateY(-6px); } }
-  /* house */
-  .prompt { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding: 11px 16px; border-radius: 16px; background: rgba(255,255,255,.8); font-weight: 600; font-size: 15px; min-height: 46px; }
-  .prompt::after { content: ''; width: 2px; height: 18px; background: var(--ink); animation: caret 1s steps(1) infinite; }
-  @keyframes caret { 50% { opacity: 0; } }
-  .hut { position: absolute; left: 50%; bottom: 14px; width: 200px; margin-left: -100px; transform-origin: 50% 100%; transform: scale(0); transition: transform .6s cubic-bezier(.2,.9,.3,1.5); }
-  .hut.on { transform: scale(1); }
-  /* weather */
-  .chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
-  .chips button { padding: 9px 16px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.25); background: transparent; color: inherit; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; transition: background .2s, color .2s; }
-  .chips button.on { background: #fff; color: var(--ink); border-color: #fff; }
-  .wx { border-radius: 24px 24px 0 0; margin: 18px 0 -28px; background: linear-gradient(#7fc4ff, #c8f0c0); transition: background .6s; overflow: hidden; }
-  .wx[data-w=rain] { background: linear-gradient(#4a5878, #6f8f7a); } .wx[data-w=snow] { background: linear-gradient(#8fa3c0, #eef3f8); }
-  .wx::before { content: ''; position: absolute; inset: -40px; opacity: 0; transition: opacity .5s; pointer-events: none; z-index: 3; }
-  .wx[data-w=rain]::before { opacity: .7; background: repeating-linear-gradient(100deg, transparent 0 22px, rgba(255,255,255,.75) 22px 23.5px, transparent 23.5px 46px); background-size: 46px 40px; animation: rain .35s linear infinite; }
-  .wx[data-w=snow]::before { opacity: 1; background: radial-gradient(circle, #fff 2.6px, transparent 3px) 0 0 / 46px 46px, radial-gradient(circle, #fff 1.8px, transparent 2.2px) 23px 18px / 34px 34px; animation: snow 5s linear infinite; }
-  @keyframes rain { to { background-position: -8px 40px; } } @keyframes snow { to { background-position: 14px 46px, 37px 52px; } }
-  .wx .sun { position: absolute; right: 26px; top: 22px; width: 54px; height: 54px; border-radius: 50%; background: #ffe27a; box-shadow: 0 0 0 10px rgba(255,226,122,.35); transition: transform .6s, opacity .6s; }
-  .wx:not([data-w=sun]) .sun { transform: translateY(-90px); opacity: 0; }
-  .wx .pet { left: 50%; margin-left: -75px; bottom: 6px; }
-  /* grow */
-  .grow .art { display: flex; align-items: flex-end; justify-content: center; }
-  .grow .pet { position: static; width: 190px; transform-origin: 50% 100%; transition: transform .3s cubic-bezier(.2,.9,.3,1.4); margin-bottom: 8px; }
-  .grow .row { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
-  .grow output { font-weight: 850; font-size: 28px; letter-spacing: -0.03em; min-width: 190px; }
-  input[type=range] { flex: 1; accent-color: var(--ink); height: 28px; }
-  /* dress */
-  .dress .art { display: flex; align-items: flex-end; justify-content: center; }
-  .dress .pet { position: static; width: 190px; margin-bottom: 8px; }
-  /* stats */
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
-  .stats div { border-radius: var(--r); padding: 26px 28px; background: #fff; border: 1.5px solid rgba(31,26,23,.08); }
-  .stats b { display: block; font-size: clamp(40px, 5vw, 68px); font-weight: 850; letter-spacing: -0.05em; line-height: 1; }
-  .stats span { color: var(--soft); font-weight: 600; font-size: 15px; }
-  /* film + download */
-  .film { border-radius: clamp(24px, 4vw, 48px); background: #1f1a17; color: #fff; padding: clamp(24px, 5vw, 64px); }
-  .film .head p { color: #b9aea4; }
-  .film video { width: 100%; border-radius: 24px; display: block; background: #000; }
-  .get { position: relative; text-align: center; border-radius: clamp(24px, 4vw, 48px); padding: clamp(110px, 12vw, 150px) 24px clamp(48px, 7vw, 90px); background: linear-gradient(135deg, #ffd45c, #ff9d6b 55%, #ff6b4a); overflow: hidden; }
-  .get h2 { font-size: clamp(38px, 6.4vw, 92px); }
-  .get p { margin: 16px auto 28px; max-width: 520px; font-weight: 600; opacity: .8; }
-  .get .note { font-size: 14px; margin: 22px auto 0; opacity: .7; }
-  .get .row { position: absolute; top: 14px; left: 0; right: 0; display: flex; justify-content: center; gap: clamp(0px, 2vw, 26px); }
-  .get .row .pet { position: static; width: clamp(64px, 9vw, 112px); }
-  footer { padding: 34px 0 44px; text-align: center; color: var(--soft); font-size: 14px; font-weight: 500; }
+@media (max-width: 760px) {
+  #dots { right: 10px; }
+  .beat.left, .beat.right { left: 20px; right: 20px; top: auto; bottom: 34px; text-align: left; }
+  .beat.center.top { top: 84px; }
+  .btn { padding: 13px 22px; font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .beat .hint, #loader img { animation: none; } }
 
-  .reveal { opacity: 0; transform: translateY(34px); transition: opacity .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1); }
-  .reveal.in { opacity: 1; transform: none; }
-  @media (max-width: 900px) { .tile, .tile.w3, .tile.w4, .tile.w6 { grid-column: span 6; min-height: 340px; } .tile.w6 .art { position: relative; right: 0; margin: 18px -28px -28px; } .stats { grid-template-columns: repeat(2, 1fr); } nav a.l, .desk .tip { display: none; } .win { transform: scale(.72); transform-origin: 0 0; } }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .reveal { opacity: 1; transform: none; } html { scroll-behavior: auto; } }
 </style>
 </head>
 <body>
+<canvas id="scene" aria-hidden="true"></canvas>
+<div id="loader"><img src="assets/icon.png" alt=""><div class="bar"><i></i></div><p data-ko="섬을 짓는 중…" data-en="Growing the island…"></p></div>
 <nav>
-  <a class="brand" href="#top"><img src="assets/icon.png" alt="">PetFam</a>
-  <a class="l" href="#features" data-ko="기능" data-en="Features"></a>
-  <a class="l" href="#film" data-ko="영상" data-en="Film"></a>
+  <a class="brand" href="#b0"><img src="assets/icon.png" alt="">PetFam</a>
   <button id="lang" type="button">EN</button>
-  <a class="btn sm coral" href="#download" data-ko="받기" data-en="Download"></a>
+  <a class="btn sm" href="https://github.com/cleverdj/petfam/releases/latest" data-ko="받기" data-en="Download"></a>
 </nav>
-
-<main id="top">
-  <header class="hero">
-    <canvas id="glow" aria-hidden="true"></canvas>
-    <div class="wrap">
-      <span class="eyebrow"><i></i><span data-ko="v1.0 · Windows & macOS · 무료" data-en="v1.0 · Windows & macOS · Free"></span></span>
-      <h1 style="margin-top:22px" data-ko="바탕화면에 사는<br><em>우리 펫 가족</em>" data-en="Your pet family,<br><em>living on your desktop</em>"></h1>
-      <p class="sub" data-ko="강아지나 고양이를 입양하면 내 창 뒤, 바탕화면 위로 이사 와요. 풍경을 집 삼아 걷고, 낮잠 자고, 하루하루 함께 자라요."
-         data-en="Adopt a puppy or a kitten and it moves in behind your windows. It walks on your wallpaper, naps in its little house and grows up with you."></p>
-      <div class="cta">
-        <a class="btn coral" href="#download" data-ko="무료로 받기 ↓" data-en="Get it free ↓"></a>
-        <a class="btn light" href="#film" data-ko="▶ 단편 영상 보기" data-en="▶ Watch the film"></a>
-      </div>
-      <div class="desk reveal" id="desk">
-        <div class="tip" data-ko="창을 끌어 보세요 · 고양이는 마우스를 따라와요 · 펫을 누르면 폴짝" data-en="Drag the windows · the cat follows your mouse · click a pet for a hop"></div>
-        <div class="win" style="left:6%; top:34%; width:34%"><div class="bar"><b></b><b></b><b></b>Weekly report</div><div class="body"><span style="width:60%;background:#1f1a17"></span><span></span><span style="width:85%"></span><span style="width:70%"></span><span style="width:90%"></span><span style="width:40%"></span></div></div>
-        <div class="win dark" style="right:7%; top:14%; width:30%"><div class="bar"><b></b><b></b><b></b>main.cs</div><div class="body"><span style="width:50%;background:#bb9af7"></span><span style="width:75%;margin-left:14px"></span><span style="width:60%;margin-left:28px;background:#9ece6a"></span><span style="width:70%;margin-left:28px;background:#e0af68"></span><span style="width:40%;margin-left:14px"></span></div></div>
-      </div>
-    </div>
-  </header>
-
-  <div class="marquee" aria-hidden="true"><div id="breeds"></div></div>
-
-  <section id="features">
-    <div class="wrap">
-      <div class="head reveal">
-        <h2 data-ko="작지만<br>진짜 같은 삶" data-en="A small life<br>that feels real"></h2>
-        <p data-ko="화면 보호기가 아니에요. 펫은 모든 창 아래, 바탕화면 층에 살고 손을 내밀 때만 앞으로 나와요." data-en="Not a screensaver. Pets live on the desktop layer, under every window, and come forward only when you reach for them."></p>
-      </div>
-      <div class="bento">
-        <article class="tile w4 t-sky peek reveal">
-          <div class="tag" data-ko="바탕화면 생활" data-en="Desktop life"></div>
-          <h3 data-ko="일하는 창 뒤에서 빼꼼" data-en="Peeking out from behind your work"></h3>
-          <p data-ko="바탕화면을 읽고 땅·물·햇살·그늘을 알아봐요. 강아지는 연못에 뛰어들고, 고양이는 볕 좋은 자리를 찾아요." data-en="PetFam reads your wallpaper and finds the ground, water, sun and shade. Dogs dive into the pond; cats find the sunny spot."></p>
-          <div class="art"><div data-pet="cat"></div><div class="w"></div></div>
-        </article>
-        <article class="tile t-lilac reveal">
-          <div class="tag" data-ko="AI 대화" data-en="AI talk"></div>
-          <h3 data-ko="자기 말투로 수다 떨어요" data-en="They chat in their own voices"></h3>
-          <p data-ko="이미 쓰는 AI를 연결하면 대화하고, 일기를 쓰고, 새 바탕화면 얘기도 먼저 꺼내요." data-en="Connect an AI you already have: they talk, keep a diary and notice a new wallpaper first."></p>
-          <div class="art chat">
-            <div data-ko="우와, 바다다! 수영하자멍!" data-en="Whoa, the sea! Let's swim!"></div>
-            <div data-ko="흥… 예전 풀밭이 더 좋았다냥." data-en="Hmph. I liked the old meadow."></div>
-            <div data-ko="모래가 폭신폭신하다멍!" data-en="But the sand is so soft!"></div>
-            <div data-ko="…인정한다냥." data-en="…Fine. It is."></div>
-          </div>
-        </article>
-        <article class="tile t-butter house reveal">
-          <div class="tag" data-ko="집 꾸미기" data-en="Houses"></div>
-          <h3 data-ko="말 한마디로 짓는 집" data-en="A house from one sentence"></h3>
-          <div class="prompt"><span>✨</span><span id="typed"></span></div>
-          <div class="art"><svg class="hut" id="hut" viewBox="0 0 200 150" aria-hidden="true"><g stroke="#3a2a22" stroke-width="3" stroke-linejoin="round"><rect x="38" y="66" width="124" height="78" rx="6" fill="#c98f5a"/><path d="M38 92h124M38 118h124" fill="none" opacity=".35"/><path d="M22 72 100 14l78 58z" fill="#ff6b4a"/><rect x="108" y="94" width="30" height="50" rx="5" fill="#7a4a2a"/><rect x="58" y="88" width="32" height="28" rx="5" fill="#ffe27a"/><path d="M74 88v28M58 102h32" fill="none"/><path d="M176 144V84" fill="none"/><circle cx="176" cy="78" r="9" fill="#ffe27a"/></g></svg></div>
-        </article>
-        <article class="tile w4 t-ink reveal">
-          <div class="tag" data-ko="진짜 날씨" data-en="Real weather"></div>
-          <h3 data-ko="우리 동네에 비가 오면, 바탕화면에도" data-en="If it rains where you live, it rains here too"></h3>
-          <div class="chips" id="wxchips"><button data-w="sun" class="on">☀️ <span data-ko="맑음" data-en="Clear"></span></button><button data-w="rain">🌧️ <span data-ko="비" data-en="Rain"></span></button><button data-w="snow">❄️ <span data-ko="눈" data-en="Snow"></span></button></div>
-          <div class="art wx" id="wx" data-w="sun"><div class="sun"></div><div data-pet="dog"></div></div>
-        </article>
-        <article class="tile w3 t-mint grow reveal">
-          <div class="tag" data-ko="함께 자라요" data-en="Growing up"></div>
-          <h3 data-ko="함께한 날만큼 자라요" data-en="A day older for every day together"></h3>
-          <div class="row"><output id="age"></output><input id="days" type="range" min="0" max="400" value="4" aria-label="days"></div>
-          <div class="art"><div data-pet="kitten"></div></div>
-        </article>
-        <article class="tile w3 t-coral dress reveal">
-          <div class="tag" data-ko="옷 입히기" data-en="Dress-up"></div>
-          <h3 data-ko="모자, 목도리, 안경, 왕관까지" data-en="Hats, scarves, glasses, even a crown"></h3>
-          <div class="chips" id="wear" style="color:var(--ink)"><button data-a="hat" class="on" style="border-color:rgba(31,26,23,.2)">🎉</button><button data-a="scarf" style="border-color:rgba(31,26,23,.2)">🧣</button><button data-a="glasses" style="border-color:rgba(31,26,23,.2)">👓</button><button data-a="crown" style="border-color:rgba(31,26,23,.2)">👑</button></div>
-          <div class="art"><div data-pet="corgi" data-class="hat"></div></div>
-        </article>
-        <article class="tile w6 reveal">
-          <div class="tag" data-ko="순하게 설계했어요" data-en="Gentle by design"></div>
-          <h3 data-ko="숙제도, 죄책감도 없어요" data-en="No chores, no guilt"></h3>
-          <p data-ko="펫은 죽지 않아요. 컴퓨터 앞에 있기만 해도 유대가 유지돼요. 전체 화면이나 발표 중에는 조용히 비켜 있어요. AI에는 펫 정보만 보내고, 화면 내용은 보내지 않아요."
-             data-en="Pets never die, and simply being at your computer keeps your bond. Full-screen apps and presentations put them on quiet mode. Only pet information goes to the AI, never what is on your screen."></p>
-          <div class="art" style="display:flex;align-items:flex-end;justify-content:center;gap:10px"><div data-pet="husky" style="position:static;width:130px"></div><div data-pet="black" style="position:static;width:120px"></div></div>
-        </article>
-      </div>
-      <div class="stats reveal">
-        <div><b>33</b><span data-ko="가지 품종" data-en="breeds"></span></div>
-        <div><b>17+16</b><span data-ko="강아지와 고양이" data-en="dogs and cats"></span></div>
-        <div><b>0</b><span data-ko="광고 · 결제" data-en="ads or payments"></span></div>
-        <div><b>2</b><span data-ko="Windows · macOS" data-en="Windows · macOS"></span></div>
-      </div>
-    </div>
+<div id="dots" aria-hidden="true"></div>
+<div id="fxdom" aria-hidden="true"><div class="bubble"></div><div class="bubble"></div></div>
+<main id="beats">
+  <section class="beat left wide" data-i="0">
+    <p class="kicker" data-ko="Windows · macOS · 무료" data-en="Windows · macOS · Free"></p>
+    <h1 data-ko="바탕화면에 사는<br>우리 펫 가족" data-en="Your pet family,<br>living on your desktop"></h1>
+    <p class="lead" data-ko="내 바탕화면이 작은 세상이 되고, 강아지와 고양이가 그 안에서 살아가요." data-en="Your wallpaper becomes a small world, and a dog and a cat make it their home."></p>
+    <p class="hint" data-ko="스크롤해서 하루를 따라가 보세요 ↓" data-en="Scroll to follow their day ↓"></p>
   </section>
-
-  <section id="film" style="padding-top:0">
-    <div class="wrap"><div class="film reveal">
-      <div class="head"><h2 data-ko="단편 「창문 여행」" data-en="Short film: The Window Ride"></h2><p data-ko="강아지와 고양이가 창을 타고 여덟 세계를 날아요. 그림도 음악도 전부 코드로 만들었어요." data-en="A dog and a cat ride a window through eight worlds. Picture and music are made entirely in code."></p></div>
-      <video controls preload="none" poster="assets/film-poster.jpg" src="assets/film.mp4"></video>
-    </div></div>
+  <section class="beat left" data-i="1">
+    <p class="kicker" data-ko="01 · 창 뒤의 삶" data-en="01 · Behind your windows"></p>
+    <h2 data-ko="일하는 창 뒤에서<br>조용히 살아요" data-en="A quiet life,<br>right behind your work"></h2>
+    <p data-ko="화면 보호기가 아니에요. 펫은 모든 앱 창 아래, 바탕화면 층에 살고 손을 내밀 때만 앞으로 나와요." data-en="Not a screensaver. Pets live on the desktop layer, under every app window, and come forward only when you reach for them."></p>
   </section>
-
-  <section id="download" style="padding-top:0">
-    <div class="wrap"><div class="get reveal">
-      <div class="row" id="lineup"></div>
-      <h2 data-ko="오늘, 첫 펫을<br>입양하세요" data-en="Adopt your first<br>pet today"></h2>
-      <p data-ko="Windows 10 21H2 이상 / Windows 11, macOS 11 이상. 무료, 광고 없음." data-en="Windows 10 21H2+ / Windows 11, and macOS 11+. Free, no ads."></p>
-      <div class="cta">
-        <a class="btn" href="https://github.com/cleverdj/petfam/releases/latest" data-ko="Windows용 받기" data-en="Download for Windows"></a>
-        <a class="btn light" href="https://github.com/cleverdj/petfam/releases/latest" data-ko="macOS용 받기" data-en="Download for macOS"></a>
-      </div>
-      <p class="note" data-ko="macOS 버전은 아직 초기 단계예요." data-en="The macOS version is still early."></p>
-    </div></div>
+  <section class="beat left" data-i="2">
+    <p class="kicker" data-ko="02 · 바탕화면을 읽어요" data-en="02 · It reads your wallpaper"></p>
+    <h2 data-ko="물을 보면<br>뛰어들어요" data-en="Sees water.<br>Jumps in."></h2>
+    <p data-ko="바탕화면 그림에서 땅, 물, 햇살, 그늘을 알아봐요. 강아지는 연못에 뛰어들고, 고양이는 볕 좋은 바위를 차지해요." data-en="PetFam finds the ground, water, sun and shade in your wallpaper. Dogs dive into the pond; cats claim the sunny rock."></p>
+  </section>
+  <section class="beat center bottom" data-i="3">
+    <p class="kicker" data-ko="03 · AI 대화" data-en="03 · They talk, with AI"></p>
+    <h2 data-ko="자기 말투로 수다 떨어요" data-en="They chat in their own voices"></h2>
+    <p data-ko="이미 쓰는 AI(Claude Code, Codex, Gemini CLI, Ollama)를 연결하면 품종별 성격대로 대화하고, 일기를 쓰고, 풍경 이야기를 해요." data-en="Connect an AI you already have (Claude Code, Codex, Gemini CLI, Ollama): they talk in character, keep a diary and notice the scenery."></p>
+  </section>
+  <section class="beat right" data-i="4">
+    <p class="kicker" data-ko="04 · 말로 짓는 집" data-en="04 · Built with words"></p>
+    <h2 data-ko="“등불 달린<br>아늑한 통나무집”" data-en="“A cozy log cabin<br>with a lantern”"></h2>
+    <p data-ko="한 문장이면 AI가 집을 지어 줘요. 펫은 문으로 걸어 들어가 잠들고, 비가 오면 안으로 피해요." data-en="One sentence and the AI builds it. Pets walk in through the door to sleep, or to get out of the rain."></p>
+  </section>
+  <section class="beat left" data-i="5">
+    <p class="kicker" data-ko="05 · 진짜 날씨" data-en="05 · Real weather"></p>
+    <h2 data-ko="우리 동네에 비가 오면<br>여기도 비가 와요" data-en="When it rains where you live,<br>it rains here"></h2>
+    <p data-ko="고양이는 집으로 뛰어가고, 강아지는 물웅덩이에서 놀아요. 눈이 오면 지붕에 소복이 쌓여요." data-en="The cat runs for the cabin, the dog plays in the puddles, and snow settles on the roof."></p>
+  </section>
+  <section class="beat center top" data-i="6">
+    <p class="kicker" data-ko="06 · 33가지 품종" data-en="06 · 33 breeds"></p>
+    <h2 data-ko="함께한 날만큼 자라는 가족" data-en="A family that grows a day older with you"></h2>
+    <p data-ko="강아지 17종, 고양이 16종. 두 달 된 아기로 와서 하루하루 함께 커요. 숙제도 죄책감도 없고, 펫은 죽지 않아요." data-en="17 dogs and 16 cats. They arrive as two-month-old babies and grow with you. No chores, no guilt, and pets never die."></p>
+  </section>
+  <section class="beat center top" data-i="7">
+    <p class="kicker" data-ko="무료 · 광고 없음" data-en="Free · no ads"></p>
+    <h2 class="big" data-ko="오늘, 첫 펫을 입양하세요" data-en="Adopt your first pet today"></h2>
+    <div class="cta">
+      <a class="btn" href="https://github.com/cleverdj/petfam/releases/latest" data-ko="Windows용 받기" data-en="Download for Windows"></a>
+      <a class="btn ghost" href="https://github.com/cleverdj/petfam/releases/latest" data-ko="macOS용 받기" data-en="Download for macOS"></a>
+      <a class="btn ghost" href="assets/film.mp4" target="_blank" rel="noopener" data-ko="▶ 단편 영상" data-en="▶ Short film"></a>
+    </div>
+    <p class="small" data-ko="Windows 10 21H2 이상 · macOS 11 이상(초기 버전) · AI에는 펫 정보만 보내요" data-en="Windows 10 21H2+ · macOS 11+ (early) · only pet information is sent to the AI"></p>
   </section>
 </main>
-<footer>© PetFam · <a href="https://github.com/cleverdj/petfam" style="text-decoration:underline">GitHub</a></footer>
+<div id="track"></div>
 
 <script type="module">
-// ------------------------------------------------------------------------------------------ 2D pets (SVG)
-const LINE = '#3a2a22';
-const KINDS = {
-  dog: { kind: 'dog', coat: '#e7b36e', far: '#cf9a56', belly: '#fff1dc', ear: '#c98c4b' },
-  cat: { kind: 'cat', coat: '#9aa5b6', far: '#818da0', belly: '#f6f3ee' },
-  kitten: { kind: 'cat', coat: '#f2a65a', far: '#d98c42', belly: '#fff1df' },
-  corgi: { kind: 'dog', coat: '#e79a48', far: '#cf8334', belly: '#fff6ea', ears: 'up', short: true },
-  husky: { kind: 'dog', coat: '#8d96a6', far: '#757f90', belly: '#f6f8fb', ears: 'up', mask: true },
-  black: { kind: 'cat', coat: '#4a4a58', far: '#3a3a46', belly: '#6a6a7e' },
-  shiba: { kind: 'dog', coat: '#de8a4a', far: '#c57436', belly: '#fff3e2', ears: 'up' },
-};
-// A side-on pet facing right, built from a few flat shapes; CSS animates the legs, tail, head, ears and eyes.
-function petSVG(name, cls = '', style = '') {
-  const o = KINDS[name], cat = o.kind === 'cat', c = o.coat, b = o.belly, h = o.short ? 17 : 26, y = 88 - h;
-  const leg = (n, x, fill) => `<rect class="leg ${n}" x="${x}" y="${y}" width="11" height="${h}" rx="5.5" fill="${fill}"/>`;
-  const tail = cat
-    ? `<g class="tail"><path d="M27 56C8 54 5 30 17 23" fill="none" stroke-width="11.5"/><path class="ns" d="M27 56C8 54 5 30 17 23" fill="none" style="stroke:${c};stroke-width:6.5"/></g>`
-    : `<g class="tail"><path d="M27 52C15 48 13 37 19 30" fill="none" stroke-width="12.5"/><path class="ns" d="M27 52C15 48 13 37 19 30" fill="none" style="stroke:${c};stroke-width:7.5"/></g>`;
-  const up = cat || o.ears === 'up';
-  const earsBack = up ? `<path class="ear" d="M92 22 103 6l3 22z" fill="${c}"/>` : `<ellipse class="ear" cx="103" cy="40" rx="7" ry="13" fill="${o.ear}" transform="rotate(-14 103 40)"/>`;
-  const earsFront = up ? `<path class="ear" d="M70 26 74 6l15 15z" fill="${c}"/><path class="ns" d="M75 22 76.5 13l7 7z" fill="#f4a7b4"/>` : `<ellipse class="ear" cx="69" cy="42" rx="7.5" ry="14" fill="${o.ear}" transform="rotate(14 69 42)"/>`;
-  return `<svg class="pet ${o.kind} ${cls}" style="${style}" viewBox="0 -8 124 104" role="img" aria-label="${name}">
-    ${tail}${leg('l2', 31, o.far)}${leg('l4', 65, o.far)}
-    <g class="bodyg"><ellipse cx="52" cy="58" rx="30" ry="19" fill="${c}"/><ellipse class="ns" cx="58" cy="67" rx="17" ry="8" fill="${b}"/>
-    <g class="acc scarf"><path d="M70 50q12 9 26 2l2 8q-15 8 -30 -1z" fill="#e2574c"/><path d="M76 58l-3 15 8 1 3 -14z" fill="#e2574c"/></g></g>
-    ${leg('l1', 38, c)}${leg('l3', 71, c)}
-    <g class="head">${earsBack}<circle cx="86" cy="38" r="20" fill="${c}"/>${o.mask ? `<path class="ns" d="M72 40q14 -16 28 0q-2 16 -14 17q-12 -1 -14 -17z" fill="${b}"/>` : ''}${earsFront}
-      <ellipse cx="88" cy="45" rx="${cat ? 7.5 : 9.5}" ry="${cat ? 5.5 : 7}" fill="${b}"/>
-      <ellipse cx="88" cy="41.5" rx="${cat ? 2.2 : 3.4}" ry="${cat ? 1.7 : 2.5}" fill="${cat ? '#e98a9a' : LINE}" style="stroke-width:1"/>
-      <path d="M88 44q-3 4 -6 2M88 44q3 4 6 2" fill="none" style="stroke-width:1.8"/>
-      <ellipse class="eye ns" cx="79" cy="35" rx="2.9" ry="3.4" fill="${LINE}"/><ellipse class="eye ns" cx="96" cy="35" rx="2.9" ry="3.4" fill="${LINE}"/>
-      <circle class="ns" cx="80" cy="33.8" r="1" fill="#fff"/><circle class="ns" cx="97" cy="33.8" r="1" fill="#fff"/>
-      <ellipse class="ns" cx="73" cy="43" rx="4" ry="2.5" fill="#ff8fa3" opacity=".6"/><ellipse class="ns" cx="102" cy="43" rx="4" ry="2.5" fill="#ff8fa3" opacity=".6"/>
-      <g class="acc hat"><path d="M76 21 87 -5l10 26z" fill="#ff6b8b"/><path class="ns" d="M80.5 12h12.5l1.5 4h-15.5z" fill="#ffd45c"/><circle cx="87" cy="-5" r="3.5" fill="#8ec9ff"/></g>
-      <g class="acc crown"><path d="M73 22 71 6l8 7 7 -11 7 11 8 -7 -2 16z" fill="#ffd45c"/></g>
-      <g class="acc glasses"><circle cx="79" cy="35" r="6.5" fill="rgba(255,255,255,.35)"/><circle cx="96" cy="35" r="6.5" fill="rgba(255,255,255,.35)"/><path d="M85.5 35h4" fill="none"/></g>
-    </g></svg>`;
-}
-document.querySelectorAll('[data-pet]').forEach(el => { el.outerHTML = petSVG(el.dataset.pet, el.dataset.class ?? '', el.getAttribute('style') ?? ''); });
-document.getElementById('lineup').innerHTML = ['corgi', 'cat', 'husky', 'kitten', 'dog', 'black', 'shiba'].map(n => petSVG(n)).join('');
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+// ======== 00_util.js ========
+// ---- small maths, noise and sculpting helpers shared by everything -------------------------------------------------
+const PI = Math.PI, TAU = PI * 2;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const range = (t, a, b) => clamp((t - a) / (b - a));
+const smooth = k => { k = clamp(k); return k * k * (3 - 2 * k); };
+const ease = k => { k = clamp(k); return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
+const backOut = k => { k = clamp(k); const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+const bell = (t, a, b, f = 0.15) => smooth(range(t, a, a + f)) * (1 - smooth(range(t, b - f, b)));
+function rng(seed) { let s = (seed * 2654435761) >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
 
-// ------------------------------------------------------------------------------------------ language
-const root = document.documentElement;
-const BREEDS = { ko: ['포메라니안', '말티즈', '토이 푸들', '비숑', '시바견', '웰시코기', '진돗개', '골든 리트리버', '프렌치 불도그', '닥스훈트', '허스키', '치와와', '비글', '사모예드', '보더 콜리', '시추', '퍼그', '코리안 숏헤어', '러시안 블루', '브리티시 숏헤어', '스코티시 폴드', '페르시안', '랙돌', '먼치킨', '샴', '메인쿤', '벵골', '스핑크스', '아비시니안', '노르웨이 숲', '터키시 앙고라'],
-  en: ['Pomeranian', 'Maltese', 'Toy Poodle', 'Bichon Frisé', 'Shiba Inu', 'Welsh Corgi', 'Jindo', 'Golden Retriever', 'French Bulldog', 'Dachshund', 'Husky', 'Chihuahua', 'Beagle', 'Samoyed', 'Border Collie', 'Shih Tzu', 'Pug', 'Korean Shorthair', 'Russian Blue', 'British Shorthair', 'Scottish Fold', 'Persian', 'Ragdoll', 'Munchkin', 'Siamese', 'Maine Coon', 'Bengal', 'Sphynx', 'Abyssinian', 'Norwegian Forest', 'Turkish Angora'] };
-const T = (ko, en) => (root.lang === 'ko' ? ko : en);
-const days = document.getElementById('days'), age = document.getElementById('age'), growPet = document.querySelector('.grow .pet');
-function showAge() {
-  const d = +days.value, stage = d < 15 ? T('아기', 'Baby') : d < 46 ? T('청소년', 'Junior') : d < 366 ? T('어른', 'Adult') : T('어르신', 'Senior');
-  age.textContent = `D+${d} · ${stage}`;
-  growPet.style.transform = `scale(${(0.5 + 0.5 * Math.min(1, d / 120)).toFixed(3)})`;
+// Value noise in 2 and 3 dimensions, and fbm.
+const PERM = (() => { const r = rng(1234), p = new Float32Array(4096); for (let i = 0; i < 4096; i++) p[i] = r(); return p; })();
+const h3 = (x, y, z) => PERM[(x * 73856093 ^ y * 19349663 ^ z * 83492791) & 4095];
+function noise3(x, y, z) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z); let fx = x - xi, fy = y - yi, fz = z - zi;
+  fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy); fz = fz * fz * (3 - 2 * fz);
+  const a = lerp(lerp(h3(xi, yi, zi), h3(xi + 1, yi, zi), fx), lerp(h3(xi, yi + 1, zi), h3(xi + 1, yi + 1, zi), fx), fy);
+  const b = lerp(lerp(h3(xi, yi, zi + 1), h3(xi + 1, yi, zi + 1), fx), lerp(h3(xi, yi + 1, zi + 1), h3(xi + 1, yi + 1, zi + 1), fx), fy);
+  return lerp(a, b, fz);
 }
-days.oninput = showAge;
+const noise2 = (x, y) => noise3(x, y, 7.31);
+function fbm2(x, y, oct = 4) { let v = 0, a = 0.5, n = 0; for (let i = 0; i < oct; i++) { v += a * noise2(x, y); n += a; x = x * 2.03 + 11.7; y = y * 2.03 + 3.1; a *= 0.5; } return v / n; }
+function fbm3(x, y, z, oct = 4) { let v = 0, a = 0.5, n = 0; for (let i = 0; i < oct; i++) { v += a * noise3(x, y, z); n += a; x = x * 2.03 + 11.7; y = y * 2.03 + 3.1; z = z * 2.03 + 5.9; a *= 0.5; } return v / n; }
+
+// The same noise for shaders.
+const GLSL_NOISE = `
+  float hash11(float n){ return fract(sin(n) * 43758.5453123); }
+  float hash31(vec3 p){ p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }
+  float vnoise(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mix(hash31(i), hash31(i + vec3(1,0,0)), f.x), mix(hash31(i + vec3(0,1,0)), hash31(i + vec3(1,1,0)), f.x), f.y),
+               mix(mix(hash31(i + vec3(0,0,1)), hash31(i + vec3(1,0,1)), f.x), mix(hash31(i + vec3(0,1,1)), hash31(i + vec3(1,1,1)), f.x), f.y), f.z); }
+  float fbm(vec3 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++){ v += a * vnoise(p); p = p * 2.03 + 7.1; a *= 0.5; } return v / 0.9375; }`;
+
+// ---- signed distance sculpting -------------------------------------------------------------------------------------
+// Shapes are written as distance functions and blended smoothly; sculpt() turns one into a mesh by walking outward from
+// a centre along every direction of a sphere (so the shape must be visible from that centre, which limbs and heads are).
+const smin = (a, b, k) => { const h = clamp(0.5 + 0.5 * (b - a) / k); return lerp(b, a, h) - k * h * (1 - h); };
+const sdSphere = (x, y, z, cx, cy, cz, r) => Math.hypot(x - cx, y - cy, z - cz) - r;
+function sdEllipsoid(x, y, z, cx, cy, cz, rx, ry, rz) {
+  const px = (x - cx) / rx, py = (y - cy) / ry, pz = (z - cz) / rz, k0 = Math.hypot(px, py, pz);
+  if (k0 < 1e-6) return -Math.min(rx, ry, rz);
+  const k1 = Math.hypot(px / rx, py / ry, pz / rz);
+  return k0 * (k0 - 1) / k1;
+}
+function sdCapsule(x, y, z, ax, ay, az, bx, by, bz, ra, rb = ra) {
+  const pax = x - ax, pay = y - ay, paz = z - az, bax = bx - ax, bay = by - ay, baz = bz - az;
+  const h = clamp((pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz));
+  return Math.hypot(pax - bax * h, pay - bay * h, paz - baz * h) - lerp(ra, rb, h);
+}
+// sdf(x, y, z) -> distance. paint(p, n, out) fills out.color (THREE.Color) and returns the fur length factor 0..1.
+function sculpt(sdf, { center = [0, 0, 0], rmax = 1, seg = 56, rings = 40, paint = null, deform = null } = {}) {
+  const geo = new THREE.SphereGeometry(1, seg, rings), pos = geo.attributes.position, nor = geo.attributes.normal;
+  const col = new Float32Array(pos.count * 3), fur = new Float32Array(pos.count), c = new THREE.Color(), p = new THREE.Vector3(), n = new THREE.Vector3();
+  const [cx, cy, cz] = center, e = 0.004;
+  for (let i = 0; i < pos.count; i++) {
+    const dx = pos.getX(i), dy = pos.getY(i), dz = pos.getZ(i);
+    let lo = 0, hi = rmax;
+    for (let k = 0; k < 22; k++) { const m = (lo + hi) / 2; if (sdf(cx + dx * m, cy + dy * m, cz + dz * m) < 0) lo = m; else hi = m; }
+    const x = cx + dx * lo, y = cy + dy * lo, z = cz + dz * lo;
+    n.set(sdf(x + e, y, z) - sdf(x - e, y, z), sdf(x, y + e, z) - sdf(x, y - e, z), sdf(x, y, z + e) - sdf(x, y, z - e)).normalize();
+    p.set(x, y, z);
+    c.setRGB(1, 1, 1); fur[i] = paint ? paint(p, n, c) : 1;
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    if (deform) deform(p, n);
+    pos.setXYZ(i, p.x, p.y, p.z); nor.setXYZ(i, n.x, n.y, n.z);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setAttribute('aFur', new THREE.BufferAttribute(fur, 1));
+  if (deform) geo.computeVertexNormals();
+  geo.computeBoundingSphere();
+  return geo;
+}
+function canvasTex(w, h, draw, srgb = true) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+
+// ======== 05_quality.js ========
+// ---- how much detail this device gets -----------------------------------------------------------------------------
+const QS = new URLSearchParams(location.search);
+const MOBILE = matchMedia('(max-width: 760px)').matches || (navigator.hardwareConcurrency ?? 8) <= 4;
+const QUALITY = MOBILE ? { msaa: 2, shells: 12, grass: 48000, leaves: 0.5, px: Math.min(devicePixelRatio, 1.5), shadow: 2048 }
+  : { msaa: 4, shells: 22, grass: 90000, leaves: 1, px: Math.min(devicePixelRatio, 2), shadow: 4096 };
+
+// ======== 10_core.js ========
+// ---- renderer, sky, light and the lens: one "weather of the moment" that every material reads -----------------------
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.toneMapping = THREE.NoToneMapping;          // the lens pass below does exposure, tone curve and encoding
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 900);
+const U = { time: { value: 0 }, wind: { value: new THREE.Vector2(1, 0.3) }, snow: { value: 0 }, wet: { value: 0 } };   // shared by all materials
+
+// The state of the day. Story keys (70_story.js) blend these; applyEnv() pushes one to the sky, the lights and the fog.
+const ENV0 = { sun: [0.45, 0.62, 0.55], sunCol: [1.0, 0.93, 0.80], sunInt: 3.3, top: [0.05, 0.22, 0.70], hor: [0.44, 0.70, 0.95], hemi: 0.62, ground: [0.40, 0.46, 0.30],
+  cloud: 0.42, cloudCol: [1, 1, 1], night: 0, fog: [0.62, 0.80, 0.96], fogDen: 0.0045, exposure: 1.0, bloom: 0.25, sat: 1.08, warm: 0.0 };
+const env = JSON.parse(JSON.stringify(ENV0));
+
+const skyU = { sunDir: { value: new THREE.Vector3() }, sunCol: { value: new THREE.Color() }, top: { value: new THREE.Color() }, hor: { value: new THREE.Color() },
+  cloud: { value: 0.4 }, cloudCol: { value: new THREE.Color() }, night: { value: 0 }, time: U.time, forEnv: { value: 0 } };
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, uniforms: skyU,
+  vertexShader: 'varying vec3 vD; void main(){ vD = position; vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position = p.xyww; }',
+  fragmentShader: `uniform vec3 sunDir, sunCol, top, hor, cloudCol; uniform float cloud, night, time, forEnv; varying vec3 vD; ${GLSL_NOISE}
+    void main(){
+      vec3 d = normalize(vD); float y = d.y;
+      vec3 c = mix(hor, top, pow(smoothstep(-0.02, 0.9, y), 0.55));
+      c = mix(c, hor * 0.82, smoothstep(0.0, -0.35, y));
+      float s = max(dot(d, sunDir), 0.0);
+      c += sunCol * (pow(s, 8.0) * 0.12 + pow(s, 64.0) * 0.35);
+      if (forEnv < 0.5) c += sunCol * smoothstep(0.9994, 0.9998, s) * 30.0 * (1.0 - night);
+      // Stars and a moon for the night.
+      if (night > 0.01 && forEnv < 0.5) {
+        vec3 q = d * 260.0; vec3 g = floor(q); float h = hash31(g);
+        c += vec3(0.85, 0.9, 1.0) * step(0.992, h) * smoothstep(0.5, 0.0, length(fract(q) - 0.5)) * (0.5 + 0.5 * sin(time * 2.0 + h * 50.0)) * night * 2.5 * smoothstep(0.0, 0.2, y);
+        float m = max(dot(d, normalize(vec3(-0.5, 0.42, -0.6))), 0.0);
+        c += vec3(1.0, 0.97, 0.88) * (smoothstep(0.9990, 0.9993, m) * 6.0 + pow(m, 300.0) * 0.5) * night;
+      }
+      // Clouds: fbm on a high plane, lit from the sun's side.
+      if (y > 0.015) {
+        vec2 uv = d.xz / (y + 0.12) * 0.75 + vec2(time * 0.006, time * 0.002);
+        float n = fbm(vec3(uv * 1.3, time * 0.01)), n2 = fbm(vec3(uv * 4.2 + 9.0, 3.0));
+        float cov = smoothstep(1.0 - cloud - 0.12, 1.0 - cloud + 0.16, n * 0.75 + n2 * 0.25);
+        float lit = fbm(vec3((uv + sunDir.xz * 0.12) * 1.3, time * 0.01));
+        vec3 cc = mix(cloudCol * mix(hor, vec3(1.0), 0.75), cloudCol * (0.55 * hor + 0.25), smoothstep(0.35, 0.8, lit) * 0.7) + sunCol * pow(s, 6.0) * 0.25;
+        c = mix(c, cc * mix(1.0, 0.25, night), cov * smoothstep(0.015, 0.14, y) * 0.94);
+      }
+      gl_FragColor = vec4(c, 1.0);
+    }`,
+});
+const skyGeo = new THREE.SphereGeometry(400, 48, 24);
+const sky = new THREE.Mesh(skyGeo, skyMat); sky.frustumCulled = false; sky.renderOrder = -100; scene.add(sky);
+// A copy of the sky lights the scene: reflections and soft fill come from the same colours the viewer sees.
+const envScene = new THREE.Scene(); envScene.add(new THREE.Mesh(skyGeo, skyMat));
+const pmrem = new THREE.PMREMGenerator(renderer);
+let envRT = null, envKey = '';
+function refreshEnvMap() {
+  const key = [env.top, env.hor, env.sun, env.cloud, env.night, env.sunCol].flat().map(v => v.toFixed(2)).join();
+  if (key === envKey) return;
+  envKey = key; skyU.forEnv.value = 1;
+  const rt = pmrem.fromScene(envScene, 0, 1, 500);
+  skyU.forEnv.value = 0; scene.environment = rt.texture; if (envRT) envRT.dispose(); envRT = rt;
+}
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x556644, 1);
+const sun = new THREE.DirectionalLight(0xffffff, 3);
+sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.035; sun.shadow.radius = 3;
+Object.assign(sun.shadow.camera, { left: -17, right: 17, top: 17, bottom: -17, near: 1, far: 90 });
+scene.add(hemi, sun, sun.target);
+scene.fog = new THREE.FogExp2(0xffffff, 0.01);
+
+// ---- lens: HDR scene -> bloom -> tilt-shift, exposure, filmic curve, grade, vignette, grain -------------------------
+let composer, bloomPass, lensPass;
+const lensU = { tDiffuse: { value: null }, time: U.time, res: { value: new THREE.Vector2(1, 1) }, exposure: { value: 1 }, sat: { value: 1.08 }, warm: { value: 0 },
+  tilt: { value: 0.0 }, focus: { value: 0.52 }, vig: { value: 0.32 }, fade: { value: 0 } };
+function buildLens(w, h) {
+  const rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: QUALITY.msaa });
+  composer = new EffectComposer(renderer, rt);
+  composer.addPass(new RenderPass(scene, camera));
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(w / 2, h / 2), 0.25, 0.7, 1.35);
+  composer.addPass(bloomPass);
+  lensPass = new ShaderPass({
+    uniforms: lensU,
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 res; uniform float time, exposure, sat, warm, tilt, focus, vig, fade; varying vec2 vUv; ${GLSL_NOISE}
+      vec3 aces(vec3 x){ return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+      void main(){
+        // Tilt-shift: sharp in a band, soft above and below, which is what makes a scene read as a miniature.
+        float r = tilt * smoothstep(0.10, 0.5, abs(vUv.y - focus)) * 7.0;
+        vec3 c = texture2D(tDiffuse, vUv).rgb;
+        if (r > 0.3) { vec3 a = c; for (int i = 0; i < 12; i++) { float an = float(i) * 2.39996, rr = sqrt((float(i) + 0.5) / 12.0) * r; a += texture2D(tDiffuse, vUv + vec2(cos(an), sin(an)) * rr / res).rgb; } c = a / 13.0; }
+        c *= exposure;
+        c = mix(c, c * vec3(1.06, 1.0, 0.90), warm);
+        c = aces(c);
+        float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        c = mix(vec3(l), c, sat);
+        c = mix(c, smoothstep(0.0, 1.0, c), 0.25);
+        vec2 q = vUv - 0.5; c *= 1.0 - vig * smoothstep(0.35, 0.95, length(q * vec2(1.0, 0.85)) * 1.25);
+        c = pow(c, vec3(1.0 / 2.2));
+        c += (fract(sin(dot(gl_FragCoord.xy + mod(floor(time * 24.0), 64.0) * 17.3, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.016;
+        gl_FragColor = vec4(mix(c, vec3(0.045, 0.04, 0.05), fade), 1.0);
+      }`,
+  });
+  composer.addPass(lensPass);
+}
+
+const _c = new THREE.Color();
+function applyEnv() {
+  const e = env;
+  skyU.sunDir.value.set(...e.sun).normalize(); skyU.sunCol.value.setRGB(...e.sunCol); skyU.top.value.setRGB(...e.top); skyU.hor.value.setRGB(...e.hor);
+  skyU.cloud.value = e.cloud; skyU.cloudCol.value.setRGB(...e.cloudCol); skyU.night.value = e.night;
+  sun.color.setRGB(...e.sunCol); sun.intensity = e.sunInt;
+  hemi.color.setRGB(...e.hor).lerp(_c.setRGB(...e.top), 0.35); hemi.groundColor.setRGB(...e.ground); hemi.intensity = e.hemi;
+  scene.fog.color.setRGB(...e.fog); scene.fog.density = e.fogDen;
+  scene.environmentIntensity = 0.55 * lerp(1, 0.6, e.night);
+  lensU.exposure.value = e.exposure; lensU.sat.value = e.sat; lensU.warm.value = e.warm;
+  if (bloomPass) bloomPass.strength = e.bloom;
+  refreshEnvMap();
+}
+// The sun's shadow box follows the point of interest.
+function aimSun(x, y, z) {
+  sun.target.position.set(x, y, z); sun.position.copy(skyU.sunDir.value).multiplyScalar(45).add(sun.target.position); sun.target.updateMatrixWorld();
+  sky.position.copy(camera.position);
+}
+
+// ======== 20_pets.js ========
+// ---- the pets: sculpted from distance fields, coated in shell fur, moved by a small rig ------------------------------
+// Each body part is its own sculpted mesh (so it can turn at its joint); the fur hides the seams. Every pose is a pure
+// function of the state handed to update(), so a frame can be rendered on its own.
+const FUR = { shells: QUALITY.shells, den: 175 };
+const furMats = [];
+function furMaterial(len, shells, den = FUR.den) {
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, alphaToCoverage: true });
+  m.userData.U = { furLen: { value: len }, shells: { value: shells }, furDen: { value: den }, furBend: { value: new THREE.Vector3() }, wet: { value: 0 } };
+  m.onBeforeCompile = s => {
+    Object.assign(s.uniforms, m.userData.U);
+    s.vertexShader = s.vertexShader.replace('#include <common>', `#include <common>
+      attribute float aFur; uniform float furLen, shells; uniform vec3 furBend; varying float vSh, vFurA; varying vec3 vBase;`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+      float sh = (float(gl_InstanceID) + 1.0) / shells; vSh = sh; vBase = position; vFurA = aFur;
+      vec3 fdir = normalize(objectNormal + vec3(0.0, -0.5 * sh, 0.0) + furBend * sh);
+      transformed += fdir * aFur * furLen * sh;`);
+    s.fragmentShader = s.fragmentShader.replace('#include <common>', `#include <common>
+      uniform float furDen, wet; varying float vSh, vFurA; varying vec3 vBase; ${GLSL_NOISE}`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+      vec3 fq = mat3(0.80, 0.36, -0.48, -0.60, 0.48, -0.64, 0.0, 0.80, 0.60) * vBase * furDen; vec3 fc = floor(fq); float frnd = hash31(fc);
+      vec3 fj = vec3(hash31(fc + 3.1), hash31(fc + 7.7), hash31(fc + 13.3)) - 0.5;
+      float flen = 0.35 + 0.65 * frnd;
+      float frad = 0.60 * (1.0 - vSh / flen) * mix(1.0, 0.75, wet);
+      if (vFurA > 0.02 && (frad <= 0.0 || length(fract(fq) - 0.5 - fj * 0.45) > frad)) discard;
+      diffuseColor.rgb *= mix(0.5, 1.12, vSh) * (0.9 + 0.2 * frnd) * mix(1.0, 0.62, wet);`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+      roughnessFactor = mix(roughnessFactor, 0.35, wet * 0.8);`);
+  };
+  furMats.push(m);
+  return m;
+}
+const skinMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
+skinMat.onBeforeCompile = s => { s.fragmentShader = s.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n diffuseColor.rgb *= 0.5;'); };
+const IDENT = new THREE.Matrix4();
+// A sculpted part with its coat: the skin casts the shadow, the shells carry the fur.
+function furry(geo, len, shells = FUR.shells) {
+  const g = new THREE.Group();
+  const skin = new THREE.Mesh(geo, skinMat); skin.castShadow = true; skin.receiveShadow = true; g.add(skin);
+  const mat = furMaterial(len, shells);
+  const coat = new THREE.InstancedMesh(geo, mat, shells); for (let i = 0; i < shells; i++) coat.setMatrixAt(i, IDENT);
+  coat.receiveShadow = true; coat.frustumCulled = false; g.add(coat);
+  g.userData.mat = mat;
+  return g;
+}
+const C = hex => new THREE.Color(hex);
+const SPECS = {
+  dog: { kind: 'dog', coat: C('#d9933f'), cream: C('#fbe9cc'), dark: C('#b06c26'), ear: C('#a8621f'), furBody: 0.062, furTail: 0.085, tailN: 5, tailL: 0.075, tailR: [0.06, 0.04],
+    eyeR: 0.041, eye: [0.09, 0.035, 0.176], iris: C('#2a1a10'), nose: C('#1d1614'), scale: 1.55 },
+  cat: { kind: 'cat', coat: C('#8f98a8'), cream: C('#f6f3ee'), dark: C('#565d6b'), ear: C('#7b8494'), furBody: 0.042, furTail: 0.04, tailN: 8, tailL: 0.078, tailR: [0.042, 0.03],
+    eyeR: 0.043, eye: [0.094, 0.025, 0.162], iris: C('#b9d36a'), nose: C('#e58f9c'), scale: 1.36, stripes: true },
+};
+function variant(base, o) { return { ...SPECS[base], ...o }; }
+
+function makePet(spec) {
+  const cat = spec.kind === 'cat', P = { spec, legs: [], tail: [], ears: [] };
+  const tmp = new THREE.Color();
+  const stripe = (p, k = 34) => spec.stripes ? smooth(range(Math.sin(p.z * k + fbm3(p.x * 6, p.y * 6, p.z * 6) * 5), 0.25, 0.75)) * smooth(range(p.y, -0.12, 0.05)) : 0;
+  const paintCoat = (c, p, creamK, stripeK) => { c.copy(spec.coat).lerp(tmp.copy(spec.dark), stripeK * 0.85).lerp(spec.cream, creamK).multiplyScalar(0.9 + 0.2 * fbm3(p.x * 9, p.y * 9, p.z * 9)); };
+
+  const root = P.root = new THREE.Group(), body = P.body = new THREE.Group(); root.add(body);
+  // Torso.
+  const torso = furry(sculpt((x, y, z) => smin(smin(sdEllipsoid(x, y, z, 0, 0, 0.2, 0.235, 0.24, 0.3), sdEllipsoid(x, y, z, 0, -0.01, -0.22, 0.215, 0.215, 0.27), 0.12),
+    sdCapsule(x, y, z, 0, 0.05, 0.3, 0, 0.23, 0.45, 0.15, 0.125), 0.1), { rmax: 0.9, seg: 72, rings: 48,
+    paint: (p, n, c) => { const k = fbm3(p.x * 5, p.y * 5, p.z * 5) * 0.12; paintCoat(c, p, Math.max(smooth(range(-p.y + k, 0.06, 0.16)), smooth(range(p.z - p.y * 0.9 + k, 0.3, 0.42)) * smooth(range(-p.y, -0.2, 0.0))), stripe(p)); return 1; } }), spec.furBody);
+  body.add(torso);
+
+  // Head.
+  const [ex, ey, ez] = spec.eye;
+  const headSdf = cat
+    ? (x, y, z) => smin(smin(sdEllipsoid(x, y, z, 0, 0, 0, 0.215, 0.195, 0.2), sdEllipsoid(x, y, z, 0, -0.075, 0.13, 0.1, 0.072, 0.1), 0.07),
+        Math.min(sdEllipsoid(x, y, z, 0.115, -0.065, 0.07, 0.1, 0.085, 0.095), sdEllipsoid(x, y, z, -0.115, -0.065, 0.07, 0.1, 0.085, 0.095)), 0.07)
+    : (x, y, z) => smin(sdEllipsoid(x, y, z, 0, 0, 0, 0.21, 0.2, 0.205), smin(sdEllipsoid(x, y, z, 0, -0.07, 0.19, 0.105, 0.088, 0.15), sdEllipsoid(x, y, z, 0, 0.03, 0.13, 0.13, 0.08, 0.1), 0.08), 0.08);
+  const head = P.head = new THREE.Group();
+  const headMesh = furry(sculpt(headSdf, { center: [0, 0, 0.03], rmax: 0.7, seg: 72, rings: 52,
+    paint: (p, n, c) => {
+      const muz = smooth(range(p.z - Math.max(0, p.y + 0.02) * 2.4, cat ? 0.13 : 0.17, cat ? 0.2 : 0.25)) * smooth(range(-p.y, -0.03, 0.04));
+      const blaze = cat ? smooth(range(-p.y, 0.0, 0.1)) * smooth(range(p.z, 0.02, 0.14)) : 0;
+      const m = cat ? smooth(range(Math.sin(p.x * 46), 0.2, 0.8)) * smooth(range(p.y, 0.07, 0.15)) * smooth(range(p.z, -0.05, 0.1)) : 0;
+      paintCoat(c, p, Math.max(muz, blaze), m);
+      const eye = Math.min(Math.hypot(p.x - ex, p.y - ey, p.z - ez), Math.hypot(p.x + ex, p.y - ey, p.z - ez));
+      const tip = cat ? Math.hypot(p.x, p.y + 0.05, p.z - 0.23) : Math.hypot(p.x, p.y + 0.03, p.z - 0.34);
+      return Math.min(lerp(1, 0.22, muz), smooth(range(eye, spec.eyeR * 0.9, spec.eyeR * 2.9)), smooth(range(tip, 0.03, 0.09)));
+    } }), spec.furBody * 0.62);
+  head.add(headMesh); head.position.set(0, 0.3, 0.5); body.add(head);
+  // Eyes, nose, whiskers.
+  const eyeMat = new THREE.MeshPhysicalMaterial({ color: cat ? spec.iris : 0x120b08, roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0.02 });
+  const pupilMat = new THREE.MeshBasicMaterial({ color: 0x050404 }), glint = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.6, 1.6) });
+  const EYE = new THREE.SphereGeometry(1, 24, 16);
+  P.eyes = [-1, 1].map(s => {
+    const e = new THREE.Group(); e.position.set(s * ex, ey, ez);
+    const ball = new THREE.Mesh(EYE, eyeMat); ball.scale.setScalar(spec.eyeR); e.add(ball);
+    if (cat) { const pu = new THREE.Mesh(EYE, pupilMat); pu.scale.set(spec.eyeR * 0.36, spec.eyeR * 0.82, spec.eyeR * 0.3); pu.position.set(s * 0.004, 0, spec.eyeR * 0.78); e.add(pu); e.userData.pupil = pu; }
+    const g = new THREE.Mesh(EYE, glint); g.scale.setScalar(spec.eyeR * 0.17); g.position.set(spec.eyeR * 0.3, spec.eyeR * 0.36, spec.eyeR * 0.84); e.add(g);
+    head.add(e); return e;
+  });
+  const noseMat = new THREE.MeshPhysicalMaterial({ color: spec.nose, roughness: 0.25, clearcoat: 0.8 });
+  const nose = new THREE.Mesh(EYE, noseMat); nose.castShadow = true;
+  if (cat) { nose.scale.set(0.022, 0.016, 0.014); nose.position.set(0, -0.045, 0.236); } else { nose.scale.set(0.043, 0.033, 0.03); nose.position.set(0, -0.035, 0.335); }
+  head.add(nose);
+  if (cat) {
+    const pts = []; for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { pts.push(s * 0.06, -0.07 + i * 0.008, 0.2, s * (0.25 + (i % 2) * 0.04), -0.09 + i * 0.03, 0.17); }
+    const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    head.add(new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 })));
+  }
+  // Ears.
+  for (const s of [-1, 1]) {
+    const pivot = new THREE.Group(); let ear;
+    if (cat) {
+      ear = furry(sculpt((x, y, z) => sdEllipsoid(x, y, z, 0, 0.09, 0, 0.09, 0.115, 0.032), { center: [0, 0.09, 0], rmax: 0.3, seg: 28, rings: 20,
+        paint: (p, n, c) => { const inner = smooth(range(n.z, 0.3, 0.7)) * smooth(range(Math.hypot(p.x, p.y - 0.08), 0.085, 0.04)); c.copy(spec.ear).lerp(tmp.set('#f0a9b6'), inner); return lerp(0.8, 0.1, inner); },
+        deform: p => { const k = smooth(range(p.y, 0.0, 0.2)); p.x *= 1 - 0.88 * k; p.z *= 1 - 0.5 * k; p.z -= p.x * p.x * 2.0; } }), 0.02, 8);
+      pivot.position.set(s * 0.118, 0.135, -0.02); pivot.rotation.set(-0.1, s * 0.25, -s * 0.3);
+    } else {
+      ear = furry(sculpt((x, y, z) => sdEllipsoid(x, y, z, 0, -0.105, 0, 0.082, 0.125, 0.03), { center: [0, -0.105, 0], rmax: 0.3, seg: 28, rings: 20,
+        paint: (p, n, c) => { c.copy(spec.ear).multiplyScalar(0.9 + 0.2 * fbm3(p.x * 20, p.y * 20, 3)); return 0.9; },
+        deform: p => { p.z += p.y * p.y * 1.5; } }), 0.04, 10);
+      pivot.position.set(s * 0.165, 0.135, -0.015); pivot.rotation.set(0.15, 0, s * 0.42);
+    }
+    pivot.add(ear); pivot.userData = { s, rest: pivot.rotation.clone() }; head.add(pivot); P.ears.push(pivot);
+  }
+  // Legs: hip -> upper -> knee -> lower with the paw.
+  const upper = rear => furry(sculpt((x, y, z) => sdCapsule(x, y, z, 0, 0.02, 0, 0, -0.2, 0, rear ? 0.105 : 0.088, 0.062), { center: [0, -0.09, 0], rmax: 0.4, seg: 28, rings: 22,
+    paint: (p, n, c) => { paintCoat(c, p, 0, spec.stripes ? smooth(range(Math.sin(p.y * 44), 0.3, 0.8)) : 0); return 0.8; } }), spec.furBody * 0.75, 12);
+  const lower = () => furry(sculpt((x, y, z) => smin(sdCapsule(x, y, z, 0, 0.01, 0, 0, -0.19, 0, 0.06, 0.05), sdEllipsoid(x, y, z, 0, -0.205, 0.035, 0.064, 0.046, 0.088), 0.04), { center: [0, -0.11, 0.01], rmax: 0.4, seg: 28, rings: 22,
+    paint: (p, n, c) => { const sock = smooth(range(-p.y, 0.1, 0.16)); paintCoat(c, p, sock, spec.stripes ? smooth(range(Math.sin(p.y * 44 + 2), 0.3, 0.8)) * (1 - sock) : 0); return lerp(0.6, 0.22, smooth(range(-p.y, 0.14, 0.2))); } }), spec.furBody * 0.6, 10);
+  const upF = upper(false), upR = upper(true), low = lower();
+  for (const [x, y, z, rear] of [[-0.13, -0.1, 0.28, 0], [0.13, -0.1, 0.28, 0], [-0.135, -0.09, -0.3, 1], [0.135, -0.09, -0.3, 1]]) {
+    const hip = new THREE.Group(); hip.position.set(x, y, z); hip.add((rear ? upR : upF).clone());
+    const knee = new THREE.Group(); knee.position.set(0, -0.2, 0); knee.add(low.clone()); hip.add(knee);
+    body.add(hip); P.legs.push({ hip, knee, rear });
+  }
+  // Tail: a chain of short tapered segments.
+  let parent = new THREE.Group(); parent.position.set(0, 0.1, -0.46); body.add(parent); P.tailRoot = parent;
+  for (let i = 0; i < spec.tailN; i++) {
+    const r0 = lerp(spec.tailR[0], spec.tailR[1], i / spec.tailN), r1 = lerp(spec.tailR[0], spec.tailR[1], (i + 1) / spec.tailN), Lz = spec.tailL, last = i === spec.tailN - 1;
+    const seg = furry(sculpt((x, y, z) => sdCapsule(x, y, z, 0, 0, 0, 0, 0, -Lz, r0, r1), { center: [0, 0, -Lz / 2], rmax: 0.3, seg: 18, rings: 12,
+      paint: (p, n, c) => { paintCoat(c, p, !cat && i >= spec.tailN - 2 ? 0.8 : 0, cat && i % 2 ? 0.9 : 0); return last ? 0.8 : 1; } }), spec.furTail, 12);
+    const j = new THREE.Group(); j.add(seg); parent.add(j); if (i) j.position.z = -Lz; P.tail.push(j); parent = j;
+  }
+  root.scale.setScalar(spec.scale);
+
+  // st: { x, y, z, yaw, gait 0..1, phase, sit 0..1, lie 0..1, look [yaw, pitch], wag 0..1, happy, airborne 0..1, wind [x,z] }
+  P.update = (st, t) => {
+    const sit = st.sit ?? 0, lie = st.lie ?? 0, gait = st.gait ?? 0, ph = st.phase ?? 0, air = st.air ?? 0, sc = spec.scale * (st.scale ?? 1);
+    root.position.set(st.x, st.y, st.z); root.rotation.y = st.yaw ?? 0; root.scale.setScalar(sc);
+    const breath = Math.sin(t * 2.4 + (cat ? 1 : 0)) * 0.012;
+    body.position.y = 0.54 - 0.2 * sit - 0.3 * lie + Math.abs(Math.sin(ph)) * 0.022 * gait;
+    body.rotation.set(-0.55 * sit * (1 - lie) + (st.pitch ?? 0) + Math.sin(ph * 2) * 0.02 * gait, 0, Math.sin(ph) * 0.04 * gait + (st.roll ?? 0));
+    torso.scale.set(1 + breath, 1 + breath, 1);
+    P.legs.forEach((L, i) => {
+      const side = i % 2, off = (L.rear ? (side ? 0 : PI) : (side ? PI : 0)), a = ph + off;
+      let hip = Math.sin(a) * 0.55 * gait, knee = Math.max(0, Math.sin(a - 1.9)) * 1.0 * gait;
+      if (L.rear) { hip = lerp(hip, -1.15, sit); knee = lerp(knee, 2.15, sit); } else { hip = lerp(hip, 0.62, sit); knee = lerp(knee, -0.12, sit); }
+      hip = lerp(hip, L.rear ? 1.25 : -1.3, lie); knee = lerp(knee, L.rear ? 0.25 : 0.1, lie);
+      hip = lerp(hip, L.rear ? 0.9 : -0.9, air); knee = lerp(knee, 0.3, air);
+      L.hip.rotation.x = hip; L.knee.rotation.x = knee;
+    });
+    const look = st.look ?? [0, 0];
+    head.rotation.set(0.5 * sit * (1 - lie) + 0.25 * lie - look[1] + Math.sin(t * 0.9 + (cat ? 2 : 0)) * 0.03 - gait * Math.sin(ph * 2) * 0.03, look[0], (st.tilt ?? 0) + Math.sin(t * 0.7) * 0.02);
+    head.position.y = 0.3 - 0.05 * lie;
+    const wag = st.wag ?? 0.3;
+    P.tailRoot.rotation.set(cat ? 0.75 - 0.5 * lie : 0.95 + 0.25 * (st.happy ? 1 : 0), 0, 0);
+    P.tail.forEach((j, i) => {
+      if (cat) { j.rotation.x = 0.14 + Math.sin(t * 1.3 + i * 0.5) * 0.06; j.rotation.y = Math.sin(t * 1.7 - i * 0.6) * (0.1 + 0.16 * wag); }
+      else { j.rotation.x = 0.3; j.rotation.y = Math.sin(t * (7 + 8 * wag) - i * 0.5) * (0.1 + 0.3 * wag); }
+    });
+    for (const e of P.ears) { const r = e.userData.rest, s = e.userData.s; e.rotation.set(r.x + (cat ? 0 : Math.sin(ph * 2 + s) * 0.12 * gait + air * 0.5), r.y, r.z + (cat ? Math.sin(t * 0.6 + s) * 0.04 : s * (air * 0.7 + Math.abs(Math.sin(ph)) * 0.08 * gait))); }
+    const blink = ((t * 0.23 + (cat ? 0.4 : 0)) % 1) < 0.03 || st.happy;
+    for (const e of P.eyes) e.scale.y = blink ? 0.12 : 1;
+  };
+  return P;
+}
+
+// ======== 30_island.js ========
+// ---- the island: a small world floating above the clouds -------------------------------------------------------------
+const ISLE = { R: 13, pond: [5.2, 1.6, 3.1], water: 0.18, cabin: [-5.2, -2.6], rock: [1.8, -3.4] };
+const PATH = [[-4.3, -0.7], [-2.2, 0.9], [0.6, 1.5], [2.6, 1.3]];
+function pathDist(x, z) {
+  let d = 1e9;
+  for (let i = 1; i < PATH.length; i++) {
+    const [ax, az] = PATH[i - 1], [bx, bz] = PATH[i], h = clamp(((x - ax) * (bx - ax) + (z - az) * (bz - az)) / ((bx - ax) ** 2 + (bz - az) ** 2));
+    d = Math.min(d, Math.hypot(x - ax - (bx - ax) * h, z - az - (bz - az) * h));
+  }
+  return d + (fbm2(x * 1.3, z * 1.3) - 0.5) * 0.5;
+}
+const pondD = (x, z) => Math.hypot(x - ISLE.pond[0], (z - ISLE.pond[1]) * 1.25) / ISLE.pond[2] + (fbm2(x * 0.7 + 4, z * 0.7) - 0.5) * 0.18;
+const edgeR = a => ISLE.R * (0.9 + 0.16 * fbm2(Math.cos(a) * 1.6 + 5, Math.sin(a) * 1.6 + 5));
+// Height of the ground. Everything that stands on the island asks this.
+function groundY(x, z) {
+  const r = Math.hypot(x, z);
+  let h = 0.75 * (1 - (r / ISLE.R) ** 2) + (fbm2(x * 0.16 + 3, z * 0.16 + 8) - 0.5) * 1.7 * smooth(range(r, 2.5, 9)) + (fbm2(x * 0.9, z * 0.9) - 0.5) * 0.12;
+  const cd = Math.hypot(x - ISLE.cabin[0], z - ISLE.cabin[1]); h = lerp(0.62, h, smooth(range(cd, 2.4, 4.6)));
+  const pd = pondD(x, z); h = lerp(0.36, h, smooth(range(pd, 1.05, 1.9)));
+  h -= 1.25 * (1 - smooth(range(pd, 0.45, 1.02)));
+  return h;
+}
+const isleU = { snow: U.snow, wet: U.wet };
+// Snow settles on whatever faces up; rain darkens it.
+// Patched materials must say what makes their shader text different, or three would share one program between them.
+const keyed = (mat, k) => { mat.userData.key = (mat.userData.key ?? '') + '|' + k; mat.customProgramCacheKey = () => mat.userData.key; return mat; };
+function weatherPatch(mat, snowK = 1) {
+  keyed(mat, 'w' + snowK);
+  mat.onBeforeCompile = s => {
+    Object.assign(s.uniforms, isleU);
+    s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\n varying vec3 vWN; varying vec3 vWP;').replace('#include <fog_vertex>', '#include <fog_vertex>\n vWN = normalize(mat3(modelMatrix) * objectNormal); vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    s.fragmentShader = s.fragmentShader.replace('#include <common>', `#include <common>\n uniform float snow, wet; varying vec3 vWN; varying vec3 vWP; ${GLSL_NOISE}`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        diffuseColor.rgb *= mix(1.0, 0.72, wet);
+        float sn = smoothstep(0.35, 0.8, vWN.y + (vnoise(vWP * 3.0) - 0.5) * 0.5) * smoothstep(0.0, 1.0, snow * 1.5 - vnoise(vWP * 0.8) * 0.5) * ${snowK.toFixed(2)};
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.96, 1.0), sn);`)
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor = mix(roughnessFactor, 0.45, wet * 0.6);');
+  };
+  return mat;
+}
+
+const island = new THREE.Group(); scene.add(island);
+{
+  // Top surface: a polar grid, painted by what lies where.
+  const RINGS = 96, SEG = 192, pos = [], col = [], idx = [], c = new THREE.Color(), t = new THREE.Color();
+  const G1 = new THREE.Color('#4f9632'), G2 = new THREE.Color('#86c24a'), G3 = new THREE.Color('#a9cf55'), DIRT = new THREE.Color('#a57f4c'), SAND = new THREE.Color('#e6d3a0'), BED = new THREE.Color('#2f7f7c'), ROCK = new THREE.Color('#8b8272');
+  for (let i = 0; i <= RINGS; i++) for (let j = 0; j <= SEG; j++) {
+    const a = j / SEG * TAU, r = Math.pow(i / RINGS, 0.85) * edgeR(a), x = Math.cos(a) * r, z = Math.sin(a) * r, y = groundY(x, z);
+    pos.push(x, y, z);
+    const n = fbm2(x * 0.5 + 9, z * 0.5), pd = pondD(x, z);
+    c.copy(G1).lerp(G2, smooth(range(n, 0.3, 0.7))).lerp(G3, smooth(range(fbm2(x * 0.22, z * 0.22 + 4), 0.55, 0.75)) * 0.7);
+    c.lerp(DIRT, (1 - smooth(range(pathDist(x, z), 0.3, 0.62))) * 0.92);
+    c.lerp(SAND, smooth(range(pd, 1.32, 1.12)));
+    c.lerp(BED, smooth(range(pd, 1.0, 0.7)));
+    c.lerp(t.copy(BED).multiplyScalar(0.45), smooth(range(pd, 0.7, 0.2)));
+    c.lerp(ROCK, smooth(range(i / RINGS, 0.955, 1.0)) * 0.8);
+    col.push(c.r, c.g, c.b);
+  }
+  for (let i = 0; i < RINGS; i++) for (let j = 0; j < SEG; j++) { const a = i * (SEG + 1) + j, b = a + SEG + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const top = new THREE.Mesh(g, weatherPatch(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, color: 0x9c9c9c }))); top.receiveShadow = true; island.add(top);
+
+  // The rock underneath: strata, overhangs, a tip that tapers into the clouds.
+  const ROWS = 70, p2 = [], c2 = [], i2 = [];
+  const R1 = new THREE.Color('#9a8d78'), R2 = new THREE.Color('#6f6557'), R3 = new THREE.Color('#b9a98c'), MOSS = new THREE.Color('#5f9a3c');
+  for (let i = 0; i <= ROWS; i++) for (let j = 0; j <= SEG; j++) {
+    const a = j / SEG * TAU, v = i / ROWS, ca = Math.cos(a), sa = Math.sin(a), re = edgeR(a), y0 = groundY(ca * re, sa * re), y = y0 - 0.02 - 13 * Math.pow(v, 1.25);
+    const lump = (fbm3(ca * 2.2 + 3, y * 0.42, sa * 2.2 + 3) - 0.5) * 3.2 * smooth(range(v, 0.0, 0.25)) + (fbm3(ca * 7, y * 1.6, sa * 7) - 0.5) * 0.8 * smooth(range(v, 0.02, 0.15));
+    const strata = (Math.sin(y * 4.2 + fbm2(ca * 3, sa * 3) * 5) * 0.5 + 0.5);
+    const r = Math.max(0.05, re * Math.pow(1 - v, 0.62) * (1 - 0.1 * smooth(range(v, 0.0, 0.08))) + lump * (1 - v * 0.6) + strata * 0.18 * smooth(range(v, 0.03, 0.2)));
+    p2.push(ca * r, y, sa * r);
+    c.copy(R1).lerp(R2, smooth(range(strata, 0.35, 0.75))).lerp(R3, smooth(range(fbm3(ca * 5, y * 0.8, sa * 5), 0.55, 0.75)) * 0.6).multiplyScalar(lerp(1, 0.55, smooth(range(v, 0.1, 0.95))));
+    c.lerp(MOSS, smooth(range(v, 0.07, 0.0)) * 0.9);
+    c2.push(c.r, c.g, c.b);
+  }
+  for (let i = 0; i < ROWS; i++) for (let j = 0; j < SEG; j++) { const a = i * (SEG + 1) + j, b = a + SEG + 1; i2.push(a, a + 1, b, a + 1, b + 1, b); }
+  const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(p2, 3)); g2.setAttribute('color', new THREE.Float32BufferAttribute(c2, 3)); g2.setIndex(i2); g2.computeVertexNormals();
+  const cliff = new THREE.Mesh(g2, weatherPatch(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: false }), 0.6)); cliff.castShadow = true; cliff.receiveShadow = true; island.add(cliff);
+}
+
+// Rocks: sculpted lumps, a few on the island and a few adrift beside it.
+const rockMat = weatherPatch(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 }));
+function makeRock(seed, sx = 1, sy = 0.7, sz = 1) {
+  const r = rng(seed), o = [r() * 9, r() * 9, r() * 9], c1 = new THREE.Color('#9b9486'), c2 = new THREE.Color('#6d675d'), moss = new THREE.Color('#6a9a42');
+  const g = sculpt((x, y, z) => sdEllipsoid(x, y, z, 0, 0, 0, sx, sy, sz) + (fbm3(x * 1.6 + o[0], y * 1.6 + o[1], z * 1.6 + o[2]) - 0.5) * 0.55 * Math.min(sx, sy, sz) * 2, { rmax: Math.max(sx, sy, sz) * 1.8, seg: 36, rings: 24,
+    paint: (p, n, c) => { c.copy(c1).lerp(c2, fbm3(p.x * 3, p.y * 3, p.z * 3)).lerp(moss, smooth(range(n.y + fbm3(p.x * 4, 2, p.z * 4) * 0.6, 0.9, 1.2)) * 0.8); return 0; } });
+  const m = new THREE.Mesh(g, rockMat); m.castShadow = true; m.receiveShadow = true; return m;
+}
+{
+  const r = rng(77);
+  const big = makeRock(5, 1.25, 0.62, 1.0); big.position.set(ISLE.rock[0], groundY(...ISLE.rock) + 0.25, ISLE.rock[1]); island.add(big);   // the cat's sunny rock
+  for (let i = 0; i < 14; i++) {
+    const a = r() * TAU, d = 3 + r() * 8.5, x = Math.cos(a) * d, z = Math.sin(a) * d; if (pondD(x, z) < 1.15 || pathDist(x, z) < 0.6) continue;
+    const s = 0.18 + r() * 0.42, m = makeRock(20 + i, s * (0.8 + r() * 0.6), s * 0.6, s * (0.8 + r() * 0.6)); m.position.set(x, groundY(x, z) + s * 0.15, z); m.rotation.y = r() * TAU; island.add(m);
+  }
+  for (const [x, y, z, s] of [[-19, -3, -6, 2.2], [21, 2, -12, 1.6], [16, -6, 9, 1.1], [-15, 4, -17, 1.3]]) {
+    const m = makeRock(90 + x, s, s * 0.8, s * 0.9); m.position.set(x, y, z); m.userData.float = [y, r() * 6]; island.add(m); ISLE.floaters = (ISLE.floaters ?? []).concat(m);
+  }
+}
+
+// The pond: clear, moving water that mirrors the sky, with lily pads.
+const waterMat = new THREE.MeshPhysicalMaterial({ color: 0x1f7f96, roughness: 0.05, metalness: 0, transparent: true, opacity: 0.82, envMapIntensity: 1.6 });
+waterMat.onBeforeCompile = s => {
+  s.uniforms.time = U.time; s.uniforms.rip = waterMat.userData.rip = { value: new THREE.Vector4(0, 0, -9, 0) };
+  s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\n varying vec3 vWP;').replace('#include <fog_vertex>', '#include <fog_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+  s.fragmentShader = s.fragmentShader.replace('#include <common>', `#include <common>\n uniform float time; uniform vec4 rip; varying vec3 vWP; ${GLSL_NOISE}`)
+    .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+      { vec2 q = vWP.xz; float e = 0.06;
+        float h0 = fbm(vec3(q * 1.6 + time * 0.25, time * 0.3)), hx = fbm(vec3((q + vec2(e, 0.0)) * 1.6 + time * 0.25, time * 0.3)), hz = fbm(vec3((q + vec2(0.0, e)) * 1.6 + time * 0.25, time * 0.3));
+        vec2 gr = vec2(hx - h0, hz - h0) / e * 0.10;
+        float d = length(q - rip.xy), age = time - rip.z;      // rings from the last splash
+        if (age > 0.0 && age < 4.0) gr += normalize(q - rip.xy + 1e-4) * sin(d * 9.0 - age * 9.0) * exp(-age * 1.1) * smoothstep(age * 2.4 + 0.3, age * 2.4 - 0.6, d) * 0.5;
+        normal = normalize(normal + (viewMatrix * vec4(gr.x, 0.0, gr.y, 0.0)).xyz); }`);
+};
+{
+  const [px, pz, pr] = ISLE.pond, g = new THREE.CircleGeometry(pr * 1.18, 72).rotateX(-PI / 2);
+  const w = new THREE.Mesh(g, waterMat); w.position.set(px, ISLE.water, pz); w.receiveShadow = true; island.add(w);
+  const padGeo = new THREE.CircleGeometry(1, 20, 0.35, TAU - 0.7).rotateX(-PI / 2), r = rng(8);
+  const pads = new THREE.InstancedMesh(padGeo, new THREE.MeshStandardMaterial({ color: 0x4f9c45, roughness: 0.5, side: THREE.DoubleSide }), 16), M = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+  for (let i = 0; i < 16; i++) { const a = r() * TAU, d = (0.25 + r() * 0.5) * pr, s = 0.16 + r() * 0.16; q.setFromEuler(e.set(0, r() * TAU, 0)); M.compose(new THREE.Vector3(px + Math.cos(a) * d, ISLE.water + 0.012, pz + Math.sin(a) * d * 0.8), q, new THREE.Vector3(s, 1, s)); pads.setMatrixAt(i, M); }
+  pads.receiveShadow = true; island.add(pads);
+}
+
+// A sea of cloud far below, so the island has somewhere to float.
+const cloudSea = new THREE.Mesh(new THREE.PlaneGeometry(900, 900).rotateX(-PI / 2), new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, uniforms: { time: U.time, col: { value: new THREE.Color(1, 1, 1) }, shade: { value: new THREE.Color(0.45, 0.6, 0.85) }, fogCol: { value: new THREE.Color() } },
+  vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+  fragmentShader: `uniform float time; uniform vec3 col, shade, fogCol; varying vec3 vW; ${GLSL_NOISE}
+    void main(){ vec2 q = vW.xz * 0.022 + vec2(time * 0.004, 0.0); float n = fbm(vec3(q, time * 0.01)) * 0.7 + fbm(vec3(q * 3.1, 4.0)) * 0.3;
+      float a = smoothstep(0.36, 0.56, n); vec3 c = mix(shade, col, smoothstep(0.42, 0.7, n));
+      float d = length(vW.xz - cameraPosition.xz); c = mix(c, fogCol, smoothstep(60.0, 380.0, d));
+      gl_FragColor = vec4(c, a * 0.96 * smoothstep(440.0, 250.0, d)); }`,
+}));
+cloudSea.position.y = -16; cloudSea.renderOrder = -50; scene.add(cloudSea);
+
+// ======== 35_clouds.js ========
+// ---- cumulus around the island: painted puffs on cards that always face the camera -----------------------------------
+const cumulus = [];
+{
+  const tex = seed => canvasTex(512, 320, (g, w, h) => {
+    const r = rng(seed), blobs = [];
+    for (let i = 0; i < 26; i++) { const x = 90 + r() * 330, hump = 1 - Math.abs(x - 256) / 210; blobs.push([x, 230 - r() * 150 * hump, 30 + r() * 46 * (0.5 + hump)]); }
+    const layer = (dx, dy, k, c0, c1) => { for (const [x, y, rad] of blobs) { const gr = g.createRadialGradient(x + dx - rad * 0.3, y + dy - rad * 0.35, rad * 0.1, x + dx, y + dy, rad * k); gr.addColorStop(0, c0); gr.addColorStop(0.8, c1); gr.addColorStop(1, c1.replace(/[\d.]+\)$/, '0)')); g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, rad * k, 0, TAU); g.fill(); } };
+    layer(6, 16, 1.0, 'rgba(150,170,205,1)', 'rgba(135,158,198,0.95)');
+    layer(0, 0, 0.92, 'rgba(255,255,255,1)', 'rgba(232,238,248,0.97)');
+    layer(-8, -12, 0.6, 'rgba(255,255,255,1)', 'rgba(255,253,246,0.9)');
+    g.globalCompositeOperation = 'destination-out'; const cut = g.createLinearGradient(0, 235, 0, 290); cut.addColorStop(0, 'rgba(0,0,0,0)'); cut.addColorStop(1, 'rgba(0,0,0,1)'); g.fillStyle = cut; g.fillRect(0, 235, w, h);
+  });
+  const texs = [3, 11, 23].map(tex), r = rng(404), geo = new THREE.PlaneGeometry(1, 0.625);
+  for (let i = 0; i < 18; i++) {
+    const a = i / 18 * TAU + r() * 0.3, d = 34 + r() * 70, s = 16 + r() * 26, m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: texs[i % 3], transparent: true, depthWrite: false, fog: false }));
+    m.position.set(Math.cos(a) * d, -12 + r() * 30, Math.sin(a) * d); m.scale.setScalar(s); m.userData = { a, d, y: m.position.y, sp: 0.004 + r() * 0.004 }; m.renderOrder = -40; scene.add(m); cumulus.push(m);
+  }
+}
+function updateClouds(t) {
+  const c = _c.setRGB(...env.cloudCol).multiplyScalar(lerp(1.0, 0.22, env.night)).lerp(scene.fog.color, 0.18);
+  for (const m of cumulus) { const u = m.userData, a = u.a + t * u.sp; m.position.set(Math.cos(a) * u.d, u.y + Math.sin(t * 0.1 + u.a) * 0.6, Math.sin(a) * u.d); m.quaternion.copy(camera.quaternion); m.material.color.copy(c); }
+}
+
+// ======== 40_flora.js ========
+// ---- everything that grows: grass, flowers, trees, bushes. All of it leans with one wind. -----------------------------
+const WIND_GLSL = `
+  uniform float time; uniform vec2 wind;
+  vec3 sway(vec3 wp, float h, float stiff){
+    float g = sin(dot(wp.xz, wind) * 0.55 + time * 1.7) * 0.5 + sin(dot(wp.xz, wind.yx * vec2(1.0, -1.0)) * 1.3 + time * 2.9) * 0.25 + sin(wp.x * 3.1 + wp.z * 2.7 + time * 4.3) * 0.08;
+    return vec3(wind.x, 0.0, wind.y) * (g + 0.25) * h * h * stiff;
+  }`;
+// Bends a material's vertices with the wind. hExpr is GLSL for "how far up the plant this vertex is" (0 at the root).
+function windPatch(mat, hExpr, stiff, extra = null, tag = '') {
+  keyed(mat, 'wind' + hExpr + stiff + tag);
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (s, r) => {
+    if (prev) prev(s, r);
+    s.uniforms.time = U.time; s.uniforms.wind = U.wind;
+    s.vertexShader = s.vertexShader.replace('#include <common>', `#include <common>\n ${WIND_GLSL}`)
+      .replace('#include <project_vertex>', `
+        vec4 wpos = vec4(transformed, 1.0);
+        #ifdef USE_INSTANCING
+          wpos = instanceMatrix * wpos;
+        #endif
+        wpos = modelMatrix * wpos;
+        wpos.xyz += sway(wpos.xyz, ${hExpr}, ${stiff.toFixed(3)});
+        vec4 mvPosition = viewMatrix * wpos;
+        gl_Position = projectionMatrix * mvPosition;`);
+    if (extra) extra(s);
+  };
+  return mat;
+}
+const M4 = new THREE.Matrix4(), Q4 = new THREE.Quaternion(), E4 = new THREE.Euler(), V4 = new THREE.Vector3(), S4 = new THREE.Vector3();
+const place = (mesh, i, x, y, z, sx, sy, sz, rx = 0, ry = 0, rz = 0) => { Q4.setFromEuler(E4.set(rx, ry, rz)); mesh.setMatrixAt(i, M4.compose(V4.set(x, y, z), Q4, S4.set(sx, sy, sz))); };
+const onLawn = (x, z) => Math.hypot(x, z) < edgeR(Math.atan2(z, x)) * 0.97 && pondD(x, z) > 1.12 && pathDist(x, z) > 0.42 && Math.hypot(x - ISLE.cabin[0], z - ISLE.cabin[1]) > 2.0;
+
+// Grass: tens of thousands of tapered blades.
+{
+  const g = new THREE.BufferGeometry(), w = MOBILE ? 0.03 : 0.02;
+  g.setAttribute('position', new THREE.Float32BufferAttribute([-w, 0, 0, w, 0, 0, -w * 0.75, 0.38, 0, w * 0.75, 0.38, 0, -w * 0.4, 0.72, 0, w * 0.4, 0.72, 0, 0, 1, 0], 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(7).fill([0, 1, 0.35]).flat(), 3));
+  g.setIndex([0, 1, 2, 1, 3, 2, 2, 3, 4, 3, 5, 4, 4, 5, 6]);
+  const mat = windPatch(weatherPatch(new THREE.MeshStandardMaterial({ roughness: 0.85, side: THREE.DoubleSide }), 0.9), 'position.y', 0.34, s => {
+    s.fragmentShader = s.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n diffuseColor.rgb *= mix(0.4, 1.3, vGh);').replace('#include <common>', '#include <common>\n varying float vGh;');
+    s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\n varying float vGh;').replace('#include <begin_vertex>', '#include <begin_vertex>\n vGh = position.y; transformed.z += position.y * position.y * 0.28;');
+  }, 'grass');
+  const N = QUALITY.grass, grass = new THREE.InstancedMesh(g, mat, N), r = rng(3), c = new THREE.Color(), a = new THREE.Color('#2f7d2a'), b = new THREE.Color('#6fb23c'), dry = new THREE.Color('#b9c452');
+  let n = 0;
+  for (let tries = 0; n < N && tries < N * 4; tries++) {
+    const x = (r() * 2 - 1) * ISLE.R, z = (r() * 2 - 1) * ISLE.R; if (!onLawn(x, z)) continue;
+    const patch = fbm2(x * 0.45 + 7, z * 0.45), tall = fbm2(x * 0.25, z * 0.25 + 9);
+    if (r() > 0.35 + patch * 0.9) continue;
+    const h = (0.1 + r() * 0.13) * (0.7 + tall * 1.1) * smooth(range(pathDist(x, z), 0.42, 1.0) * 0.6 + 0.4);
+    place(grass, n, x, groundY(x, z) - 0.02, z, 1 + r() * 0.8, h, 1, (r() - 0.5) * 0.3, r() * TAU, (r() - 0.5) * 0.3);
+    grass.setColorAt(n, c.copy(a).lerp(b, r() * 0.6 + patch * 0.5).lerp(dry, smooth(range(tall, 0.6, 0.8)) * r() * 0.5)); n++;
+  }
+  grass.count = n; grass.receiveShadow = true; grass.frustumCulled = false; island.add(grass);
+}
+
+// Flowers: a stem and a five-petal head, in drifts.
+{
+  const petal = new THREE.Shape(); for (let i = 0; i <= 40; i++) { const an = i / 40 * TAU, rad = 0.55 + 0.45 * Math.abs(Math.cos(an * 2.5)); i ? petal.lineTo(Math.cos(an) * rad, Math.sin(an) * rad) : petal.moveTo(rad, 0); }
+  const head = new THREE.ShapeGeometry(petal, 3).rotateX(-PI / 2 + 0.5);
+  const stem = new THREE.CylinderGeometry(0.06, 0.06, 1, 4).translate(0, 0.5, 0), core = new THREE.SphereGeometry(0.3, 8, 6).translate(0, 0.08, 0.05);
+  const N = MOBILE ? 500 : 1500, r = rng(12), pal = ['#ffffff', '#ffd23f', '#ff7aa8', '#c58bff', '#ff8a4c', '#fff3a8', '#ff5d6c'].map(h => new THREE.Color(h));
+  const mk = (geo, color, rough) => { const m = new THREE.InstancedMesh(geo, windPatch(weatherPatch(new THREE.MeshStandardMaterial({ color, roughness: rough, side: THREE.DoubleSide }), 0.7), 'position.y', 0.3), N); m.receiveShadow = true; m.frustumCulled = false; island.add(m); return m; };
+  const heads = mk(head, 0xffffff, 0.7), stems = mk(stem, 0x4f8f3a, 0.9), cores = mk(core, 0xffc21a, 0.6);
+  let n = 0;
+  for (let tries = 0; n < N && tries < N * 30; tries++) {
+    const x = (r() * 2 - 1) * ISLE.R, z = (r() * 2 - 1) * ISLE.R; if (!onLawn(x, z)) continue;
+    const drift = fbm2(x * 0.6 + 20, z * 0.6 + 4); if (drift < 0.52 || r() > (drift - 0.5) * 6) continue;
+    const h = 0.26 + r() * 0.2, s = 0.07 + r() * 0.05, y = groundY(x, z), ry = r() * TAU, tx = (r() - 0.5) * 0.5, tz = (r() - 0.5) * 0.5;
+    place(stems, n, x, y, z, s * 2.2, h, s * 2.2, tx, ry, tz); { const hx = x + Math.sin(tz) * h, hz = z - Math.sin(tx) * h, hy = y + h * Math.cos(tx) * Math.cos(tz); place(heads, n, hx, hy, hz, s, s, s, 0, ry, 0); place(cores, n, hx, hy, hz, s, s, s, 0, ry, 0); }
+    heads.setColorAt(n, pal[Math.floor(fbm2(x * 0.3 + 40, z * 0.3) * 13 + r() * 2) % pal.length]); n++;
+  }
+  heads.count = stems.count = cores.count = n;
+}
+
+// Trees: a tapering trunk with boughs, and a crown of thousands of leaf cards shaded as one soft volume.
+const leafTex = canvasTex(64, 64, (g, w, h) => {
+  g.clearRect(0, 0, w, h); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(32, 2); g.bezierCurveTo(60, 14, 58, 46, 32, 62); g.bezierCurveTo(6, 46, 4, 14, 32, 2); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.18)'; g.lineWidth = 2; g.beginPath(); g.moveTo(32, 6); g.lineTo(32, 58); g.stroke();
+});
+const TREES = [];
+function makeTree(x, z, { h = 4.6, crown = 2.1, leaf = ['#3f8f3a', '#7cc24a'], seed = 1, leaves = 2600, bark = '#7a5a3c' } = {}) {
+  const r = rng(seed), g = new THREE.Group(), y0 = groundY(x, z) - 0.15; g.position.set(x, y0, z);
+  const barkMat = weatherPatch(new THREE.MeshStandardMaterial({ color: bark, roughness: 1 }), 0.5);
+  const limb = (pts, r0, r1) => { const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 14, 1, 9), barkMat); const p = m.geometry.attributes.position, nrm = m.geometry.attributes.normal;
+    for (let i = 0; i < p.count; i++) { const k = Math.floor(i / 10) / 14, rad = lerp(r0, r1, Math.pow(k, 0.8)) * (1 + (fbm3(p.getX(i) * 3, p.getY(i) * 2, p.getZ(i) * 3) - 0.5) * 0.3); p.setXYZ(i, p.getX(i) - nrm.getX(i) * (1 - rad), p.getY(i) - nrm.getY(i) * (1 - rad), p.getZ(i) - nrm.getZ(i) * (1 - rad)); }
+    m.geometry.computeVertexNormals(); m.castShadow = true; m.receiveShadow = true; g.add(m); };
+  const lean = [(r() - 0.5) * 0.9, (r() - 0.5) * 0.9], top = new THREE.Vector3(lean[0], h * 0.62, lean[1]);
+  limb([new THREE.Vector3(0, 0, 0), new THREE.Vector3(lean[0] * 0.2, h * 0.25, lean[1] * 0.2), new THREE.Vector3(lean[0] * 0.7, h * 0.48, lean[1] * 0.7), top], h * 0.075, h * 0.035);
+  const blobs = [[top.x, h * 0.86, top.z, crown]];
+  for (let i = 0; i < 4; i++) { const a = i / 4 * TAU + r() * 0.8, d = crown * (0.75 + r() * 0.35), by = h * (0.62 + r() * 0.2), end = new THREE.Vector3(top.x + Math.cos(a) * d, by, top.z + Math.sin(a) * d);
+    limb([top.clone().multiplyScalar(0.85), top.clone().lerp(end, 0.5).add(new THREE.Vector3(0, 0.25, 0)), end], h * 0.03, h * 0.012); blobs.push([end.x, end.y + crown * 0.15, end.z, crown * (0.55 + r() * 0.2)]); }
+  const N = Math.round(leaves * QUALITY.leaves), card = new THREE.PlaneGeometry(1, 1), aN = new Float32Array(N * 3);
+  const mat = windPatch(weatherPatch(new THREE.MeshStandardMaterial({ map: leafTex, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.75 }), 1.0), '(wpos.y - modelMatrix[3].y) * 0.16', 0.5, s => {
+    s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\n attribute vec3 aN;').replace('#include <defaultnormal_vertex>', '#include <defaultnormal_vertex>\n transformedNormal = normalize(normalMatrix * aN);')
+      .replace('wpos.xyz += sway(', 'wpos.xyz += vec3(sin(time * 5.0 + wpos.x * 9.0), cos(time * 4.3 + wpos.z * 9.0), 0.0) * 0.012 * (uv.y); wpos.xyz += sway(');
+  }, 'leaf');
+  const crownMesh = new THREE.InstancedMesh(card, mat, N), ca = new THREE.Color(leaf[0]), cb = new THREE.Color(leaf[1]), c = new THREE.Color();
+  for (let i = 0; i < N; i++) {
+    const b = blobs[Math.floor(r() * r() * blobs.length) % blobs.length], u = r() * 2 - 1, an = r() * TAU, sq = Math.sqrt(1 - u * u), rad = b[3] * Math.pow(0.55 + r() * 0.45, 0.6);
+    const nx = sq * Math.cos(an), ny = u * 0.85 + 0.12, nz = sq * Math.sin(an), s = 0.24 + r() * 0.2;
+    place(crownMesh, i, b[0] + nx * rad, b[1] + ny * rad * 0.8, b[2] + nz * rad, s, s * 1.3, s, r() * TAU, r() * TAU, r() * TAU);
+    aN[i * 3] = nx; aN[i * 3 + 1] = ny + 0.35; aN[i * 3 + 2] = nz;
+    crownMesh.setColorAt(i, c.copy(ca).lerp(cb, smooth(range(ny + r() * 0.6, -0.4, 1.0))).multiplyScalar(0.7 + 0.3 * rad / b[3]));
+  }
+  card.setAttribute('aN', new THREE.InstancedBufferAttribute(aN, 3));
+  crownMesh.castShadow = true; crownMesh.receiveShadow = true; crownMesh.frustumCulled = false; g.add(crownMesh);
+  island.add(g); TREES.push({ g, blobs, x, z, y0 }); return g;
+}
+makeTree(-7.6, 3.4, { h: 5.6, crown: 2.5, seed: 4 });
+makeTree(9.6, -3.2, { h: 4.8, crown: 2.1, seed: 9, leaf: ['#3a8a44', '#86c552'] });
+makeTree(-1.5, -8.2, { h: 5.2, crown: 2.3, seed: 15 });
+const BLOSSOM = makeTree(2.6, -6.8, { h: 3.9, crown: 1.9, seed: 21, leaf: ['#e06f9a', '#f9b6cc'], bark: '#6b4a3a', leaves: 2400 });
+makeTree(-9.6, -5.6, { h: 3.6, crown: 1.6, seed: 28, leaf: ['#2f7a3c', '#6fb648'], leaves: 1600 });
+makeTree(-10.6, 3.6, { h: 3.2, crown: 1.5, seed: 33, leaves: 1500 });
+makeTree(6.2, -8.6, { h: 4.2, crown: 1.9, seed: 37, leaves: 2000, leaf: ['#3a8a44', '#86c552'] });
+// Bushes are crowns without a trunk.
+for (const [x, z, s, seed] of [[-9.2, 6.2, 0.8, 41], [-0.4, -6.2, 0.9, 42], [-10.4, 0.6, 0.7, 43], [10.6, 3.4, 0.7, 44], [-6.4, -7.2, 0.9, 45], [11.2, -0.8, 0.7, 46]]) {
+  const t = makeTree(x, z, { h: 1.25 * s, crown: 0.9 * s, seed, leaves: 700, leaf: ['#357f3a', '#74bb4c'] }); t.children[0].visible = false;
+}
+
+// ======== 50_props.js ========
+// ---- things people made: the log cabin (built piece by piece), the app windows, a ball and a bowl ---------------------
+const cabin = new THREE.Group(); cabin.position.set(ISLE.cabin[0], groundY(...ISLE.cabin), ISLE.cabin[1]); cabin.rotation.y = 0.72; island.add(cabin);
+const cabinParts = [], cabinLit = { glass: null, bulb: null, light: null };
+{
+  const wood = c => weatherPatch(new THREE.MeshStandardMaterial({ color: c, roughness: 0.85 }), 0.9);
+  const logSide = wood('#a8743f'), logEnd = new THREE.MeshStandardMaterial({ color: '#e0b77c', roughness: 0.9 }), dark = wood('#6b4426'), roofA = wood('#c2543c'), roofB = wood('#a94530'), stone = weatherPatch(new THREE.MeshStandardMaterial({ color: '#8f8a80', roughness: 1 }), 0.9);
+  // Every piece remembers when it joins the build (0 = first, 1 = last) and where it belongs.
+  const part = (mesh, order, x, y, z, rx = 0, ry = 0, rz = 0) => { mesh.position.set(x, y, z); mesh.rotation.set(rx, ry, rz); mesh.castShadow = true; mesh.receiveShadow = true; mesh.userData = { order, y, s: mesh.scale.clone() }; cabin.add(mesh); cabinParts.push(mesh); return mesh; };
+  const W = 3.4, D = 2.6, LOGR = 0.125, ROWS = 8, Hwall = ROWS * LOGR * 1.82;
+  const logGeo = len => new THREE.CylinderGeometry(LOGR, LOGR, len, 10).rotateZ(PI / 2);
+  part(new THREE.Mesh(new THREE.BoxGeometry(W + 0.5, 0.22, D + 0.5), stone), 0, 0, 0.06, 0);
+  const gx = logGeo(W + 0.45), gz = logGeo(D + 0.45);
+  for (let i = 0; i < ROWS; i++) {
+    const y = 0.28 + i * LOGR * 1.82, o = 0.06 + i / ROWS * 0.42;
+    for (const s of [-1, 1]) {
+      part(new THREE.Mesh(gx, [logSide, logEnd, logEnd]), o, 0, y, s * D / 2);
+      part(new THREE.Mesh(gz, [logSide, logEnd, logEnd]), o + 0.02, s * W / 2, y + LOGR * 0.9, 0, 0, PI / 2, 0);
+    }
+  }
+  for (let i = 0; i < 5; i++) for (const s of [-1, 1]) part(new THREE.Mesh(logGeo((W + 0.3) * (1 - (i + 0.6) / 5.6)), [logSide, logEnd, logEnd]), 0.52 + i * 0.02, 0, 0.28 + Hwall + i * LOGR * 1.82, s * D / 2);
+  // Roof: two slopes of shingle rows and a ridge.
+  const slope = 0.74, half = (W / 2 + 0.45) / Math.cos(slope), top = 0.28 + Hwall + 5 * LOGR * 1.82 + 0.1;
+  for (const s of [-1, 1]) for (let i = 0; i < 9; i++) {
+    const u = (i + 0.5) / 9 * half, m = new THREE.Mesh(new THREE.BoxGeometry(half / 9 * 1.25, 0.06, D + 0.9), i % 2 ? roofA : roofB);
+    part(m, 0.66 + i * 0.016, s * u * Math.cos(slope), top - u * Math.sin(slope) + 0.02, 0, 0, 0, -s * slope - s * 0.09);
+  }
+  part(new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, D + 1.0), dark), 0.82, 0, top + 0.06, 0);
+  part(new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.5, 0.5), stone), 0.84, -0.95, top - 0.35, -0.45);
+  part(new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.12, 0.62), stone), 0.86, -0.95, top + 0.42, -0.45);
+  // Door, window and the things around them, on the front (+z) wall.
+  const front = D / 2 + LOGR + 0.01;
+  part(new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.5, 0.08), dark), 0.88, 0.75, 1.02, front);
+  part(new THREE.Mesh(new THREE.BoxGeometry(0.74, 1.36, 0.1), wood('#8a5a34')), 0.89, 0.75, 0.98, front + 0.02);
+  part(new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 8), new THREE.MeshStandardMaterial({ color: '#f2c14e', roughness: 0.3, metalness: 0.8 })), 0.9, 1.0, 0.98, front + 0.09);
+  part(new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.95, 0.08), dark), 0.88, -0.78, 1.22, front);
+  cabinLit.glass = new THREE.MeshStandardMaterial({ color: '#33363d', emissive: '#ffcc66', emissiveIntensity: 0, roughness: 0.2 });
+  part(new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.78, 0.09), cabinLit.glass), 0.9, -0.78, 1.22, front + 0.01);
+  part(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.8, 0.12), dark), 0.91, -0.78, 1.22, front + 0.01);
+  part(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.12), dark), 0.91, -0.78, 1.22, front + 0.01);
+  part(new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.16, 0.24), wood('#7a4e2c')), 0.92, -0.78, 0.7, front + 0.12);
+  ['#ff7aa8', '#ffd23f', '#ffffff', '#ff7aa8', '#c58bff'].forEach((c, i) => part(new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 })), 0.93 + i * 0.006, -1.18 + i * 0.2, 0.84 + (i % 2) * 0.04, front + 0.13));
+  part(new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 0.6), stone), 0.9, 0.75, 0.2, front + 0.3);
+  // Lantern on a post.
+  part(new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 1.9, 8), dark), 0.94, 2.25, 1.0, front + 0.5);
+  part(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.05), dark), 0.95, 2.02, 1.9, front + 0.5);
+  cabinLit.bulb = new THREE.MeshStandardMaterial({ color: '#fff3d0', emissive: '#ffb347', emissiveIntensity: 0.2, roughness: 0.4 });
+  part(new THREE.Mesh(new THREE.SphereGeometry(0.11, 14, 10), cabinLit.bulb), 0.96, 1.82, 1.72, front + 0.5);
+  part(new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.12, 6), dark), 0.96, 1.82, 1.86, front + 0.5);
+  cabinLit.light = new THREE.PointLight('#ffb65c', 0, 9, 1.6); cabinLit.light.position.set(1.82, 1.7, front + 0.7); cabin.add(cabinLit.light);
+}
+// b = 0 nothing yet ... 1 finished. Each piece drops in and settles with a small overshoot.
+function buildCabin(b) {
+  for (const m of cabinParts) {
+    const o = m.userData.order * 0.82, k = range(b, o, o + 0.16), e = backOut(k);
+    m.visible = k > 0; m.scale.copy(m.userData.s).multiplyScalar(Math.max(0.001, e)); m.position.y = m.userData.y + (1 - ease(k)) * 2.2;
+  }
+}
+cabin.updateMatrixWorld(true);
+const DOOR = cabin.localToWorld(new THREE.Vector3(0.75, 0, 2.4));
+
+// App windows: what you are working in, floating in front of the pets' world.
+const appWindows = [];
+{
+  const ui = kind => canvasTex(900, 600, (g, w, h) => {
+    const darkUi = kind === 1; g.fillStyle = darkUi ? '#20243a' : '#fbfaf7'; g.fillRect(0, 0, w, h);
+    g.fillStyle = darkUi ? '#2c3150' : '#ece8e1'; g.fillRect(0, 0, w, 64);
+    ['#ff6159', '#ffbd2e', '#28c941'].forEach((c, i) => { g.fillStyle = c; g.beginPath(); g.arc(36 + i * 34, 32, 11, 0, TAU); g.fill(); });
+    const r = rng(kind + 3), cols = darkUi ? ['#7aa2f7', '#9ece6a', '#e0af68', '#bb9af7', '#c0caf5'] : ['#d9d4cb'];
+    if (kind === 2) { g.fillStyle = '#e8f1ff'; g.fillRect(40, 110, w - 80, 300); g.fillStyle = '#8fb8ff'; for (let i = 0; i < 9; i++) { const bh = 60 + r() * 200; g.fillRect(80 + i * 86, 390 - bh, 52, bh); } }
+    for (let i = 0; i < (kind === 2 ? 3 : 10); i++) { let x = 50 + (darkUi ? [0, 1, 2, 2, 1, 2, 3, 2, 1, 0][i] * 40 : 0); const y = (kind === 2 ? 450 : 110) + i * 46;
+      for (let k = 0; k < (darkUi ? 2 + Math.floor(r() * 3) : 1); k++) { const ww = darkUi ? 60 + r() * 150 : 420 + r() * 380; g.fillStyle = i === 0 && !darkUi ? '#2a2623' : cols[Math.floor(r() * cols.length)]; g.beginPath(); g.roundRect(x, y, ww, 20, 10); g.fill(); x += ww + 16; } }
+  });
+  const shape = (w, h, r) => { const s = new THREE.Shape(); s.moveTo(-w / 2 + r, -h / 2); s.lineTo(w / 2 - r, -h / 2); s.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r); s.lineTo(w / 2, h / 2 - r); s.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2); s.lineTo(-w / 2 + r, h / 2); s.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r); s.lineTo(-w / 2, -h / 2 + r); s.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2); return s; };
+  for (const [kind, w, h, x, y, z, ry] of [[0, 3.3, 2.2, -2.5, 2.3, 5.2, 0.16], [1, 3.1, 2.1, 3.1, 3.0, 4.4, -0.16], [2, 2.1, 1.5, 0.5, 4.5, 3.6, 0.04]]) {
+    const geo = new THREE.ExtrudeGeometry(shape(w, h, 0.16), { depth: 0.05, bevelEnabled: false }), uv = geo.attributes.uv, p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / w + 0.5, p.getY(i) / h + 0.5);
+    const tex = ui(kind), m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.45, roughness: 0.35, transparent: true, opacity: 0.97 }));
+    m.castShadow = true; m.userData = { home: [x, y, z, ry], i: appWindows.length }; scene.add(m); appWindows.push(m);
+  }
+}
+function showWindows(k, t) {
+  for (const m of appWindows) {
+    const [x, y, z, ry] = m.userData.home, i = m.userData.i, e = backOut(range(k, i * 0.12, 0.5 + i * 0.12));
+    m.visible = k > 0.001; m.scale.setScalar(Math.max(0.001, e)); m.position.set(x, y + Math.sin(t * 0.7 + i * 2) * 0.08 + (1 - e) * 2, z); m.rotation.set(Math.sin(t * 0.5 + i) * 0.02, ry + Math.sin(t * 0.4 + i * 3) * 0.03, 0);
+    m.material.opacity = 0.97 * clamp(k * 3);
+  }
+}
+
+// A ball and a food bowl, because somebody lives here.
+const ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 16), new THREE.MeshStandardMaterial({ map: canvasTex(64, 32, (g, w, h) => { g.fillStyle = '#e8483f'; g.fillRect(0, 0, w, h); g.fillStyle = '#fff6e6'; g.fillRect(0, 11, w, 10); }), roughness: 0.45 }));
+ball.castShadow = true; scene.add(ball);
+{
+  const bowl = new THREE.Mesh(new THREE.LatheGeometry([[0.0, 0.02], [0.3, 0.02], [0.34, 0.2], [0.3, 0.2], [0.26, 0.07], [0, 0.07]].map(p => new THREE.Vector2(...p)), 24), new THREE.MeshStandardMaterial({ color: '#4c8fd6', roughness: 0.3, side: THREE.DoubleSide }));
+  bowl.position.set(DOOR.x + 1.3, groundY(DOOR.x + 1.3, DOOR.z + 0.3), DOOR.z + 0.3); bowl.castShadow = true; island.add(bowl);
+}
+
+// ======== 60_fx.js ========
+// ---- air and water in motion: rain, snow, splashes, petals, fireflies, butterflies, chimney smoke ---------------------
+// One point cloud type with per-point size and alpha; every effect below fills one from the time alone.
+class Dots {
+  constructor(n, { additive = false, color = [1, 1, 1], soft = true } = {}) {
+    this.n = n; this.pos = new Float32Array(n * 3); this.size = new Float32Array(n); this.alpha = new Float32Array(n); this.col = new Float32Array(n * 3).fill(1);
+    const g = this.geo = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(this.size, 1)); g.setAttribute('aAlpha', new THREE.BufferAttribute(this.alpha, 1)); g.setAttribute('aCol', new THREE.BufferAttribute(this.col, 3));
+    this.U = { px: { value: 1 }, tint: { value: new THREE.Color(...color) } };
+    this.mesh = new THREE.Points(g, new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending, uniforms: this.U,
+      vertexShader: 'attribute float aSize, aAlpha; attribute vec3 aCol; uniform float px; varying float vA; varying vec3 vC; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vA = aAlpha; vC = aCol; gl_PointSize = aSize * px / max(-mv.z, 0.1); gl_Position = projectionMatrix * mv; }',
+      fragmentShader: `uniform vec3 tint; varying float vA; varying vec3 vC; void main(){ float d = length(gl_PointCoord - 0.5) * 2.0; float a = ${soft ? 'pow(smoothstep(1.0, 0.0, d), 1.5)' : 'smoothstep(1.0, 0.8, d)'}; if (a * vA < 0.01) discard; gl_FragColor = vec4(tint * vC, a * vA); }` }));
+    this.mesh.frustumCulled = false; scene.add(this.mesh);
+  }
+  set(i, x, y, z, s, a) { this.pos[i * 3] = x; this.pos[i * 3 + 1] = y; this.pos[i * 3 + 2] = z; this.size[i] = s; this.alpha[i] = a; }
+  rgb(i, r, g, b) { this.col[i * 3] = r; this.col[i * 3 + 1] = g; this.col[i * 3 + 2] = b; }
+  done(visible = true) { this.mesh.visible = visible; if (!visible) return; for (const k of ['position', 'aSize', 'aAlpha', 'aCol']) this.geo.attributes[k].needsUpdate = true; this.U.px.value = renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))); }
+}
+const fxSnow = new Dots(MOBILE ? 500 : 1400), fxSpray = new Dots(260, { color: [0.9, 0.97, 1.0] }), fxPetals = new Dots(120, { color: [1.0, 0.72, 0.82], soft: false });
+const fxFlies = new Dots(140, { additive: true, color: [2.6, 2.1, 0.7] }), fxSmoke = new Dots(40, { color: [0.92, 0.92, 0.95] }), fxHearts = new Dots(24, { additive: true, color: [2.4, 0.7, 0.9] });
+const RAIN_N = MOBILE ? 900 : 2600, rainPos = new Float32Array(RAIN_N * 6), rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+const fxRain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0xcfe0ff, transparent: true, opacity: 0, fog: false })); fxRain.frustumCulled = false; scene.add(fxRain);
+
+// Butterflies: two wings each, looping over the flowers.
+const butterflies = [];
+{
+  const wing = new THREE.Shape(); wing.moveTo(0, 0); wing.bezierCurveTo(0.1, 0.22, 0.34, 0.26, 0.36, 0.08); wing.bezierCurveTo(0.38, -0.06, 0.26, -0.2, 0.1, -0.16); wing.lineTo(0, 0);
+  const g = new THREE.ShapeGeometry(wing, 6).rotateX(-PI / 2);
+  for (const [c, cx, cz, rad, sp, ph] of [['#ffd23f', -7.5, 5.0, 1.6, 0.5, 0], ['#8fd3ff', 3.2, -3.4, 1.9, 0.42, 2], ['#ff9ac1', 8.0, -6.0, 1.4, 0.55, 4]]) {
+    const b = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: c, side: THREE.DoubleSide, roughness: 0.6, emissive: c, emissiveIntensity: 0.15 }), l = new THREE.Mesh(g, m), r = new THREE.Mesh(g, m); r.scale.x = -1; l.castShadow = r.castShadow = true;
+    b.add(l, r); b.userData = { l, r, cx, cz, rad, sp, ph }; scene.add(b); butterflies.push(b);
+  }
+}
+
+// w: { rain, snow, night, splash: [{t0 (story seconds), x, y, z, power}], wake: {x, z, k}, smoke, petals }
+function updateFx(w, t) {
+  const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z;
+  // Rain falls in a box around the middle of the island.
+  fxRain.visible = w.rain > 0.01; fxRain.material.opacity = w.rain * 0.5;
+  if (fxRain.visible) { const r = rng(41); for (let i = 0; i < RAIN_N; i++) { const x = (r() - 0.5) * 34, z = (r() - 0.5) * 34, sp = 17 + r() * 7, y = 16 - ((t * sp + r() * 22) % 22); rainPos.set([x, y, z, x - 0.14, y - 0.6, z + 0.04], i * 6); } rainGeo.attributes.position.needsUpdate = true; }
+  { const r = rng(77); for (let i = 0; i < fxSnow.n; i++) { const sp = 0.9 + r() * 1.1, ph = r() * 6.3; fxSnow.set(i, (r() - 0.5) * 34 + Math.sin(t * 0.8 + ph) * 0.5, 15 - ((t * sp + r() * 19) % 19), (r() - 0.5) * 34 + Math.cos(t * 0.6 + ph) * 0.5, 0.07 + r() * 0.08, w.snow * 0.95); } fxSnow.done(w.snow > 0.01); }
+  // Splashes: droplets thrown up and out, then falling back.
+  { let n = 0;
+    for (const s of w.splash ?? []) { const a = s.age ?? (t - s.t0), r = rng(Math.round((s.x + s.z) * 10) + 7); if (a < 0 || a > 1.5) continue;
+      for (let i = 0; i < 90 && n < fxSpray.n; i++) { const an = r() * TAU, sp = (0.6 + r() * 2.6) * s.power, up = (3 + r() * 4.5) * s.power, y = s.y + up * a - 7 * a * a;
+        if (y < s.y - 0.05) continue; fxSpray.set(n++, s.x + Math.cos(an) * sp * a, y, s.z + Math.sin(an) * sp * a, 0.11 * (1 - a * 0.4), 0.9); } }
+    if (w.wake && w.wake.k > 0.01) { const r = rng(5); for (let i = 0; i < 40 && n < fxSpray.n; i++) { const a = (t * 1.8 + r()) % 1, an = r() * TAU; fxSpray.set(n++, w.wake.x + Math.cos(an) * (0.3 + a * 0.6), ISLE.water + 0.05 + Math.sin(a * PI) * 0.22, w.wake.z + Math.sin(an) * (0.3 + a * 0.6), 0.07 * (1 - a), 0.8 * w.wake.k); } }
+    const used = n; for (; n < fxSpray.n; n++) fxSpray.set(n, 0, -99, 0, 0, 0); fxSpray.done(used > 0); }
+  // Petals drift down from the blossom tree; hidden in bad weather and at night.
+  { const r = rng(13), k = (w.petals ?? 1) * (1 - w.rain) * (1 - w.snow), b = BLOSSOM.position;
+    for (let i = 0; i < fxPetals.n; i++) { const life = 7 + r() * 6, a = ((t + r() * life) % life) / life, an = r() * TAU, d = r() * 2.2;
+      fxPetals.set(i, b.x + Math.cos(an) * d + a * (3 + r() * 5) + Math.sin(t * 1.3 + i) * 0.25, b.y + 4.4 - a * 5.2 + Math.sin(t * 2 + i) * 0.1, b.z + Math.sin(an) * d + a * (r() - 0.3) * 3, 0.085, k * Math.min(1, a * 8) * (1 - smooth(range(a, 0.8, 1)))); }
+    fxPetals.done(k > 0.01); }
+  { const r = rng(61); for (let i = 0; i < fxFlies.n; i++) { const ph = r() * 6.3, sp = 0.5 + r(), an = r() * TAU, d = 1.5 + r() * 10; fxFlies.set(i, Math.cos(an) * d + Math.sin(t * 0.5 * sp + ph) * 0.9, 1.0 + r() * 3.2 + Math.sin(t * 0.8 * sp + ph) * 0.5, Math.sin(an) * d + Math.cos(t * 0.45 * sp + ph) * 0.9, 0.16, w.night * (0.2 + 0.8 * Math.max(0, Math.sin(t * 1.5 * sp + ph * 3)))); } fxFlies.done(w.night > 0.01); }
+  // Chimney smoke, once the cabin stands.
+  { const r = rng(19), top = cabin.localToWorld(new THREE.Vector3(-0.95, 4.2, -0.45)); for (let i = 0; i < fxSmoke.n; i++) { const a = (t * 0.22 + r()) % 1; fxSmoke.set(i, top.x + a * a * 1.6 + Math.sin(t + i) * 0.1 * a, top.y + a * 3.2, top.z + (r() - 0.5) * 0.4 * a, 0.5 + a * 1.4, (w.smoke ?? 0) * 0.35 * Math.sin(a * PI)); } fxSmoke.done((w.smoke ?? 0) > 0.01); }
+  // Hearts when a pet is clicked.
+  { let n = 0; for (const h of w.hearts ?? []) { const a = t - h.t0; if (a < 0 || a > 1.4) continue; const r = rng(Math.round(h.t0 * 60)); for (let i = 0; i < 8 && n < fxHearts.n; i++) fxHearts.set(n++, h.x + (r() - 0.5) * 0.9, h.y + a * (1.2 + r()), h.z + (r() - 0.5) * 0.9, 0.2 * (1 - a / 1.4), 1 - a / 1.4); }
+    const used = n; for (; n < fxHearts.n; n++) fxHearts.set(n, 0, -99, 0, 0, 0); fxHearts.done(used > 0); }
+  for (const b of butterflies) { const d = b.userData, a = t * d.sp + d.ph, x = d.cx + Math.cos(a) * d.rad * (1 + 0.3 * Math.sin(a * 2.3)), z = d.cz + Math.sin(a * 1.3) * d.rad, k = (1 - w.rain) * (1 - w.snow) * (1 - w.night);
+    b.visible = k > 0.05; b.position.set(x, groundY(x, z) + 0.9 + Math.sin(t * 2.2 + d.ph) * 0.35, z); b.rotation.y = -a * 1.2; b.scale.setScalar(0.55 * k);
+    const f = Math.sin(t * 22 + d.ph) * 0.9 + 0.3; d.l.rotation.z = f; d.r.rotation.z = -f; }
+  if (ISLE.floaters) for (const m of ISLE.floaters) { m.position.y = m.userData.float[0] + Math.sin(t * 0.35 + m.userData.float[1]) * 0.5; m.rotation.y = t * 0.03 + m.userData.float[1]; }
+}
+
+// ======== 70_story.js ========
+// ---- the story: scrolling moves through eight beats; this file says where the camera, the day and the pets are --------
+const BEATS = 8;
+const CAM = [
+  { p: [17, 7.5, 23], l: [0, 0.9, 0], f: 32, o: 0.19 },          // 0 the island, morning
+  { p: [1.0, 2.6, 15], l: [0.2, 2.3, 0], f: 34, o: 0.16 },       // 1 through the app windows
+  { p: [12.4, 2.3, 7.6], l: [4.6, 0.7, 1.4], f: 30, o: 0.14 },   // 2 the pond
+  { p: [0.6, 1.9, 8.2], l: [0, 1.5, 1.8], f: 26, o: 0 },     // 3 the two of them talking
+  { p: [2.6, 3.3, 9.2], l: [-4.0, 1.9, -1.6], f: 34, o: -0.12 },  // 4 the cabin goes up
+  { p: [7.5, 3.6, 13], l: [-1.4, 1.3, 0.6], f: 34, o: 0.13 },       // 5 weather
+  { p: [-1.2, 2.2, 12.5], l: [-1.2, 1.9, 1.6], f: 30, o: 0 },       // 6 the family, golden hour
+  { p: [7.5, 4.2, 15.5], l: [-2.6, 2.6, 0], f: 32, o: 0 },     // 7 night
+];
+const E = (o = {}) => ({ ...ENV0, ...o });
+const ENVS = [
+  [0, E({ sun: [0.55, 0.5, 0.55], sunCol: [1.0, 0.9, 0.76], warm: 0.25 })],
+  [1.6, E({ sun: [0.4, 0.72, 0.5] })],
+  [2.4, E({ sun: [0.25, 0.85, 0.45], sunInt: 3.1 })],
+  [4.5, E({ sun: [-0.35, 0.7, 0.55], cloud: 0.5 })],
+  [4.85, E({ sun: [-0.3, 0.7, 0.5], sunCol: [0.75, 0.8, 0.9], sunInt: 0.7, top: [0.26, 0.31, 0.42], hor: [0.5, 0.56, 0.64], hemi: 0.75, cloud: 0.98, cloudCol: [0.55, 0.58, 0.66], fog: [0.5, 0.56, 0.64], fogDen: 0.007, exposure: 0.95, sat: 0.9, bloom: 0.2 })],
+  [5.2, E({ sun: [-0.3, 0.7, 0.5], sunCol: [0.75, 0.8, 0.9], sunInt: 0.7, top: [0.26, 0.31, 0.42], hor: [0.5, 0.56, 0.64], hemi: 0.75, cloud: 0.98, cloudCol: [0.55, 0.58, 0.66], fog: [0.5, 0.56, 0.64], fogDen: 0.007, exposure: 0.95, sat: 0.9, bloom: 0.2 })],
+  [5.5, E({ sun: [-0.3, 0.6, 0.5], sunCol: [0.9, 0.93, 1.0], sunInt: 1.5, top: [0.45, 0.55, 0.72], hor: [0.8, 0.86, 0.94], hemi: 1.0, cloud: 0.9, cloudCol: [0.85, 0.88, 0.95], fog: [0.82, 0.87, 0.94], fogDen: 0.012, exposure: 0.95, sat: 0.92 })],
+  [5.75, E({ sun: [-0.3, 0.6, 0.5], sunCol: [0.9, 0.93, 1.0], sunInt: 1.5, top: [0.45, 0.55, 0.72], hor: [0.8, 0.86, 0.94], hemi: 1.0, cloud: 0.9, cloudCol: [0.85, 0.88, 0.95], fog: [0.82, 0.87, 0.94], fogDen: 0.012, exposure: 0.95, sat: 0.92 })],
+  [5.96, E({ sun: [-0.8, 0.2, 0.45], sunCol: [1.0, 0.6, 0.3], sunInt: 3.2, top: [0.16, 0.26, 0.6], hor: [1.0, 0.64, 0.4], hemi: 0.7, ground: [0.5, 0.36, 0.3], cloud: 0.5, cloudCol: [1.0, 0.8, 0.7], fog: [0.98, 0.7, 0.5], fogDen: 0.007, warm: 0.7, bloom: 0.4, sat: 1.12 })],
+  [6.5, E({ sun: [-0.8, 0.2, 0.45], sunCol: [1.0, 0.6, 0.3], sunInt: 3.2, top: [0.16, 0.26, 0.6], hor: [1.0, 0.64, 0.4], hemi: 0.7, ground: [0.5, 0.36, 0.3], cloud: 0.5, cloudCol: [1.0, 0.8, 0.7], fog: [0.98, 0.7, 0.5], fogDen: 0.007, warm: 0.7, bloom: 0.4, sat: 1.12 })],
+  [7, E({ sun: [-0.5, 0.42, -0.6], sunCol: [0.5, 0.62, 1.0], sunInt: 1.9, top: [0.01, 0.02, 0.08], hor: [0.06, 0.11, 0.28], hemi: 0.75, ground: [0.08, 0.1, 0.14], cloud: 0.3, cloudCol: [0.3, 0.36, 0.55], night: 1, fog: [0.04, 0.07, 0.18], fogDen: 0.006, exposure: 1.5, bloom: 0.7, sat: 1.05 })],
+];
+function envAt(s) {
+  let a = ENVS[0], b = ENVS[0];
+  for (let i = 1; i < ENVS.length; i++) { if (s <= ENVS[i][0]) { a = ENVS[i - 1]; b = ENVS[i]; break; } a = b = ENVS[i]; }
+  const k = a === b ? 0 : smooth(range(s, a[0], b[0]));
+  for (const key in ENV0) { const x = a[1][key], y = b[1][key]; env[key] = Array.isArray(x) ? x.map((v, i) => lerp(v, y[i], k)) : lerp(x, y, k); }
+}
+const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), _a = new THREE.Vector3(), _b = new THREE.Vector3();
+function cameraAt(s, t, ptr) {
+  const i = Math.min(BEATS - 2, Math.floor(s)), k = ease(clamp(s - i)), A = CAM[i], B = CAM[i + 1], portrait = camera.aspect < 0.9;
+  camPos.set(...A.p).lerp(_a.set(...B.p), k); camLook.set(...A.l).lerp(_b.set(...B.l), k);
+  camPos.y += Math.sin(k * PI) * 1.6;                                        // rise a little between beats, like a crane
+  const orbit = Math.sin(t * 0.11) * 0.07 * (1 - bell(s, 0.6, 4.4, 0.3) * 0.7);   // slow drift, mostly on the wide shots
+  camPos.sub(camLook).applyAxisAngle(_a.set(0, 1, 0), orbit + (ptr.x * 0.05)).multiplyScalar(portrait ? 1.55 : 1).add(camLook);
+  camPos.y += ptr.y * 0.35 + (portrait ? 1.2 : 0);
+  camera.position.copy(camPos); camera.fov = lerp(A.f, B.f, k) * (portrait ? 1.25 : 1);
+  { const w = renderer.domElement.width, h = renderer.domElement.height, o = portrait ? 0 : lerp(A.o, B.o, k); camera.setViewOffset(w, h, -o * w, 0, w, h); }   // slide the picture aside to leave room for the words
+  camera.updateProjectionMatrix(); camera.lookAt(camLook); camera.updateMatrixWorld();
+}
+
+// A pet's path through the story: keys [beat, x, z, pose]. Between two places it walks; at a place it holds its pose.
+function actor(keys) {
+  const len = [0]; for (let i = 1; i < keys.length; i++) len.push(len[i - 1] + Math.hypot(keys[i][1] - keys[i - 1][1], keys[i][2] - keys[i - 1][2]));
+  return s => {
+    let i = 1; while (i < keys.length - 1 && s > keys[i][0]) i++;
+    const A = keys[i - 1], B = keys[i], k = range(s, A[0], B[0]), e = smooth(k), d = len[i] - len[i - 1], moving = d > 0.05 && k > 0 && k < 1;
+    const pa = A[3] ?? {}, pb = B[3] ?? {}, m = moving ? Math.min(1, Math.sin(PI * k) * 3) : 0;
+    const head = Math.atan2(B[1] - A[1], B[2] - A[2]), yaw = moving ? head : (k >= 1 ? pb.yaw ?? head : pa.yaw ?? 0);
+    const hold = k >= 1 ? pb : pa;
+    return { x: lerp(A[1], B[1], e), z: lerp(A[2], B[2], e), yaw, gait: m, phase: (len[i - 1] + d * e) * 6.2, sit: (hold.sit ?? 0) * (1 - m), lie: (hold.lie ?? 0) * (1 - m), run: pb.run ?? 0 };
+  };
+}
+const RX = ISLE.rock[0], RZ = ISLE.rock[1];
+const dogTrack = actor([
+  [0.6, -1.2, 2.2, { yaw: 0.6 }], [1.0, -2.4, 1.6, { yaw: 0.4 }], [1.6, 1.4, 1.5, { yaw: 1.4 }], [1.8, 2.5, 1.45, { yaw: 1.5 }],
+  [2.72, 2.5, 1.45, { yaw: -1.5 }], [3.0, -1.1, 2.0, { yaw: 1.05, sit: 1 }], [3.5, -1.1, 2.0, { yaw: 1.05, sit: 1 }], [3.9, -1.9, 1.4, { yaw: -1.0, sit: 1 }],
+  [4.55, -1.9, 1.4, { yaw: -1.0, sit: 1 }], [4.8, 0.4, 3.0, { yaw: 0.3 }], [5.3, 0.4, 3.0, { yaw: 0.3, sit: 1 }], [5.72, 0.4, 3.0, { yaw: 0.3, sit: 1 }],
+  [5.92, -2.1, 2.2, { yaw: 0.15, sit: 1 }], [6.55, -2.1, 2.2, { yaw: 0.15, sit: 1 }], [6.9, DOOR.x + 1.6, DOOR.z + 0.9, { yaw: 0.9, lie: 1 }], [9, DOOR.x + 1.6, DOOR.z + 0.9, { yaw: 0.9, lie: 1 }],
+]);
+const catTrack = actor([
+  [2.6, RX, RZ, { yaw: 0.5, sit: 1 }], [3.0, 1.1, 2.1, { yaw: -1.05, sit: 1 }], [3.5, 1.1, 2.1, { yaw: -1.05, sit: 1 }], [3.9, -0.4, 0.4, { yaw: -1.2, sit: 1 }],
+  [4.62, -0.4, 0.4, { yaw: -1.2, sit: 1 }], [4.9, DOOR.x, DOOR.z, { yaw: 2.4 }], [5.7, DOOR.x, DOOR.z, { yaw: 0.7 }], [5.92, -0.4, 2.2, { yaw: -0.15, sit: 1 }],
+  [6.55, -0.4, 2.2, { yaw: -0.15, sit: 1 }], [6.9, DOOR.x + 0.2, DOOR.z + 0.5, { yaw: 0.2, lie: 1 }], [9, DOOR.x + 0.2, DOOR.z + 0.5, { yaw: 0.2, lie: 1 }],
+]);
+const EXTRA_SPOTS = [[-4.5, 1.8, 0.35], [-3.3, 2.8, 0.25], [0.9, 2.9, -0.25], [2.0, 2.1, -0.35]];
+
+// Everything the pets do at story position s and time t. click: { pet, t0 } from the last click.
+function petsAt(s, t, ptrWorld, click) {
+  const out = { splash: [], wake: null, wet: 0 };
+  const lookAt = (st, hy) => { if (!ptrWorld) return [0, 0]; const a = Math.atan2(ptrWorld.x - st.x, ptrWorld.z - st.z) - st.yaw, w = Math.atan2(Math.sin(a), Math.cos(a)); return [clamp(w, -1, 1) * 0.8 * (1 - st.gait), clamp((ptrWorld.y - hy) * 0.12, -0.3, 0.3)]; };
+  // ---- dog
+  let d = dogTrack(s);
+  const live = 1 - smooth(range(s, 0.3, 0.62));
+  if (live > 0) { const a = t * 0.42, x = -0.4 + Math.cos(a) * 2.4, z = 2.6 + Math.sin(a) * 1.1; d = { ...d, x: lerp(d.x, x, live), z: lerp(d.z, z, live), yaw: live > 0.5 ? Math.atan2(-Math.sin(a) * 2.4, Math.cos(a) * 1.1) : d.yaw, gait: Math.max(d.gait, live), phase: live > 0.5 ? a * 2.0 * 6.2 : d.phase }; }
+  d.y = groundY(d.x, d.z); d.wag = 0.6;
+  // The dive: a run-up, an arc over the bank, a splash, a swim, and out again.
+  const [px, pz] = ISLE.pond, jump = range(s, 1.8, 2.0), swim = bell(s, 2.0, 2.72, 0.04), out2 = range(s, 2.6, 2.72);
+  if (s > 1.8 && s < 2.72) {
+    const sw = t * 0.9, sx = px + Math.cos(sw) * 1.1, sz = pz + Math.sin(sw) * 0.8;
+    if (jump < 1) { d.x = lerp(2.5, px - 0.6, jump); d.z = lerp(1.45, pz, jump); d.y = lerp(groundY(2.5, 1.45), ISLE.water - 0.5, jump) + Math.sin(jump * PI) * 1.5; d.yaw = 1.5; d.air = Math.sin(jump * PI); d.pitch = lerp(-0.5, 0.6, jump); d.gait = 0; }
+    else { const k = smooth(out2); d.x = lerp(sx, 2.5, k); d.z = lerp(sz, 1.45, k); d.y = lerp(ISLE.water - 0.62, groundY(2.5, 1.45), k); d.yaw = k > 0.05 ? -1.5 : sw + PI / 2 + PI / 2; d.gait = 1; d.phase = t * 11; d.pitch = -0.12; out.wake = { x: d.x, z: d.z, k: 1 - k }; }
+    out.splash.push({ age: (s - 2.0) * 3.2, x: px - 0.6, y: ISLE.water, z: pz, power: 1.15 });
+  }
+  out.wet = bell(s, 2.0, 3.25, 0.03); d.roll = Math.sin(t * 34) * 0.16 * bell(s, 2.78, 2.98, 0.04);
+  if (s > 4.8 && s < 5.25) { const h = Math.abs(Math.sin(t * 5)); d.y += h * 0.5; d.air = h * 0.6; d.sit = 0; d.happy = true; if (h < 0.15) out.splash.push({ age: ((t * 5 / PI) % 1) * 0.6, x: d.x, y: d.y, z: d.z, power: 0.35 }); }
+  if (s > 5.3 && s < 5.72) d.look = [0, 0.45];
+  if (s > 6.85) d.happy = true;
+  d.look ??= lookAt(d, d.y + 1.2);
+  // ---- cat
+  let c = catTrack(s);
+  c.y = groundY(c.x, c.z); c.wag = 0.4;
+  if (s < 2.6) { c.y = groundY(RX, RZ) + 0.86; c.lie = smooth(range(s, 1.5, 1.9)); c.sit = 1 - c.lie; c.happy = c.lie > 0.6; }
+  else if (s < 3.0) c.y += (1 - smooth(range(s, 2.6, 2.75))) * 0.86;
+  const inside = bell(s, 4.9, 5.7, 0.03); c.scale = 1 - inside; c.hide = inside > 0.98;
+  if (s > 6.85) c.happy = true;
+  c.look ??= lookAt(c, c.y + 1.0);
+  if (s > 2.9 && s < 3.6) { d.look = [0.25, 0.05]; c.look = [-0.25, 0.0]; d.tilt = Math.sin(t * 1.3) * 0.18; }
+  // ---- the rest of the family, for the golden hour
+  out.extras = EXTRA_SPOTS.map(([x, z, yaw], i) => { const k = backOut(range(s, 5.74 + i * 0.04, 5.9 + i * 0.04)) * (1 - smooth(range(s, 6.6 + i * 0.03, 6.75 + i * 0.03)));
+    const st = { x, z, y: groundY(x, z), yaw, sit: 1, scale: Math.max(0.001, k), hide: k < 0.01, wag: 0.7 }; st.look = lookAt(st, st.y + 1.1); return st; });
+  if (click) { const a = t - click.t0, st = click.pet === 'dog' ? d : click.pet === 'cat' ? c : out.extras[click.pet]; if (st && a > 0 && a < 0.55) { st.y += Math.sin(a / 0.55 * PI) * 0.7; st.happy = true; st.air = Math.sin(a / 0.55 * PI) * 0.5; } }
+  out.dog = d; out.cat = c;
+  return out;
+}
+
+// ======== 90_main.js ========
+// ---- boot, input, the frame ---------------------------------------------------------------------------------------------
+const dog = makePet(SPECS.dog), cat = makePet(SPECS.cat);
+const extras = [
+  makePet(variant('dog', { coat: C('#f4f1ea'), cream: C('#ffffff'), dark: C('#d9d2c4'), ear: C('#e6dfd2'), scale: 1.25 })),
+  makePet(variant('cat', { coat: C('#e8964a'), cream: C('#fff3e2'), dark: C('#b9692a'), ear: C('#d9843c'), iris: C('#e2b23a'), scale: 1.2 })),
+  makePet(variant('cat', { coat: C('#3d3d4a'), cream: C('#4a4a58'), dark: C('#2c2c36'), ear: C('#34343f'), iris: C('#ffd23f'), stripes: false, scale: 1.25 })),
+  makePet(variant('dog', { coat: C('#6f7888'), cream: C('#f1f3f7'), dark: C('#4c5462'), ear: C('#59616f'), scale: 1.45 })),
+];
+for (const p of [dog, cat, ...extras]) { scene.add(p.root); p.fur = []; p.root.traverse(o => { if (o.material?.userData?.U) p.fur.push(o.material.userData.U); }); }
+const setWet = (p, v) => { for (const u of p.fur) u.wet.value = v; };
+
+// ---- language and the words on screen
+const root = document.documentElement;
 function setLang(l) {
   root.lang = l;
   document.querySelectorAll('[data-ko]').forEach(e => { e.innerHTML = e.dataset[l]; });
   document.getElementById('lang').textContent = l === 'ko' ? 'EN' : '한국어';
-  document.title = T('PetFam — 우리 펫 가족이 바탕화면에 살아요', 'PetFam — Your pet family, living on your desktop');
-  document.getElementById('breeds').innerHTML = [...BREEDS[l], ...BREEDS[l]].map(b => `<span>${b}</span>`).join('');
-  showAge();
+  document.title = l === 'ko' ? 'PetFam — 우리 펫 가족이 바탕화면에 살아요' : 'PetFam — Your pet family, living on your desktop';
   try { localStorage.setItem('petfam-lang', l); } catch { /* private mode */ }
 }
 document.getElementById('lang').onclick = () => setLang(root.lang === 'ko' ? 'en' : 'ko');
-let saved = null; try { saved = localStorage.getItem('petfam-lang'); } catch { /* private mode */ }
-setLang(saved ?? ((navigator.language || 'en').startsWith('ko') ? 'ko' : 'en'));
-
-// ------------------------------------------------------------------------------------------ bento widgets
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.12 });
-document.querySelectorAll('.reveal').forEach(e => io.observe(e));
-
-// House from a sentence: type, build, pause, repeat.
-const typed = document.getElementById('typed'), hut = document.getElementById('hut');
-(async function house() {
-  const wait = ms => new Promise(r => setTimeout(r, ms));
-  for (;;) {
-    const text = T('등불 달린 아늑한 통나무집', 'A cozy log cabin with a lantern');
-    hut.classList.remove('on'); typed.textContent = '';
-    await wait(700);
-    for (const ch of text) { typed.textContent += ch; await wait(reduced ? 0 : 75); }
-    await wait(350); hut.classList.add('on');
-    await wait(4200);
-  }
-})();
-
-// Weather chips.
-const wx = document.getElementById('wx');
-document.getElementById('wxchips').onclick = e => { const b = e.target.closest('button'); if (!b) return; wx.dataset.w = b.dataset.w; [...b.parentNode.children].forEach(x => x.classList.toggle('on', x === b)); };
-
-// Dress-up: the hat and the crown share the head, so one replaces the other.
-const dressPet = document.querySelector('.dress .pet'), wear = document.getElementById('wear');
-wear.onclick = e => {
-  const b = e.target.closest('button'); if (!b) return;
-  const on = !b.classList.contains('on'), a = b.dataset.a, other = a === 'hat' ? 'crown' : a === 'crown' ? 'hat' : null;
-  b.classList.toggle('on', on); dressPet.classList.toggle(a, on);
-  if (on && other) { dressPet.classList.remove(other); wear.querySelector(`[data-a=${other}]`).classList.remove('on'); }
-};
-
-// ------------------------------------------------------------------------------------------ the desktop demo
-// Pets walk on the wallpaper, behind the app windows. The dog wanders; the cat follows the pointer. Windows can be
-// dragged aside to find whoever is behind them.
-const desk = document.getElementById('desk');
-const SAY = { dog: [['멍!', 'Woof!'], ['산책 가자멍!', 'Walk? Walk!'], ['간식 주세요멍', 'Treat, please'], ['여기 좋다멍', 'I like it here']], cat: [['냥.', 'Mew.'], ['흥.', 'Hmph.'], ['쓰다듬어라냥', 'You may pet me'], ['졸리다냥…', 'Sleepy…']] };
-const actors = ['dog', 'cat'].map((name, i) => {
-  const el = document.createElement('div'); el.className = 'actor';
-  el.innerHTML = `<div class="bubble"></div><div class="hopper"><div class="flip">${petSVG(name)}</div></div>`;
-  desk.appendChild(el);
-  const a = { name, el, svg: el.querySelector('.pet'), flip: el.querySelector('.flip'), hopper: el.querySelector('.hopper'), bubble: el.querySelector('.bubble'), x: i ? 0.62 : 0.3, y: i ? 0.9 : 0.8, tx: i ? 0.62 : 0.3, ty: i ? 0.9 : 0.8, wait: 1 + i, dir: 1 };
-  el.style.cursor = 'pointer';
-  el.addEventListener('click', () => {
-    a.hopper.classList.remove('hop'); void a.hopper.offsetWidth; a.hopper.classList.add('hop');
-    const line = SAY[name][Math.floor(Math.random() * 4)]; a.bubble.textContent = T(...line); a.bubble.classList.add('on');
-    clearTimeout(a.say); a.say = setTimeout(() => a.bubble.classList.remove('on'), 1600);
+{ let saved = null; try { saved = localStorage.getItem('petfam-lang'); } catch { /* private mode */ } setLang(QS.get('lang') ?? saved ?? ((navigator.language || 'en').startsWith('ko') ? 'ko' : 'en')); }
+const beatEls = [...document.querySelectorAll('.beat')], dotsEl = document.getElementById('dots'), bubbles = [...document.querySelectorAll('.bubble')];
+dotsEl.innerHTML = beatEls.map(() => '<i></i>').join('');
+// [dog says, cat answers] in Korean and English.
+const TALK = [
+  { ko: ['여기 풀밭 진짜 좋다멍!', '흥, 나쁘지 않다냥.'], en: ['I love this meadow!', 'Hmph. Not bad.'] },
+  { ko: ['같이 연못 들어가자멍!', '젖는 건 질색이다냥.'], en: ['Come swim with me!', 'I do not do wet.'] },
+  { ko: ['집사 오늘 일 많아 보인다멍.', '그럼 간식은 누가 주냥…'], en: ['Our human looks busy today.', 'Then who brings the treats…'] },
+];
+const _v = new THREE.Vector3();
+function updateDom(s, t) {
+  const portrait = innerWidth < 760;
+  beatEls.forEach((el, i) => {
+    const a = clamp(1 - Math.abs(s - i) * (i === 0 || i === BEATS - 1 ? 2.2 : 2.6)), e = smooth(a), center = el.classList.contains('center');
+    el.style.opacity = e.toFixed(3); el.style.visibility = e > 0.01 ? 'visible' : 'hidden';
+    el.style.transform = `${center ? 'translateX(-50%) ' : ''}${!center && !portrait ? 'translateY(-50%) ' : ''}translateY(${((s - i) * -70).toFixed(1)}px)`;
+    dotsEl.children[i].classList.toggle('on', Math.round(s) === i);
   });
-  return a;
-});
-const pointer = { x: 0.5, y: 0.9, inside: false };
-desk.addEventListener('pointermove', e => { const r = desk.getBoundingClientRect(); pointer.x = (e.clientX - r.left) / r.width; pointer.y = (e.clientY - r.top) / r.height; pointer.inside = e.pointerType === 'mouse'; });
-desk.addEventListener('pointerleave', () => { pointer.inside = false; });
-desk.querySelectorAll('.win').forEach(w => {
-  let start = null;
-  w.addEventListener('pointerdown', e => { start = [e.clientX, e.clientY, w.offsetLeft, w.offsetTop]; w.setPointerCapture(e.pointerId); w.style.right = 'auto'; w.style.left = start[2] + 'px'; w.style.top = start[3] + 'px'; });
-  w.addEventListener('pointermove', e => { if (!start) return; w.style.left = start[2] + e.clientX - start[0] + 'px'; w.style.top = start[3] + e.clientY - start[1] + 'px'; });
-  w.addEventListener('pointerup', () => { start = null; });
-  w.addEventListener('pointercancel', () => { start = null; });
-});
-let last = performance.now();
-function step(ms) {
-  const dt = Math.min(0.05, (ms - last) / 1000); last = ms;
-  const W = desk.clientWidth, H = desk.clientHeight;
-  for (const a of actors) {
-    if (a.name === 'cat' && pointer.inside) { a.tx = Math.min(0.92, Math.max(0.08, pointer.x)); a.ty = Math.min(0.97, Math.max(0.72, pointer.y + 0.12)); a.wait = 0; }
-    else if ((a.wait -= dt) < 0 && Math.hypot((a.tx - a.x) * W, (a.ty - a.y) * H) < 8) { a.tx = 0.08 + Math.random() * 0.84; a.ty = 0.72 + Math.random() * 0.25; a.wait = 1.5 + Math.random() * 3.5; }
-    const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx * W, dy * H), speed = (a.name === 'cat' ? 0.19 : 0.13) * W;
-    const moving = d > 6 && !reduced;
-    if (moving) { const k = Math.min(1, speed * dt / d); a.x += dx * k; a.y += dy * k; if (Math.abs(dx) * W > 3) a.dir = Math.sign(dx); }
-    a.svg.classList.toggle('walk', moving);
-    const s = 0.62 + (a.y - 0.7) * 1.5;
-    a.el.style.transform = `translate(${a.x * W - a.el.offsetWidth / 2}px, ${-(1 - a.y) * H}px) scale(${s.toFixed(3)})`;
-    a.el.style.zIndex = a.y > 0.86 ? 3 : 2;
-    a.flip.style.transform = `scaleX(${a.dir})`;
-  }
-  requestAnimationFrame(step);
+  const talk = Math.abs(s - 3) < 0.3, turn = Math.floor(t / 2.8), pair = TALK[Math.floor(turn / 2) % TALK.length][root.lang === 'ko' ? 'ko' : 'en'];
+  [dog, cat].forEach((p, i) => {
+    const el = bubbles[i], on = talk && turn % 2 === i;
+    if (on && el.textContent !== pair[i]) el.textContent = pair[i];
+    p.head.getWorldPosition(_v); _v.y += 0.62; _v.project(camera);
+    el.style.left = `${(_v.x * 0.5 + 0.5) * innerWidth}px`; el.style.top = `${(-_v.y * 0.5 + 0.5) * innerHeight}px`; el.classList.toggle('on', on);
+  });
 }
-requestAnimationFrame(step);
 
-// ------------------------------------------------------------------------------------------ hero glow (three.js)
-// A slow, soft gradient behind the headline, drawn by one fragment shader. Without WebGL the CSS gradient stays.
-try {
-  const THREE = await import('three');
-  const canvas = document.getElementById('glow'), hero = canvas.parentElement;
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
-  const scene = new THREE.Scene(), cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const uniforms = { time: { value: 0 }, aspect: { value: 1 }, mouse: { value: new THREE.Vector2(0.5, 0.5) } };
-  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
-    uniforms,
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-    fragmentShader: `uniform float time, aspect; uniform vec2 mouse; varying vec2 vUv;
-      vec3 blob(vec3 acc, vec2 p, vec2 c, float r, vec3 col){ float d = length((p - c) * vec2(aspect, 1.0)); return mix(acc, col, smoothstep(r, 0.0, d) * 0.9); }
-      void main(){
-        vec2 p = vUv; float t = time * 0.12; vec3 c = vec3(1.0, 0.973, 0.933);
-        c = blob(c, p, vec2(0.18 + sin(t * 1.3) * 0.1, 0.75 + cos(t) * 0.1), 0.55, vec3(1.0, 0.82, 0.68));
-        c = blob(c, p, vec2(0.82 + cos(t * 1.1) * 0.1, 0.8 + sin(t * 0.9) * 0.1), 0.5, vec3(0.74, 0.87, 1.0));
-        c = blob(c, p, vec2(0.55 + sin(t * 0.7) * 0.18, 0.3 + cos(t * 1.2) * 0.1), 0.55, vec3(0.86, 0.8, 1.0));
-        c = blob(c, p, vec2(0.3 + cos(t * 0.8) * 0.12, 0.25), 0.4, vec3(1.0, 0.9, 0.6));
-        c = blob(c, p, mouse, 0.28, vec3(0.72, 0.93, 0.83));
-        gl_FragColor = vec4(c, 1.0);
-      }`,
-  })));
-  const size = () => { const w = hero.clientWidth, h = hero.clientHeight; renderer.setPixelRatio(1); renderer.setSize(w / 3, h / 3, false); uniforms.aspect.value = w / h; };
-  addEventListener('resize', size); size();
-  hero.addEventListener('pointermove', e => { const r = hero.getBoundingClientRect(); uniforms.mouse.value.set((e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height); });
-  const draw = ms => { uniforms.time.value = reduced ? 0 : ms / 1000; if (hero.getBoundingClientRect().bottom > 0) renderer.render(scene, cam); requestAnimationFrame(draw); };
-  requestAnimationFrame(draw);
-} catch { /* the CSS gradient is the fallback */ }
+// ---- input: scroll position (eased), pointer, clicks on pets
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ptr = { x: 0, y: 0, seen: false }, ptrWorld = new THREE.Vector3(), ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.9), noPtr = { x: 0, y: 0 };
+addEventListener('pointermove', e => { ptr.x = e.clientX / innerWidth * 2 - 1; ptr.y = -(e.clientY / innerHeight * 2 - 1); ptr.seen = e.pointerType === 'mouse'; });
+let click = null, lastStates = null, clockNow = 0; const hearts = [];
+addEventListener('pointerdown', e => {
+  if (e.target.closest('a, button') || !lastStates) return;
+  let best = null, bd = 130;
+  for (const [id, st] of [['dog', lastStates.dog], ['cat', lastStates.cat], ...lastStates.extras.map((x, i) => [i, x])]) {
+    if (st.hide) continue; _v.set(st.x, st.y + 0.8, st.z).project(camera);
+    const d = Math.hypot((_v.x * 0.5 + 0.5) * innerWidth - e.clientX, (-_v.y * 0.5 + 0.5) * innerHeight - e.clientY); if (d < bd) { bd = d; best = [id, st]; }
+  }
+  if (best) { click = { pet: best[0], t0: clockNow }; hearts.push({ t0: clockNow, x: best[1].x, y: best[1].y + 1.6, z: best[1].z }); if (hearts.length > 3) hearts.shift(); }
+});
+const scrollP = () => { const max = document.documentElement.scrollHeight - innerHeight; return max > 0 ? clamp(scrollY / max) : 0; };
+let sSmooth = scrollP() * (BEATS - 1);
+
+function resize() {
+  const w = innerWidth, h = innerHeight, px = QUALITY.px;
+  renderer.setPixelRatio(px); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  buildLens(Math.round(w * px), Math.round(h * px)); lensU.res.value.set(w * px, h * px);
+}
+addEventListener('resize', resize); resize();
+
+// One frame: story position s (0..7) and time t in seconds decide everything.
+function frame(s, t) {
+  clockNow = t; U.time.value = t;
+  envAt(s); applyEnv();
+  cameraAt(s, t, ptr.seen && !reduced ? ptr : noPtr);
+  if (ptr.seen) { ray.setFromCamera(new THREE.Vector2(ptr.x, ptr.y), camera); if (!ray.ray.intersectPlane(plane, ptrWorld)) ptrWorld.set(0, 1, 6); }
+  const rain = bell(s, 4.7, 5.3, 0.12), snow = bell(s, 5.25, 5.82, 0.12), night = env.night;
+  const st = lastStates = petsAt(s, t, ptr.seen ? ptrWorld : null, click);
+  dog.update(st.dog, t); setWet(dog, Math.max(st.wet, rain * 0.6));
+  cat.root.visible = !st.cat.hide; cat.update(st.cat, t);
+  extras.forEach((p, i) => { p.root.visible = !st.extras[i].hide; if (p.root.visible) p.update(st.extras[i], t); });
+  U.wet.value = rain * 0.9; U.snow.value = smooth(range(s, 5.3, 5.6)) * (1 - smooth(range(s, 5.68, 5.9)));
+  buildCabin(range(s, 3.3, 3.98));
+  showWindows(bell(s, 0.55, 1.75, 0.3), t);
+  const lit = s > 4.25 ? Math.max(night, rain * 0.8, snow * 0.5, smooth(range(s, 6.0, 6.4)) * 0.6) : 0;
+  cabinLit.glass.emissiveIntensity = lit * 2.2; cabinLit.bulb.emissiveIntensity = 0.2 + lit * 5; cabinLit.light.intensity = lit * 26;
+  ball.position.set(-3.1, groundY(-3.1, 3.2) + 0.2, 3.2);
+  updateFx({ rain, snow, night, splash: st.splash, wake: st.wake, smoke: s > 4.0 ? 1 - 0.75 * night : 0, hearts }, t);
+  if (waterMat.userData.rip) waterMat.userData.rip.value.set(ISLE.pond[0] - 0.6, ISLE.pond[1], s > 2.0 && s < 3.4 ? t - (s - 2.0) * 3.2 : -99, 0);
+  lensU.tilt.value = MOBILE ? 0 : 0.5 * (1 - bell(s, 2.6, 3.4, 0.3) * 0.6);
+  const cu = cloudSea.material.uniforms; cu.fogCol.value.copy(scene.fog.color); cu.col.value.setRGB(...env.cloudCol).multiplyScalar(lerp(1, 0.25, night)); cu.shade.value.setRGB(...env.hor).multiplyScalar(lerp(0.85, 0.3, night));
+  aimSun(0, 0, 0); updateClouds(t);
+  updateDom(s, t);
+  composer.render();
+}
+window.__frame = (p, t) => frame(p * (BEATS - 1), t);
+
+// Warm up every shader on a hidden frame, then lift the curtain.
+window.__ready = new Promise(res => requestAnimationFrame(() => { frame(sSmooth, 0); frame(5, 0); frame(sSmooth, 0); document.getElementById('loader').classList.add('done'); res(true); }));
+if (!QS.has('capture')) {
+  let last = performance.now();
+  const loop = ms => {
+    const dt = Math.min(0.05, (ms - last) / 1000); last = ms;
+    sSmooth = lerp(sSmooth, scrollP() * (BEATS - 1), 1 - Math.exp(-dt * (reduced ? 30 : 4.5)));
+    if (!document.hidden) frame(sSmooth, ms / 1000);
+    requestAnimationFrame(loop);
+  };
+  window.__ready.then(() => requestAnimationFrame(loop));
+}
+
 </script>
 </body>
 </html>

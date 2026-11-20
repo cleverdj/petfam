@@ -330,13 +330,21 @@ node render.mjs --film --lang en   # English title and end card
 ```
 
 ### Homepage
-`site/index.html` is the PetFam homepage: one static page (Korean and English), no build step. The characters are
-2D: each pet is an SVG built from a few flat shapes and animated with CSS (walking legs, wagging tail, blinking,
-ears). In the desktop demo at the top they walk on the real PetFam wallpaper behind draggable app windows; the cat
-follows the pointer and a click makes a pet hop and speak. Below it, a bento grid has small live demos (peeking from
-behind a window, chatting, a house built from a sentence, weather, growing up, dress-up). The soft moving gradient
-behind the headline is a three.js shader, with a CSS gradient as the fallback. Open the file, or host the `site/`
-folder anywhere. `node promo/shot-site.mjs` saves full-page screenshots to `promo/out/site`.
+`site/index.html` is the PetFam homepage: one scroll-driven three.js scene, a small island floating above the
+clouds where the dog and the cat live. Scrolling moves a camera through eight beats of their day (the island at
+morning, life behind your app windows, the dive into the pond, the two of them talking, the cabin assembling
+itself, rain turning to snow, the whole family at golden hour, and a lantern-lit night with the download buttons).
+Pets look at the pointer and hop when clicked. Korean and English.
+
+Everything is made by code at load, with no models or textures: the pets are sculpted from distance fields and
+coated in shell fur, the island has a sculpted cliff, a reflecting pond, tens of thousands of wind-blown grass
+blades and trees with leaf-card crowns, and the picture goes through an HDR pipeline (bloom, tilt-shift, filmic
+curve, grade). Every frame is a pure function of scroll position and time.
+
+Sources live in `site/src/` as plain scripts concatenated in name order; `node site/build.mjs` writes
+`site/index.html`, which opens straight from disk (three.js and the font come from a CDN). To check it without a
+browser: `node promo/shot-site.mjs --frames "0:2,0.43:2,1:2"` renders exact frames (scroll position:time) to
+`promo/out/site`, and `node promo/live-site.mjs` loads it like a visitor, scrolls, clicks and reports the frame rate.
 
 ## Roadmap
 - Try the macOS version on real Macs and polish it (Retina scaling across mixed displays, separate Spaces per display)
