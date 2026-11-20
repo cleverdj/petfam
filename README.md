@@ -330,11 +330,13 @@ node render.mjs --film --lang en   # English title and end card
 ```
 
 ### Homepage
-`site/index.html` is the PetFam homepage: one static page (Korean and English) over a live three.js meadow. The
-pets look at the pointer, the cat follows it and a click makes the nearest pet hop; scrolling moves through the
-story (a house is built, rain turns to snow, more breeds arrive, sunset, a starry night). It needs no build step:
-open the file, or host the `site/` folder anywhere (three.js comes from a CDN, and without WebGL the page still
-reads fine). `node promo/shot-site.mjs` saves screenshots of every section to `promo/out/site`.
+`site/index.html` is the PetFam homepage: one static page (Korean and English), no build step. The characters are
+2D: each pet is an SVG built from a few flat shapes and animated with CSS (walking legs, wagging tail, blinking,
+ears). In the desktop demo at the top they walk on the real PetFam wallpaper behind draggable app windows; the cat
+follows the pointer and a click makes a pet hop and speak. Below it, a bento grid has small live demos (peeking from
+behind a window, chatting, a house built from a sentence, weather, growing up, dress-up). The soft moving gradient
+behind the headline is a three.js shader, with a CSS gradient as the fallback. Open the file, or host the `site/`
+folder anywhere. `node promo/shot-site.mjs` saves full-page screenshots to `promo/out/site`.
 
 ## Roadmap
 - Try the macOS version on real Macs and polish it (Retina scaling across mixed displays, separate Spaces per display)

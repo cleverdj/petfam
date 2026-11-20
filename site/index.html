@@ -6,460 +6,471 @@
 <title>PetFam — 우리 펫 가족이 바탕화면에 살아요</title>
 <meta name="description" content="PetFam is a desktop pet for Windows and macOS: a puppy or a kitten that lives on your wallpaper, behind your windows.">
 <link rel="icon" href="assets/icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Fredoka:wght@500;700&family=Fraunces:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js" } }</script>
 <style>
-  :root { --ink: #3b2a20; --cream: #fffaf0; --coral: #ff8a5c; --line: #4b3326; }
+  :root { --bg: #fff8ee; --ink: #1f1a17; --soft: #6f655d; --line: #3a2a22; --card: #ffffff; --coral: #ff6b4a; --butter: #ffd45c; --mint: #9be3c3; --sky: #8ec9ff; --lilac: #c9b6ff; --r: 32px; }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body { margin: 0; color: var(--ink); background: linear-gradient(#8fc6ec, #e6f3e0 60%, #7fbf5a); background-attachment: fixed;
-         font-family: 'Gowun Dodum', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: 18px; line-height: 1.65; overflow-x: hidden; }
-  html[lang=en] body { font-family: 'Fredoka', system-ui, sans-serif; font-weight: 500; }
-  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
-  #fx { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
-  main, nav, footer { position: relative; z-index: 2; }
-  h1, h2 { font-family: 'Gowun Batang', serif; font-weight: 700; margin: 0; line-height: 1.25; }
-  html[lang=en] h1, html[lang=en] h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; }
-  a { color: inherit; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+         font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; text-decoration: none; }
+  h1, h2, h3, p { margin: 0; }
+  h1 { font-size: clamp(44px, 8.4vw, 124px); font-weight: 850; letter-spacing: -0.045em; line-height: 0.98; }
+  h2 { font-size: clamp(32px, 5vw, 68px); font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; }
+  h3 { font-size: clamp(22px, 2.2vw, 30px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; }
+  .wrap { width: min(1240px, 100% - 40px); margin: 0 auto; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: #fff; border: 1.5px solid rgba(31,26,23,.12); font-size: 14px; font-weight: 600; }
+  .eyebrow i { width: 8px; height: 8px; border-radius: 50%; background: #2fbf71; box-shadow: 0 0 0 4px rgba(47,191,113,.2); }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 16px 28px; border-radius: 999px; background: var(--ink); color: #fff; font-weight: 700; font-size: 17px; border: 0; cursor: pointer;
+         transition: transform .2s cubic-bezier(.2,.9,.3,1.4), background .2s; font-family: inherit; }
+  .btn:hover { transform: translateY(-3px) scale(1.03); }
+  .btn.coral { background: var(--coral); } .btn.light { background: #fff; color: var(--ink); border: 1.5px solid rgba(31,26,23,.14); }
+  .btn.sm { padding: 10px 18px; font-size: 15px; }
 
-  nav { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 22px; padding: 12px clamp(16px, 4vw, 44px);
-        background: rgba(255,250,240,.82); backdrop-filter: blur(10px); border-bottom: 2px solid rgba(75,51,38,.15); z-index: 10; }
-  nav .brand { display: flex; align-items: center; gap: 10px; font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 26px; text-decoration: none; margin-right: auto; }
-  nav .brand img { width: 38px; height: 38px; border-radius: 10px; }
-  nav a.link { text-decoration: none; font-size: 16px; opacity: .8; }
-  nav a.link:hover { opacity: 1; }
-  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 999px; border: 2.5px solid var(--line); background: var(--coral); color: #fff;
-         font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; box-shadow: 0 4px 0 var(--line); transition: transform .12s, box-shadow .12s; }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--line); }
-  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
-  .btn.ghost { background: var(--cream); color: var(--ink); }
-  .btn.small { padding: 7px 16px; font-size: 15px; box-shadow: 0 3px 0 var(--line); }
-  #lang { background: none; border: 2px solid var(--line); border-radius: 999px; padding: 5px 13px; font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); }
+  nav { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 4px; padding: 7px 7px 7px 16px; border-radius: 999px;
+        background: rgba(255,255,255,.72); backdrop-filter: blur(18px) saturate(1.4); border: 1px solid rgba(31,26,23,.1); box-shadow: 0 10px 40px rgba(60,40,20,.1); white-space: nowrap; }
+  nav .brand { display: flex; align-items: center; gap: 8px; font-weight: 850; font-size: 18px; letter-spacing: -0.03em; margin-right: 10px; }
+  nav .brand img { width: 28px; height: 28px; border-radius: 8px; }
+  nav a.l { padding: 8px 13px; border-radius: 999px; font-size: 15px; font-weight: 600; color: var(--soft); transition: background .2s, color .2s; }
+  nav a.l:hover { background: rgba(31,26,23,.06); color: var(--ink); }
+  #lang { padding: 8px 12px; border-radius: 999px; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; color: var(--soft); }
 
-  section { min-height: 100vh; display: flex; align-items: center; padding: 96px clamp(16px, 6vw, 90px) 40px; pointer-events: none; }
-  section > * { pointer-events: auto; }
-  .hero { flex-direction: column; justify-content: flex-start; text-align: center; padding-top: clamp(110px, 17vh, 190px); }
-  .hero h1 { font-size: clamp(34px, 5.6vw, 70px); color: #fffaf0; text-shadow: 0 3px 0 var(--line), 0 8px 30px rgba(40,60,100,.35); }
-  .hero p { max-width: 640px; margin: 18px auto 26px; font-size: clamp(17px, 1.7vw, 21px); background: rgba(255,250,240,.86); padding: 12px 22px; border-radius: 18px; }
-  .hero .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-  .hero .hint { margin-top: 18px; font-size: 15px; background: rgba(255,250,240,.7); padding: 4px 16px; border-radius: 999px; display: inline-block; }
-  .card { max-width: 500px; background: rgba(255,250,240,.95); border: 3px solid var(--line); border-radius: 28px; padding: 30px 32px; box-shadow: 0 8px 0 rgba(75,51,38,.2); }
-  .left { justify-content: flex-start; } .right { justify-content: flex-end; } .center { justify-content: center; }
-  .kicker { display: flex; align-items: center; gap: 12px; color: #c9562c; font-family: 'Gowun Batang', serif; font-weight: 700; letter-spacing: .12em; font-size: 15px; margin-bottom: 10px; }
-  .kicker::before { content: ''; width: 34px; height: 2px; background: currentColor; }
-  h2 { font-size: clamp(26px, 3vw, 38px); margin-bottom: 14px; }
-  .card p { margin: 0 0 12px; }
-  .card ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
-  .card li { padding: 4px 13px; border-radius: 999px; border: 2px solid rgba(75,51,38,.35); font-size: 15px; background: #fff; }
-  .wide { max-width: 860px; width: 100%; text-align: center; }
-  .wide video { width: 100%; border-radius: 18px; border: 3px solid var(--line); display: block; margin-top: 14px; background: #000; }
-  .wide .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
-  #download { align-items: flex-start; padding-top: 16vh; }
-  .note { font-size: 14px; opacity: .75; margin-top: 14px !important; }
-  footer { text-align: center; padding: 26px 16px 34px; color: #fffaf0; font-size: 14px; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+  /* hero */
+  .hero { position: relative; padding: clamp(120px, 17vh, 190px) 0 40px; text-align: center; overflow: hidden; }
+  #glow { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; opacity: .9; }
+  .hero::before { content: ''; position: absolute; inset: 0; z-index: 0; background: radial-gradient(60% 50% at 20% 20%, #ffe1c9, transparent 70%), radial-gradient(50% 45% at 85% 15%, #d9ecff, transparent 70%), radial-gradient(60% 50% at 60% 70%, #e3dcff, transparent 70%); }
+  .hero::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 240px; background: linear-gradient(transparent, var(--bg)); z-index: 0; }
+  .hero > .wrap { position: relative; z-index: 1; }
+  .hero h1 em { font-style: normal; color: var(--coral); }
+  .hero .sub { max-width: 620px; margin: 26px auto 30px; font-size: clamp(17px, 1.6vw, 21px); color: var(--soft); font-weight: 500; }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
-  .bubble { position: absolute; padding: 9px 20px; border-radius: 24px; background: var(--cream); border: 2.5px solid var(--line); font-size: 19px; white-space: nowrap;
-            transform: translate(-50%, -100%); transition: opacity .3s; opacity: 0; }
-  .bubble::after { content: ''; position: absolute; left: 50%; bottom: -11px; margin-left: -8px; width: 14px; height: 14px; background: var(--cream);
-                   border-right: 2.5px solid var(--line); border-bottom: 2.5px solid var(--line); transform: rotate(45deg); }
-  .heart { position: absolute; font-size: 30px; animation: up 1.1s ease-out forwards; }
-  @keyframes up { from { transform: translate(-50%, 0) scale(.6); opacity: 1; } to { transform: translate(-50%, -110px) scale(1.3); opacity: 0; } }
-  @media (max-width: 760px) {
-    nav a.link { display: none; }
-    section { align-items: flex-start; padding-top: 84px; }
-    .left, .right { justify-content: center; }
-    .card { padding: 22px 22px; }
-    .bubble { font-size: 15px; }
-  }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  /* the desktop demo */
+  .desk { position: relative; margin: 56px auto 0; aspect-ratio: 16 / 9; max-height: 640px; border-radius: 28px; overflow: hidden; background: #8fc6ec url(assets/meadow.jpg) center / cover;
+          box-shadow: 0 40px 100px rgba(60,40,20,.25), 0 0 0 8px #fff, 0 0 0 9.5px rgba(31,26,23,.12); touch-action: pan-y; }
+  .desk .tip { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); padding: 7px 16px; border-radius: 999px; background: rgba(255,255,255,.85); backdrop-filter: blur(8px); font-size: 14px; font-weight: 600; z-index: 6; }
+  .actor { position: absolute; left: 0; bottom: 0; width: 13%; min-width: 74px; will-change: transform; z-index: 2; }
+  .actor .flip { transition: transform .25s; }
+  .win { position: absolute; z-index: 4; border-radius: 14px; background: #fff; box-shadow: 0 18px 50px rgba(30,20,10,.3); overflow: hidden; cursor: grab; user-select: none; touch-action: none; }
+  .win:active { cursor: grabbing; }
+  .win .bar { height: 30px; background: #f1ede7; display: flex; align-items: center; gap: 6px; padding: 0 12px; font-size: 12px; font-weight: 600; color: var(--soft); }
+  .win .bar b { width: 10px; height: 10px; border-radius: 50%; background: #ff6159; } .win .bar b:nth-child(2) { background: #ffbd2e; } .win .bar b:nth-child(3) { background: #28c941; margin-right: 6px; }
+  .win .body { padding: 14px; display: grid; gap: 9px; }
+  .win .body span { height: 9px; border-radius: 5px; background: #e6e1da; display: block; }
+  .win.dark { background: #1f2333; } .win.dark .bar { background: #2b3046; color: #c9d1e8; } .win.dark .body span { background: #7aa2f7; }
+  .bubble { position: absolute; left: 50%; bottom: 96%; transform: translateX(-50%) scale(0); transform-origin: 50% 100%; padding: 7px 14px; border-radius: 16px; background: #fff; font-size: clamp(12px, 1.2vw, 15px); font-weight: 700;
+            white-space: nowrap; box-shadow: 0 6px 18px rgba(30,20,10,.2); transition: transform .3s cubic-bezier(.2,.9,.3,1.5); }
+  .bubble.on { transform: translateX(-50%) scale(1); }
+
+  /* 2D pets */
+  .pet { display: block; width: 100%; overflow: visible; }
+  .pet * { stroke: var(--line); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+  .pet .ns { stroke: none; }
+  .pet .leg, .pet .tail, .pet .head, .pet .eye, .pet .ear { transform-box: fill-box; }
+  .pet .leg { transform-origin: 50% 8%; }
+  .pet.walk .l1, .pet.walk .l4 { animation: legA .46s linear infinite; }
+  .pet.walk .l2, .pet.walk .l3 { animation: legB .46s linear infinite; }
+  .pet.walk .bodyg { animation: trot .23s ease-in-out infinite alternate; }
+  .pet .tail { transform-origin: 100% 100%; animation: wag .34s ease-in-out infinite alternate; }
+  .pet.cat .tail { animation: sway 1.9s ease-in-out infinite alternate; }
+  .pet .head { transform-origin: 30% 95%; animation: nod 2.6s ease-in-out infinite; }
+  .pet .eye { transform-origin: 50% 50%; animation: blink 4.2s infinite; }
+  .pet.cat .eye { animation-delay: 1.3s; }
+  .pet .ear { transform-origin: 50% 0; animation: flop 2.6s ease-in-out infinite; }
+  .pet .acc { display: none; }
+  .pet.hat .hat, .pet.scarf .scarf, .pet.glasses .glasses, .pet.crown .crown { display: block; }
+  .hop { animation: hop .5s cubic-bezier(.3,0,.5,1); }
+  @keyframes legA { 0%,100% { transform: rotate(26deg); } 50% { transform: rotate(-26deg); } }
+  @keyframes legB { 0%,100% { transform: rotate(-26deg); } 50% { transform: rotate(26deg); } }
+  @keyframes trot { to { transform: translateY(-2.5px); } }
+  @keyframes wag { from { transform: rotate(-16deg); } to { transform: rotate(22deg); } }
+  @keyframes sway { from { transform: rotate(-8deg); } to { transform: rotate(12deg); } }
+  @keyframes nod { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-3.5deg); } }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+  @keyframes flop { 0%,100% { transform: rotate(0); } 50% { transform: rotate(5deg); } }
+  @keyframes hop { 0%,100% { transform: translateY(0); } 45% { transform: translateY(-34%); } }
+
+  /* marquee */
+  .marquee { overflow: hidden; padding: 34px 0; mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+  .marquee div { display: flex; gap: 14px; width: max-content; animation: slide 46s linear infinite; }
+  .marquee span { padding: 10px 20px; border-radius: 999px; background: #fff; border: 1.5px solid rgba(31,26,23,.1); font-weight: 700; font-size: 16px; white-space: nowrap; }
+  .marquee span:nth-child(4n+1) { background: var(--butter); border-color: transparent; } .marquee span:nth-child(4n+3) { background: var(--mint); border-color: transparent; }
+  @keyframes slide { to { transform: translateX(-50%); } }
+
+  /* bento */
+  section { padding: clamp(60px, 9vw, 120px) 0; }
+  .head { display: flex; align-items: end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 34px; }
+  .head p { max-width: 420px; color: var(--soft); font-weight: 500; }
+  .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+  .tile { position: relative; grid-column: span 2; min-height: 380px; border-radius: var(--r); padding: 28px; overflow: hidden; background: var(--card); border: 1.5px solid rgba(31,26,23,.08);
+          display: flex; flex-direction: column; transition: transform .35s cubic-bezier(.2,.9,.3,1.2), box-shadow .35s; }
+  .tile:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(60,40,20,.14); }
+  .tile.w3 { grid-column: span 3; } .tile.w4 { grid-column: span 4; } .tile.w6 { grid-column: span 6; min-height: 0; }
+  .tile.w6 .art { position: absolute; right: 40px; bottom: 0; margin: 0; min-height: 0; }
+  .tile.w6 p { max-width: 620px; }
+  .tile p { color: var(--soft); margin-top: 8px; font-weight: 500; font-size: 16px; max-width: 440px; }
+  .tile .tag { font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .6; margin-bottom: 10px; }
+  .tile .art { position: relative; flex: 1; min-height: 190px; margin: 18px -28px -28px; }
+  .t-sky { background: linear-gradient(160deg, #dff0ff, #b9dcff); } .t-butter { background: linear-gradient(160deg, #fff1c2, #ffd98a); } .t-mint { background: linear-gradient(160deg, #dcf7ea, #b4ebd2); }
+  .t-lilac { background: linear-gradient(160deg, #ece5ff, #d2c4ff); } .t-coral { background: linear-gradient(160deg, #ffe0d6, #ffbfae); } .t-ink { background: #1f1a17; color: #fff; } .t-ink p { color: #b9aea4; }
+  .art .pet { position: absolute; width: 150px; }
+  /* peek */
+  .peek .w { position: absolute; left: 12%; right: 12%; bottom: -30px; height: 62%; border-radius: 16px 16px 0 0; background: #fff; box-shadow: 0 -10px 40px rgba(30,60,120,.18); z-index: 2; }
+  .peek .w::before { content: ''; position: absolute; left: 16px; top: 14px; width: 46px; height: 10px; border-radius: 5px; background: radial-gradient(circle at 5px 5px, #ff6159 4.5px, transparent 5px), radial-gradient(circle at 23px 5px, #ffbd2e 4.5px, transparent 5px), radial-gradient(circle at 41px 5px, #28c941 4.5px, transparent 5px); }
+  .peek .pet { left: 50%; margin-left: -75px; bottom: 44%; animation: peek 5.5s cubic-bezier(.4,0,.2,1) infinite; z-index: 1; }
+  @keyframes peek { 0%, 12%, 88%, 100% { transform: translateY(74%); } 28%, 72% { transform: translateY(0); } }
+  /* chat */
+  .chat { display: flex; flex-direction: column; gap: 10px; padding: 0 28px 28px; justify-content: flex-end; }
+  .chat div { max-width: 82%; padding: 11px 16px; border-radius: 20px; background: #fff; font-weight: 600; font-size: 15px; opacity: 0; animation: say 9s infinite; box-shadow: 0 4px 14px rgba(60,40,120,.1); }
+  .chat div:nth-child(even) { align-self: flex-end; background: var(--ink); color: #fff; }
+  .chat div:nth-child(2) { animation-delay: 1.4s; } .chat div:nth-child(3) { animation-delay: 2.8s; } .chat div:nth-child(4) { animation-delay: 4.2s; }
+  @keyframes say { 0% { opacity: 0; transform: translateY(14px) scale(.9); } 5%, 78% { opacity: 1; transform: none; } 86%, 100% { opacity: 0; transform: translateY(-6px); } }
+  /* house */
+  .prompt { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding: 11px 16px; border-radius: 16px; background: rgba(255,255,255,.8); font-weight: 600; font-size: 15px; min-height: 46px; }
+  .prompt::after { content: ''; width: 2px; height: 18px; background: var(--ink); animation: caret 1s steps(1) infinite; }
+  @keyframes caret { 50% { opacity: 0; } }
+  .hut { position: absolute; left: 50%; bottom: 14px; width: 200px; margin-left: -100px; transform-origin: 50% 100%; transform: scale(0); transition: transform .6s cubic-bezier(.2,.9,.3,1.5); }
+  .hut.on { transform: scale(1); }
+  /* weather */
+  .chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .chips button { padding: 9px 16px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.25); background: transparent; color: inherit; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; transition: background .2s, color .2s; }
+  .chips button.on { background: #fff; color: var(--ink); border-color: #fff; }
+  .wx { border-radius: 24px 24px 0 0; margin: 18px 0 -28px; background: linear-gradient(#7fc4ff, #c8f0c0); transition: background .6s; overflow: hidden; }
+  .wx[data-w=rain] { background: linear-gradient(#4a5878, #6f8f7a); } .wx[data-w=snow] { background: linear-gradient(#8fa3c0, #eef3f8); }
+  .wx::before { content: ''; position: absolute; inset: -40px; opacity: 0; transition: opacity .5s; pointer-events: none; z-index: 3; }
+  .wx[data-w=rain]::before { opacity: .7; background: repeating-linear-gradient(100deg, transparent 0 22px, rgba(255,255,255,.75) 22px 23.5px, transparent 23.5px 46px); background-size: 46px 40px; animation: rain .35s linear infinite; }
+  .wx[data-w=snow]::before { opacity: 1; background: radial-gradient(circle, #fff 2.6px, transparent 3px) 0 0 / 46px 46px, radial-gradient(circle, #fff 1.8px, transparent 2.2px) 23px 18px / 34px 34px; animation: snow 5s linear infinite; }
+  @keyframes rain { to { background-position: -8px 40px; } } @keyframes snow { to { background-position: 14px 46px, 37px 52px; } }
+  .wx .sun { position: absolute; right: 26px; top: 22px; width: 54px; height: 54px; border-radius: 50%; background: #ffe27a; box-shadow: 0 0 0 10px rgba(255,226,122,.35); transition: transform .6s, opacity .6s; }
+  .wx:not([data-w=sun]) .sun { transform: translateY(-90px); opacity: 0; }
+  .wx .pet { left: 50%; margin-left: -75px; bottom: 6px; }
+  /* grow */
+  .grow .art { display: flex; align-items: flex-end; justify-content: center; }
+  .grow .pet { position: static; width: 190px; transform-origin: 50% 100%; transition: transform .3s cubic-bezier(.2,.9,.3,1.4); margin-bottom: 8px; }
+  .grow .row { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+  .grow output { font-weight: 850; font-size: 28px; letter-spacing: -0.03em; min-width: 190px; }
+  input[type=range] { flex: 1; accent-color: var(--ink); height: 28px; }
+  /* dress */
+  .dress .art { display: flex; align-items: flex-end; justify-content: center; }
+  .dress .pet { position: static; width: 190px; margin-bottom: 8px; }
+  /* stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
+  .stats div { border-radius: var(--r); padding: 26px 28px; background: #fff; border: 1.5px solid rgba(31,26,23,.08); }
+  .stats b { display: block; font-size: clamp(40px, 5vw, 68px); font-weight: 850; letter-spacing: -0.05em; line-height: 1; }
+  .stats span { color: var(--soft); font-weight: 600; font-size: 15px; }
+  /* film + download */
+  .film { border-radius: clamp(24px, 4vw, 48px); background: #1f1a17; color: #fff; padding: clamp(24px, 5vw, 64px); }
+  .film .head p { color: #b9aea4; }
+  .film video { width: 100%; border-radius: 24px; display: block; background: #000; }
+  .get { position: relative; text-align: center; border-radius: clamp(24px, 4vw, 48px); padding: clamp(110px, 12vw, 150px) 24px clamp(48px, 7vw, 90px); background: linear-gradient(135deg, #ffd45c, #ff9d6b 55%, #ff6b4a); overflow: hidden; }
+  .get h2 { font-size: clamp(38px, 6.4vw, 92px); }
+  .get p { margin: 16px auto 28px; max-width: 520px; font-weight: 600; opacity: .8; }
+  .get .note { font-size: 14px; margin: 22px auto 0; opacity: .7; }
+  .get .row { position: absolute; top: 14px; left: 0; right: 0; display: flex; justify-content: center; gap: clamp(0px, 2vw, 26px); }
+  .get .row .pet { position: static; width: clamp(64px, 9vw, 112px); }
+  footer { padding: 34px 0 44px; text-align: center; color: var(--soft); font-size: 14px; font-weight: 500; }
+
+  .reveal { opacity: 0; transform: translateY(34px); transition: opacity .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (max-width: 900px) { .tile, .tile.w3, .tile.w4, .tile.w6 { grid-column: span 6; min-height: 340px; } .tile.w6 .art { position: relative; right: 0; margin: 18px -28px -28px; } .stats { grid-template-columns: repeat(2, 1fr); } nav a.l, .desk .tip { display: none; } .win { transform: scale(.72); transform-origin: 0 0; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .reveal { opacity: 1; transform: none; } html { scroll-behavior: auto; } }
 </style>
 </head>
 <body>
-<canvas id="scene" aria-hidden="true"></canvas>
-<div id="fx" aria-hidden="true"></div>
-
 <nav>
   <a class="brand" href="#top"><img src="assets/icon.png" alt="">PetFam</a>
-  <a class="link" href="#life" data-ko="바탕화면 생활" data-en="Desktop life"></a>
-  <a class="link" href="#ai" data-ko="AI 대화" data-en="AI talk"></a>
-  <a class="link" href="#house" data-ko="집 꾸미기" data-en="Houses"></a>
-  <a class="link" href="#film" data-ko="영상" data-en="Film"></a>
+  <a class="l" href="#features" data-ko="기능" data-en="Features"></a>
+  <a class="l" href="#film" data-ko="영상" data-en="Film"></a>
   <button id="lang" type="button">EN</button>
-  <a class="btn small" href="#download" data-ko="받기" data-en="Download"></a>
+  <a class="btn sm coral" href="#download" data-ko="받기" data-en="Download"></a>
 </nav>
 
 <main id="top">
-  <section class="hero">
-    <h1 data-ko="우리 펫 가족이<br>바탕화면에 살아요" data-en="Your pet family,<br>living on your desktop"></h1>
-    <p data-ko="강아지나 고양이를 입양하면 내 창 뒤, 바탕화면 위로 이사 와요. 풍경을 집 삼아 걷고, 낮잠 자고, 하루하루 함께 자라요."
-       data-en="Adopt a puppy or a kitten and it moves in behind your windows: it walks on your wallpaper, naps in its little house and grows up with you."></p>
-    <div class="cta">
-      <a class="btn" href="#download" data-ko="무료로 받기" data-en="Get it free"></a>
-      <a class="btn ghost" href="#film" data-ko="▶ 영상 보기" data-en="▶ Watch the film"></a>
+  <header class="hero">
+    <canvas id="glow" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <span class="eyebrow"><i></i><span data-ko="v1.0 · Windows & macOS · 무료" data-en="v1.0 · Windows & macOS · Free"></span></span>
+      <h1 style="margin-top:22px" data-ko="바탕화면에 사는<br><em>우리 펫 가족</em>" data-en="Your pet family,<br><em>living on your desktop</em>"></h1>
+      <p class="sub" data-ko="강아지나 고양이를 입양하면 내 창 뒤, 바탕화면 위로 이사 와요. 풍경을 집 삼아 걷고, 낮잠 자고, 하루하루 함께 자라요."
+         data-en="Adopt a puppy or a kitten and it moves in behind your windows. It walks on your wallpaper, naps in its little house and grows up with you."></p>
+      <div class="cta">
+        <a class="btn coral" href="#download" data-ko="무료로 받기 ↓" data-en="Get it free ↓"></a>
+        <a class="btn light" href="#film" data-ko="▶ 단편 영상 보기" data-en="▶ Watch the film"></a>
+      </div>
+      <div class="desk reveal" id="desk">
+        <div class="tip" data-ko="창을 끌어 보세요 · 고양이는 마우스를 따라와요 · 펫을 누르면 폴짝" data-en="Drag the windows · the cat follows your mouse · click a pet for a hop"></div>
+        <div class="win" style="left:6%; top:34%; width:34%"><div class="bar"><b></b><b></b><b></b>Weekly report</div><div class="body"><span style="width:60%;background:#1f1a17"></span><span></span><span style="width:85%"></span><span style="width:70%"></span><span style="width:90%"></span><span style="width:40%"></span></div></div>
+        <div class="win dark" style="right:7%; top:14%; width:30%"><div class="bar"><b></b><b></b><b></b>main.cs</div><div class="body"><span style="width:50%;background:#bb9af7"></span><span style="width:75%;margin-left:14px"></span><span style="width:60%;margin-left:28px;background:#9ece6a"></span><span style="width:70%;margin-left:28px;background:#e0af68"></span><span style="width:40%;margin-left:14px"></span></div></div>
+      </div>
     </div>
-    <div class="hint" data-ko="마우스를 움직여 보세요 · 누르면 폴짝!" data-en="Move the mouse · click for a hop!"></div>
+  </header>
+
+  <div class="marquee" aria-hidden="true"><div id="breeds"></div></div>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2 data-ko="작지만<br>진짜 같은 삶" data-en="A small life<br>that feels real"></h2>
+        <p data-ko="화면 보호기가 아니에요. 펫은 모든 창 아래, 바탕화면 층에 살고 손을 내밀 때만 앞으로 나와요." data-en="Not a screensaver. Pets live on the desktop layer, under every window, and come forward only when you reach for them."></p>
+      </div>
+      <div class="bento">
+        <article class="tile w4 t-sky peek reveal">
+          <div class="tag" data-ko="바탕화면 생활" data-en="Desktop life"></div>
+          <h3 data-ko="일하는 창 뒤에서 빼꼼" data-en="Peeking out from behind your work"></h3>
+          <p data-ko="바탕화면을 읽고 땅·물·햇살·그늘을 알아봐요. 강아지는 연못에 뛰어들고, 고양이는 볕 좋은 자리를 찾아요." data-en="PetFam reads your wallpaper and finds the ground, water, sun and shade. Dogs dive into the pond; cats find the sunny spot."></p>
+          <div class="art"><div data-pet="cat"></div><div class="w"></div></div>
+        </article>
+        <article class="tile t-lilac reveal">
+          <div class="tag" data-ko="AI 대화" data-en="AI talk"></div>
+          <h3 data-ko="자기 말투로 수다 떨어요" data-en="They chat in their own voices"></h3>
+          <p data-ko="이미 쓰는 AI를 연결하면 대화하고, 일기를 쓰고, 새 바탕화면 얘기도 먼저 꺼내요." data-en="Connect an AI you already have: they talk, keep a diary and notice a new wallpaper first."></p>
+          <div class="art chat">
+            <div data-ko="우와, 바다다! 수영하자멍!" data-en="Whoa, the sea! Let's swim!"></div>
+            <div data-ko="흥… 예전 풀밭이 더 좋았다냥." data-en="Hmph. I liked the old meadow."></div>
+            <div data-ko="모래가 폭신폭신하다멍!" data-en="But the sand is so soft!"></div>
+            <div data-ko="…인정한다냥." data-en="…Fine. It is."></div>
+          </div>
+        </article>
+        <article class="tile t-butter house reveal">
+          <div class="tag" data-ko="집 꾸미기" data-en="Houses"></div>
+          <h3 data-ko="말 한마디로 짓는 집" data-en="A house from one sentence"></h3>
+          <div class="prompt"><span>✨</span><span id="typed"></span></div>
+          <div class="art"><svg class="hut" id="hut" viewBox="0 0 200 150" aria-hidden="true"><g stroke="#3a2a22" stroke-width="3" stroke-linejoin="round"><rect x="38" y="66" width="124" height="78" rx="6" fill="#c98f5a"/><path d="M38 92h124M38 118h124" fill="none" opacity=".35"/><path d="M22 72 100 14l78 58z" fill="#ff6b4a"/><rect x="108" y="94" width="30" height="50" rx="5" fill="#7a4a2a"/><rect x="58" y="88" width="32" height="28" rx="5" fill="#ffe27a"/><path d="M74 88v28M58 102h32" fill="none"/><path d="M176 144V84" fill="none"/><circle cx="176" cy="78" r="9" fill="#ffe27a"/></g></svg></div>
+        </article>
+        <article class="tile w4 t-ink reveal">
+          <div class="tag" data-ko="진짜 날씨" data-en="Real weather"></div>
+          <h3 data-ko="우리 동네에 비가 오면, 바탕화면에도" data-en="If it rains where you live, it rains here too"></h3>
+          <div class="chips" id="wxchips"><button data-w="sun" class="on">☀️ <span data-ko="맑음" data-en="Clear"></span></button><button data-w="rain">🌧️ <span data-ko="비" data-en="Rain"></span></button><button data-w="snow">❄️ <span data-ko="눈" data-en="Snow"></span></button></div>
+          <div class="art wx" id="wx" data-w="sun"><div class="sun"></div><div data-pet="dog"></div></div>
+        </article>
+        <article class="tile w3 t-mint grow reveal">
+          <div class="tag" data-ko="함께 자라요" data-en="Growing up"></div>
+          <h3 data-ko="함께한 날만큼 자라요" data-en="A day older for every day together"></h3>
+          <div class="row"><output id="age"></output><input id="days" type="range" min="0" max="400" value="4" aria-label="days"></div>
+          <div class="art"><div data-pet="kitten"></div></div>
+        </article>
+        <article class="tile w3 t-coral dress reveal">
+          <div class="tag" data-ko="옷 입히기" data-en="Dress-up"></div>
+          <h3 data-ko="모자, 목도리, 안경, 왕관까지" data-en="Hats, scarves, glasses, even a crown"></h3>
+          <div class="chips" id="wear" style="color:var(--ink)"><button data-a="hat" class="on" style="border-color:rgba(31,26,23,.2)">🎉</button><button data-a="scarf" style="border-color:rgba(31,26,23,.2)">🧣</button><button data-a="glasses" style="border-color:rgba(31,26,23,.2)">👓</button><button data-a="crown" style="border-color:rgba(31,26,23,.2)">👑</button></div>
+          <div class="art"><div data-pet="corgi" data-class="hat"></div></div>
+        </article>
+        <article class="tile w6 reveal">
+          <div class="tag" data-ko="순하게 설계했어요" data-en="Gentle by design"></div>
+          <h3 data-ko="숙제도, 죄책감도 없어요" data-en="No chores, no guilt"></h3>
+          <p data-ko="펫은 죽지 않아요. 컴퓨터 앞에 있기만 해도 유대가 유지돼요. 전체 화면이나 발표 중에는 조용히 비켜 있어요. AI에는 펫 정보만 보내고, 화면 내용은 보내지 않아요."
+             data-en="Pets never die, and simply being at your computer keeps your bond. Full-screen apps and presentations put them on quiet mode. Only pet information goes to the AI, never what is on your screen."></p>
+          <div class="art" style="display:flex;align-items:flex-end;justify-content:center;gap:10px"><div data-pet="husky" style="position:static;width:130px"></div><div data-pet="black" style="position:static;width:120px"></div></div>
+        </article>
+      </div>
+      <div class="stats reveal">
+        <div><b>33</b><span data-ko="가지 품종" data-en="breeds"></span></div>
+        <div><b>17+16</b><span data-ko="강아지와 고양이" data-en="dogs and cats"></span></div>
+        <div><b>0</b><span data-ko="광고 · 결제" data-en="ads or payments"></span></div>
+        <div><b>2</b><span data-ko="Windows · macOS" data-en="Windows · macOS"></span></div>
+      </div>
+    </div>
   </section>
 
-  <section class="left" id="life">
-    <div class="card">
-      <div class="kicker" data-ko="바탕화면 위, 창 뒤에서" data-en="On your wallpaper, behind your windows"></div>
-      <h2 data-ko="일하는 창 뒤에서 조용히 살아가요" data-en="A quiet life right behind your work"></h2>
-      <p data-ko="화면 보호기가 아니에요. 펫은 모든 앱 창 아래, 바탕화면 층에 살아요. 손을 내밀 때만 앞으로 나와요. 바탕화면을 읽고 땅·물·햇살·그늘을 알아봐서, 강아지는 연못에 뛰어들고 고양이는 볕 좋은 자리를 찾아요."
-         data-en="Not a screensaver. Pets live on the desktop layer, under every app window, and come to the front only when you reach for them. PetFam reads your wallpaper and finds the ground, water, sun and shade: dogs jump into the pond, cats find the sunny spot."></p>
-      <ul>
-        <li data-ko="창 가장자리로 빼꼼" data-en="Peeks from window edges"></li>
-        <li data-ko="쓰다듬기 · 안아 주기" data-en="Pet, hug, carry"></li>
-        <li data-ko="공 던지기" data-en="Throw the ball"></li>
-        <li data-ko="여러 모니터 · 가상 데스크톱" data-en="All screens and desktops"></li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="right" id="ai">
-    <div class="card">
-      <div class="kicker" data-ko="AI 대화 · 풍경 인식" data-en="They talk, with AI"></div>
-      <h2 data-ko="사는 곳을 알고, 자기 말투로 이야기해요" data-en="They know where they live, and say so"></h2>
-      <p data-ko="이미 쓰고 있는 AI(Claude Code, Codex, Gemini CLI, Ollama 또는 API 키)를 연결하면 펫들이 품종별 성격대로 대화하고, 일기를 쓰고, 나와 이야기해요. 바탕화면을 바꾸면 새 풍경 이야기를 먼저 꺼내요."
-         data-en="Connect an AI you already have (Claude Code, Codex, Gemini CLI, Ollama or an API key) and your pets chat in their own personas, keep a diary and talk with you. Change the wallpaper and they are the first to mention it."></p>
-      <ul>
-        <li data-ko="펫끼리 수다" data-en="Pets chat together"></li>
-        <li data-ko="밤마다 일기" data-en="A diary every night"></li>
-        <li data-ko="펫에게 말 걸기" data-en="Talk to your pet"></li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="left" id="house">
-    <div class="card">
-      <div class="kicker" data-ko="말로 꾸미는 집" data-en="Build with words"></div>
-      <h2 data-ko="“등불 달린 아늑한 통나무집” 한 마디면 돼요" data-en="“A cozy log cabin with a lantern” is all it takes"></h2>
-      <p data-ko="집을 짓고, 누구 집인지 정해 주세요. 펫은 문으로 걸어 들어가 잠들고, 비가 오면 안으로 피해요. 직접 꾸며도 되고, 원하는 모습을 적으면 AI가 지어 줘요."
-         data-en="Build houses and decide whose is whose. Pets walk in through the door to sleep, or to get out of the rain. Decorate by hand, or describe what you want and the AI builds it."></p>
-      <ul>
-        <li data-ko="옷 입히기" data-en="Dress-up"></li>
-        <li data-ko="커플룩" data-en="Matching outfits"></li>
-        <li data-ko="털 색 바꾸기" data-en="Your own colours"></li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="right" id="weather">
-    <div class="card">
-      <div class="kicker" data-ko="진짜 날씨" data-en="Real weather"></div>
-      <h2 data-ko="우리 동네에 비가 오면, 바탕화면에도 비가 와요" data-en="When it rains where you live, it rains on your desktop"></h2>
-      <p data-ko="고양이는 비를 피해 달리고, 강아지는 물웅덩이에서 놀아요. 눈이 오면 지붕에 눈이 쌓여요. 계속 내려 보세요, 곧 눈으로 바뀌어요."
-         data-en="Cats run for cover, dogs play in the puddles, and snow piles up on the roofs. Keep scrolling: it is about to turn to snow."></p>
-    </div>
-  </section>
-
-  <section class="left" id="grow">
-    <div class="card">
-      <div class="kicker" data-ko="33가지 품종 · 함께 자라요" data-en="33 breeds · growing up with you"></div>
-      <h2 data-ko="저마다의 성격, 하루하루 함께 크는 가족" data-en="Real personalities, a day older each day"></h2>
-      <p data-ko="강아지 17종, 고양이 16종. 안으면 소리 지르는 시바, 품에서 녹아내리는 랙돌, 밥 얘기만 하는 코기. 두 달 된 아기로 와서, 함께한 날만큼 자라요. 숙제도 죄책감도 없어요. 펫은 죽지 않아요."
-         data-en="17 dogs and 16 cats: a Shiba that screams when picked up, a Ragdoll that melts in your arms, a Corgi who only talks about food. They arrive as two-month-old babies and grow a day older for each day you spend together. No chores, no guilt: pets never die."></p>
-      <ul>
-        <li data-ko="포메라니안" data-en="Pomeranian"></li><li data-ko="웰시코기" data-en="Welsh Corgi"></li><li data-ko="시바견" data-en="Shiba Inu"></li>
-        <li data-ko="진돗개" data-en="Jindo"></li><li data-ko="허스키" data-en="Husky"></li><li data-ko="코리안 숏헤어" data-en="Korean Shorthair"></li>
-        <li data-ko="러시안 블루" data-en="Russian Blue"></li><li data-ko="랙돌" data-en="Ragdoll"></li><li data-ko="샴" data-en="Siamese"></li><li data-ko="…그리고 24종 더" data-en="…and 24 more"></li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="center" id="film">
-    <div class="card wide">
-      <div class="kicker" style="justify-content:center" data-ko="단편 애니메이션" data-en="Short film"></div>
-      <h2 data-ko="창문 여행" data-en="The Window Ride"></h2>
-      <p data-ko="강아지와 고양이가 창을 타고 여덟 세계를 날아요. 그림도 음악도 전부 코드로 만들었어요."
-         data-en="A dog and a cat ride a window through eight worlds. Picture and music are made entirely in code."></p>
+  <section id="film" style="padding-top:0">
+    <div class="wrap"><div class="film reveal">
+      <div class="head"><h2 data-ko="단편 「창문 여행」" data-en="Short film: The Window Ride"></h2><p data-ko="강아지와 고양이가 창을 타고 여덟 세계를 날아요. 그림도 음악도 전부 코드로 만들었어요." data-en="A dog and a cat ride a window through eight worlds. Picture and music are made entirely in code."></p></div>
       <video controls preload="none" poster="assets/film-poster.jpg" src="assets/film.mp4"></video>
-    </div>
+    </div></div>
   </section>
 
-  <section class="center" id="download">
-    <div class="card wide">
-      <div class="kicker" style="justify-content:center" data-ko="무료 · 광고 없음" data-en="Free · no ads"></div>
-      <h2 data-ko="오늘, 첫 펫을 입양하세요" data-en="Adopt your first pet today"></h2>
-      <p data-ko="Windows 10 21H2 이상 / Windows 11, macOS 11 이상." data-en="Windows 10 21H2+ / Windows 11, and macOS 11+."></p>
+  <section id="download" style="padding-top:0">
+    <div class="wrap"><div class="get reveal">
+      <div class="row" id="lineup"></div>
+      <h2 data-ko="오늘, 첫 펫을<br>입양하세요" data-en="Adopt your first<br>pet today"></h2>
+      <p data-ko="Windows 10 21H2 이상 / Windows 11, macOS 11 이상. 무료, 광고 없음." data-en="Windows 10 21H2+ / Windows 11, and macOS 11+. Free, no ads."></p>
       <div class="cta">
         <a class="btn" href="https://github.com/cleverdj/petfam/releases/latest" data-ko="Windows용 받기" data-en="Download for Windows"></a>
-        <a class="btn ghost" href="https://github.com/cleverdj/petfam/releases/latest" data-ko="macOS용 받기" data-en="Download for macOS"></a>
+        <a class="btn light" href="https://github.com/cleverdj/petfam/releases/latest" data-ko="macOS용 받기" data-en="Download for macOS"></a>
       </div>
-      <p class="note" data-ko="펫 정보만 AI에 보내요. 화면 내용은 보내지 않아요. macOS 버전은 아직 초기 단계예요."
-         data-en="Only pet information goes to the AI, never what is on your screen. The macOS version is still early."></p>
-    </div>
+      <p class="note" data-ko="macOS 버전은 아직 초기 단계예요." data-en="The macOS version is still early."></p>
+    </div></div>
   </section>
 </main>
-<footer>© PetFam · <span data-ko="이 페이지의 풍경은 three.js로 그렸어요" data-en="The scenery on this page is drawn with three.js"></span></footer>
+<footer>© PetFam · <a href="https://github.com/cleverdj/petfam" style="text-decoration:underline">GitHub</a></footer>
 
 <script type="module">
-// --------------------------------------------------------------------------------------------- language
+// ------------------------------------------------------------------------------------------ 2D pets (SVG)
+const LINE = '#3a2a22';
+const KINDS = {
+  dog: { kind: 'dog', coat: '#e7b36e', far: '#cf9a56', belly: '#fff1dc', ear: '#c98c4b' },
+  cat: { kind: 'cat', coat: '#9aa5b6', far: '#818da0', belly: '#f6f3ee' },
+  kitten: { kind: 'cat', coat: '#f2a65a', far: '#d98c42', belly: '#fff1df' },
+  corgi: { kind: 'dog', coat: '#e79a48', far: '#cf8334', belly: '#fff6ea', ears: 'up', short: true },
+  husky: { kind: 'dog', coat: '#8d96a6', far: '#757f90', belly: '#f6f8fb', ears: 'up', mask: true },
+  black: { kind: 'cat', coat: '#4a4a58', far: '#3a3a46', belly: '#6a6a7e' },
+  shiba: { kind: 'dog', coat: '#de8a4a', far: '#c57436', belly: '#fff3e2', ears: 'up' },
+};
+// A side-on pet facing right, built from a few flat shapes; CSS animates the legs, tail, head, ears and eyes.
+function petSVG(name, cls = '', style = '') {
+  const o = KINDS[name], cat = o.kind === 'cat', c = o.coat, b = o.belly, h = o.short ? 17 : 26, y = 88 - h;
+  const leg = (n, x, fill) => `<rect class="leg ${n}" x="${x}" y="${y}" width="11" height="${h}" rx="5.5" fill="${fill}"/>`;
+  const tail = cat
+    ? `<g class="tail"><path d="M27 56C8 54 5 30 17 23" fill="none" stroke-width="11.5"/><path class="ns" d="M27 56C8 54 5 30 17 23" fill="none" style="stroke:${c};stroke-width:6.5"/></g>`
+    : `<g class="tail"><path d="M27 52C15 48 13 37 19 30" fill="none" stroke-width="12.5"/><path class="ns" d="M27 52C15 48 13 37 19 30" fill="none" style="stroke:${c};stroke-width:7.5"/></g>`;
+  const up = cat || o.ears === 'up';
+  const earsBack = up ? `<path class="ear" d="M92 22 103 6l3 22z" fill="${c}"/>` : `<ellipse class="ear" cx="103" cy="40" rx="7" ry="13" fill="${o.ear}" transform="rotate(-14 103 40)"/>`;
+  const earsFront = up ? `<path class="ear" d="M70 26 74 6l15 15z" fill="${c}"/><path class="ns" d="M75 22 76.5 13l7 7z" fill="#f4a7b4"/>` : `<ellipse class="ear" cx="69" cy="42" rx="7.5" ry="14" fill="${o.ear}" transform="rotate(14 69 42)"/>`;
+  return `<svg class="pet ${o.kind} ${cls}" style="${style}" viewBox="0 -8 124 104" role="img" aria-label="${name}">
+    ${tail}${leg('l2', 31, o.far)}${leg('l4', 65, o.far)}
+    <g class="bodyg"><ellipse cx="52" cy="58" rx="30" ry="19" fill="${c}"/><ellipse class="ns" cx="58" cy="67" rx="17" ry="8" fill="${b}"/>
+    <g class="acc scarf"><path d="M70 50q12 9 26 2l2 8q-15 8 -30 -1z" fill="#e2574c"/><path d="M76 58l-3 15 8 1 3 -14z" fill="#e2574c"/></g></g>
+    ${leg('l1', 38, c)}${leg('l3', 71, c)}
+    <g class="head">${earsBack}<circle cx="86" cy="38" r="20" fill="${c}"/>${o.mask ? `<path class="ns" d="M72 40q14 -16 28 0q-2 16 -14 17q-12 -1 -14 -17z" fill="${b}"/>` : ''}${earsFront}
+      <ellipse cx="88" cy="45" rx="${cat ? 7.5 : 9.5}" ry="${cat ? 5.5 : 7}" fill="${b}"/>
+      <ellipse cx="88" cy="41.5" rx="${cat ? 2.2 : 3.4}" ry="${cat ? 1.7 : 2.5}" fill="${cat ? '#e98a9a' : LINE}" style="stroke-width:1"/>
+      <path d="M88 44q-3 4 -6 2M88 44q3 4 6 2" fill="none" style="stroke-width:1.8"/>
+      <ellipse class="eye ns" cx="79" cy="35" rx="2.9" ry="3.4" fill="${LINE}"/><ellipse class="eye ns" cx="96" cy="35" rx="2.9" ry="3.4" fill="${LINE}"/>
+      <circle class="ns" cx="80" cy="33.8" r="1" fill="#fff"/><circle class="ns" cx="97" cy="33.8" r="1" fill="#fff"/>
+      <ellipse class="ns" cx="73" cy="43" rx="4" ry="2.5" fill="#ff8fa3" opacity=".6"/><ellipse class="ns" cx="102" cy="43" rx="4" ry="2.5" fill="#ff8fa3" opacity=".6"/>
+      <g class="acc hat"><path d="M76 21 87 -5l10 26z" fill="#ff6b8b"/><path class="ns" d="M80.5 12h12.5l1.5 4h-15.5z" fill="#ffd45c"/><circle cx="87" cy="-5" r="3.5" fill="#8ec9ff"/></g>
+      <g class="acc crown"><path d="M73 22 71 6l8 7 7 -11 7 11 8 -7 -2 16z" fill="#ffd45c"/></g>
+      <g class="acc glasses"><circle cx="79" cy="35" r="6.5" fill="rgba(255,255,255,.35)"/><circle cx="96" cy="35" r="6.5" fill="rgba(255,255,255,.35)"/><path d="M85.5 35h4" fill="none"/></g>
+    </g></svg>`;
+}
+document.querySelectorAll('[data-pet]').forEach(el => { el.outerHTML = petSVG(el.dataset.pet, el.dataset.class ?? '', el.getAttribute('style') ?? ''); });
+document.getElementById('lineup').innerHTML = ['corgi', 'cat', 'husky', 'kitten', 'dog', 'black', 'shiba'].map(n => petSVG(n)).join('');
+
+// ------------------------------------------------------------------------------------------ language
 const root = document.documentElement;
+const BREEDS = { ko: ['포메라니안', '말티즈', '토이 푸들', '비숑', '시바견', '웰시코기', '진돗개', '골든 리트리버', '프렌치 불도그', '닥스훈트', '허스키', '치와와', '비글', '사모예드', '보더 콜리', '시추', '퍼그', '코리안 숏헤어', '러시안 블루', '브리티시 숏헤어', '스코티시 폴드', '페르시안', '랙돌', '먼치킨', '샴', '메인쿤', '벵골', '스핑크스', '아비시니안', '노르웨이 숲', '터키시 앙고라'],
+  en: ['Pomeranian', 'Maltese', 'Toy Poodle', 'Bichon Frisé', 'Shiba Inu', 'Welsh Corgi', 'Jindo', 'Golden Retriever', 'French Bulldog', 'Dachshund', 'Husky', 'Chihuahua', 'Beagle', 'Samoyed', 'Border Collie', 'Shih Tzu', 'Pug', 'Korean Shorthair', 'Russian Blue', 'British Shorthair', 'Scottish Fold', 'Persian', 'Ragdoll', 'Munchkin', 'Siamese', 'Maine Coon', 'Bengal', 'Sphynx', 'Abyssinian', 'Norwegian Forest', 'Turkish Angora'] };
+const T = (ko, en) => (root.lang === 'ko' ? ko : en);
+const days = document.getElementById('days'), age = document.getElementById('age'), growPet = document.querySelector('.grow .pet');
+function showAge() {
+  const d = +days.value, stage = d < 15 ? T('아기', 'Baby') : d < 46 ? T('청소년', 'Junior') : d < 366 ? T('어른', 'Adult') : T('어르신', 'Senior');
+  age.textContent = `D+${d} · ${stage}`;
+  growPet.style.transform = `scale(${(0.5 + 0.5 * Math.min(1, d / 120)).toFixed(3)})`;
+}
+days.oninput = showAge;
 function setLang(l) {
   root.lang = l;
   document.querySelectorAll('[data-ko]').forEach(e => { e.innerHTML = e.dataset[l]; });
   document.getElementById('lang').textContent = l === 'ko' ? 'EN' : '한국어';
-  document.title = l === 'ko' ? 'PetFam — 우리 펫 가족이 바탕화면에 살아요' : 'PetFam — Your pet family, living on your desktop';
+  document.title = T('PetFam — 우리 펫 가족이 바탕화면에 살아요', 'PetFam — Your pet family, living on your desktop');
+  document.getElementById('breeds').innerHTML = [...BREEDS[l], ...BREEDS[l]].map(b => `<span>${b}</span>`).join('');
+  showAge();
   try { localStorage.setItem('petfam-lang', l); } catch { /* private mode */ }
 }
+document.getElementById('lang').onclick = () => setLang(root.lang === 'ko' ? 'en' : 'ko');
 let saved = null; try { saved = localStorage.getItem('petfam-lang'); } catch { /* private mode */ }
 setLang(saved ?? ((navigator.language || 'en').startsWith('ko') ? 'ko' : 'en'));
-document.getElementById('lang').onclick = () => setLang(root.lang === 'ko' ? 'en' : 'ko');
 
-// --------------------------------------------------------------------------------------------- scene
-// One meadow behind the whole page. Scrolling moves through the story: day, a house, rain and snow, more pets,
-// sunset, and a starry night. The page still reads fine without WebGL (the body has a sky gradient).
-let THREE;
-try { THREE = await import('three'); } catch { THREE = null; }
-const canvas = document.getElementById('scene');
-let renderer = null;
-if (THREE) { try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); } catch { renderer = null; } }
-if (renderer) start();
+// ------------------------------------------------------------------------------------------ bento widgets
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(e => io.observe(e));
 
-function start() {
-  const PI = Math.PI;
-  const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
-  const lerp = (a, b, k) => a + (b - a) * k;
-  const range = (t, a, b) => clamp((t - a) / (b - a));
-  const smooth = k => { k = clamp(k); return k * k * (3 - 2 * k); };
-  const backOut = k => { k = clamp(k); const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
-  function rng(seed) { let s = (seed * 2654435761) >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 400);
-  const hemi = new THREE.HemisphereLight('#ffffff', '#9fc27a', 1.2), sun = new THREE.DirectionalLight('#fff3da', 1.5);
-  sun.position.set(-4, 7, 6); scene.add(hemi, sun);
-
-  const gradMap = (() => { const t = new THREE.DataTexture(new Uint8Array([165, 255]), 2, 1, THREE.RedFormat); t.minFilter = t.magFilter = THREE.NearestFilter; t.needsUpdate = true; return t; })();
-  const toon = (c, extra = {}) => new THREE.MeshToonMaterial({ color: c, gradientMap: gradMap, ...extra });
-  const OUT = new THREE.MeshBasicMaterial({ color: '#4b3326', side: THREE.BackSide });
-  const SPH = new THREE.SphereGeometry(1, 28, 18), CONE = new THREE.ConeGeometry(1, 1, 16), LEG = new THREE.CapsuleGeometry(0.075, 0.24, 4, 10);
-  function add(parent, geo, material, pos, scl, outline = true) {
-    const m = new THREE.Mesh(geo, material); m.position.set(...pos); if (scl) m.scale.set(...scl); parent.add(m);
-    if (outline) { const o = new THREE.Mesh(geo, OUT); o.scale.setScalar(1.07); m.add(o); }
-    return m;
+// House from a sentence: type, build, pause, repeat.
+const typed = document.getElementById('typed'), hut = document.getElementById('hut');
+(async function house() {
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  for (;;) {
+    const text = T('등불 달린 아늑한 통나무집', 'A cozy log cabin with a lantern');
+    hut.classList.remove('on'); typed.textContent = '';
+    await wait(700);
+    for (const ch of text) { typed.textContent += ch; await wait(reduced ? 0 : 75); }
+    await wait(350); hut.classList.add('on');
+    await wait(4200);
   }
+})();
 
-  // Sky dome, sun and moon, stars.
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(200, 24, 16), new THREE.ShaderMaterial({
-    side: THREE.BackSide, depthWrite: false, uniforms: { top: { value: new THREE.Color() }, bot: { value: new THREE.Color() } },
-    vertexShader: 'varying vec3 vD; void main(){ vD = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform vec3 top, bot; varying vec3 vD; void main(){ float y = normalize(vD).y; gl_FragColor = vec4(mix(bot, top, smoothstep(-0.05, 0.55, y)), 1.0); }',
-  }));
-  scene.add(sky);
-  const disc = (color, r) => new THREE.Mesh(new THREE.CircleGeometry(r, 40), new THREE.MeshBasicMaterial({ color, transparent: true, fog: false }));
-  const sunDisc = disc('#fff6d8', 5), moon = disc('#f6f0dc', 4.2); scene.add(sunDisc, moon);
-  const starGeo = new THREE.BufferGeometry();
-  { const r = rng(5), p = []; for (let i = 0; i < 500; i++) { const a = r() * PI * 2, e = r() * 1.2 + 0.08; p.push(Math.cos(a) * Math.cos(e) * 180, Math.sin(e) * 180, -Math.abs(Math.sin(a) * Math.cos(e)) * 180); } starGeo.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); }
-  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: '#ffffff', size: 1.1, transparent: true, opacity: 0, depthWrite: false })); scene.add(stars);
+// Weather chips.
+const wx = document.getElementById('wx');
+document.getElementById('wxchips').onclick = e => { const b = e.target.closest('button'); if (!b) return; wx.dataset.w = b.dataset.w; [...b.parentNode.children].forEach(x => x.classList.toggle('on', x === b)); };
 
-  // Ground and hills, trees, flowers, clouds.
-  const grass = toon('#7cc65a'), far1 = toon('#6bb858'), far2 = toon('#5aa958');
-  add(scene, SPH, grass, [0, -80, 0], [80, 80, 80], false);
-  add(scene, SPH, far1, [-34, -40, -44], [60, 52, 40], false);
-  add(scene, SPH, far2, [40, -44, -60], [70, 58, 40], false);
-  const trunkMat = toon('#7a5236'), leafMats = ['#4c9a4a', '#3f8a45', '#5aa850'].map(c => toon(c));
-  { const r = rng(9); for (let i = 0; i < 16; i++) { const x = (r() * 2 - 1) * 26, z = -8 - r() * 22, s = 0.9 + r() * 1.3, y = -80 + Math.sqrt(6400 - x * x - z * z);
-      add(scene, new THREE.CylinderGeometry(0.14, 0.2, 1, 8), trunkMat, [x, y + 0.5 * s, z], [s, s, s], false); add(scene, SPH, leafMats[i % 3], [x, y + 1.5 * s, z], [0.85 * s, 1.1 * s, 0.85 * s]); } }
-  const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.beginPath(); g.arc(16, 16, 14, 0, 7); g.fill(); return new THREE.CanvasTexture(c); })();
-  const flowers = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ size: 0.16, vertexColors: true, map: dotTex, alphaTest: 0.5 }));
-  { const r = rng(21), p = [], c = [], pal = ['#ffffff', '#ff7aa2', '#ffd166', '#c084fc', '#ff8a5c'].map(x => new THREE.Color(x));
-    for (let i = 0; i < 1800; i++) { const x = (r() * 2 - 1) * 16, z = 5 - r() * 20, y = -80 + Math.sqrt(6400 - x * x - z * z) + 0.06; p.push(x, y, z); const k = pal[Math.floor(r() * 5)]; c.push(k.r, k.g, k.b); }
-    flowers.geometry.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); flowers.geometry.setAttribute('color', new THREE.Float32BufferAttribute(c, 3)); }
-  scene.add(flowers);
-  const cloudMat = new THREE.MeshToonMaterial({ color: '#ffffff', gradientMap: gradMap }), clouds = [];
-  { const r = rng(31); for (let i = 0; i < 7; i++) { const g = new THREE.Group(); for (let k = 0; k < 6; k++) { const s = 1 + r() * 1.4; add(g, SPH, cloudMat, [(k - 2.5) * 1.5 + r(), r() * 0.8, r()], [s * 1.3, s * 0.75, s], false); }
-      g.position.set((i - 3) * 13 + r() * 5, 9 + r() * 6, -30 - r() * 14); g.userData.x = g.position.x; scene.add(g); clouds.push(g); } }
+// Dress-up: the hat and the crown share the head, so one replaces the other.
+const dressPet = document.querySelector('.dress .pet'), wear = document.getElementById('wear');
+wear.onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const on = !b.classList.contains('on'), a = b.dataset.a, other = a === 'hat' ? 'crown' : a === 'crown' ? 'hat' : null;
+  b.classList.toggle('on', on); dressPet.classList.toggle(a, on);
+  if (on && other) { dressPet.classList.remove(other); wear.querySelector(`[data-a=${other}]`).classList.remove('on'); }
+};
 
-  // Pets.
-  function makePet(o) {
-    const p = { o, hips: [], ears: [], eyes: [], seed: o.seed, x: o.x, face: 0, sit: 1, hop: -9, wagBoost: 0 };
-    const cat = o.kind === 'cat', k = o.legs ?? 1, hipY = 0.4 * k;
-    const rootG = p.root = new THREE.Group(); scene.add(rootG);
-    const body = p.body = new THREE.Group(); rootG.add(body);
-    const coat = toon(o.coat), belly = toon(o.belly), ink = toon('#2a201c');
-    add(body, SPH, coat, [0, hipY + 0.1, 0], [0.3, 0.27, 0.47]); add(body, SPH, belly, [0, hipY + 0.02, 0.2], [0.22, 0.18, 0.26], false);
-    for (const [x, z] of [[-0.16, 0.28], [0.16, 0.28], [-0.16, -0.28], [0.16, -0.28]]) {
-      const hip = new THREE.Group(); hip.position.set(x, hipY, z); body.add(hip);
-      add(hip, LEG, coat, [0, -0.18 * k, 0], [1, k, 1]); add(hip, SPH, belly, [0, -0.37 * k, 0.025], [0.085, 0.055, 0.105]); p.hips.push(hip);
-    }
-    const head = p.head = new THREE.Group(); head.position.set(0, hipY + 0.4, 0.4); body.add(head);
-    add(head, SPH, coat, [0, 0.06, 0], cat ? [0.29, 0.25, 0.26] : [0.28, 0.27, 0.27]);
-    if (o.mask) add(head, SPH, belly, [0, 0.02, 0.1], [0.22, 0.17, 0.2], false);
-    if (!cat) { add(head, SPH, belly, [0, -0.04, 0.19], [0.15, 0.12, 0.15]); add(head, SPH, ink, [0, 0.02, 0.335], [0.055, 0.042, 0.04], false); }
-    else { add(head, SPH, belly, [0, -0.03, 0.2], [0.13, 0.09, 0.09], false); add(head, SPH, toon('#e98a9a'), [0, 0.02, 0.285], [0.03, 0.022, 0.02], false); }
-    const white = new THREE.MeshBasicMaterial({ color: '#ffffff' }), blush = new THREE.MeshBasicMaterial({ color: '#ff8fa3', transparent: true, opacity: 0.55 });
-    for (const s of [-1, 1]) {
-      const eye = add(head, SPH, ink, [s * 0.11, 0.11, 0.215], [0.042, 0.054, 0.035], false);
-      const hl = new THREE.Mesh(SPH, white); hl.position.set(0.3, 0.38, 0.82); hl.scale.setScalar(0.32); eye.add(hl); p.eyes.push(eye);
-      const b = new THREE.Mesh(SPH, blush); b.position.set(s * 0.175, 0, 0.19); b.scale.set(0.05, 0.028, 0.02); head.add(b);
-      const ear = new THREE.Group(); head.add(ear);
-      if (cat || o.ears === 'up') { ear.position.set(s * 0.15, 0.27, -0.01); ear.rotation.z = -s * 0.28; add(ear, CONE, coat, [0, 0.08, 0], [0.1, 0.17, 0.07]); add(ear, CONE, toon('#f4a7b4'), [0, 0.06, 0.045], [0.055, 0.11, 0.03], false); }
-      else { ear.position.set(s * 0.24, 0.17, -0.02); ear.rotation.z = s * 0.3; add(ear, SPH, toon(o.ear ?? o.coat), [s * 0.03, -0.14, 0], [0.085, 0.19, 0.13]); }
-      p.ears.push(ear);
-    }
-    const tail = p.tail = new THREE.Group(); tail.position.set(0, hipY + 0.2, -0.42); body.add(tail);
-    if (cat) { add(tail, new THREE.CapsuleGeometry(0.05, 0.5, 4, 10), coat, [0, 0.28, 0]); tail.rotation.x = -0.45; }
-    else { add(tail, new THREE.CapsuleGeometry(0.06, 0.2, 4, 10), coat, [0, 0.15, 0]); tail.rotation.x = -0.85; }
-    return p;
-  }
-  const dog = makePet({ kind: 'dog', coat: '#e7b36e', belly: '#fff1dc', ear: '#c98c4b', seed: 1, x: -0.9 });
-  const cat = makePet({ kind: 'cat', coat: '#8f9aab', belly: '#f4f1ec', seed: 2, x: 0.9 });
-  const extras = [
-    makePet({ kind: 'dog', coat: '#e0913f', belly: '#fff6ea', ears: 'up', legs: 0.68, seed: 4, x: -1.95, z: -0.5 }),
-    makePet({ kind: 'dog', coat: '#7d8696', belly: '#f4f6fa', ears: 'up', mask: true, seed: 5, x: 0.05, z: -1.0 }),
-    makePet({ kind: 'cat', coat: '#3c3c48', belly: '#55556a', seed: 6, x: 1.85, z: -0.7 }),
-    makePet({ kind: 'cat', coat: '#f2a65a', belly: '#fff1df', seed: 3, x: 2.6, z: 0.1 }),
-  ];
-  const pets = [dog, cat, ...extras];
-
-  // House with a lantern.
-  const house = new THREE.Group(); house.position.set(0.2, 0, -2.6); house.rotation.y = 0.35; scene.add(house);
-  const roofMat = toon('#c8553e'), winMat = new THREE.MeshBasicMaterial({ color: '#8a7a5a' }), bulbMat = new THREE.MeshBasicMaterial({ color: '#9a958a' });
-  {
-    add(house, new THREE.BoxGeometry(2.4, 1.5, 1.7), toon('#b07a45'), [0, 0.75, 0]);
-    const tri = new THREE.Shape(); tri.moveTo(-1.5, 0); tri.lineTo(1.5, 0); tri.lineTo(0, 1.15); tri.lineTo(-1.5, 0);
-    const g = new THREE.ExtrudeGeometry(tri, { depth: 2.0, bevelEnabled: false }); g.translate(0, 0, -1.0);
-    add(house, g, roofMat, [0, 1.5, 0]);
-    add(house, new THREE.BoxGeometry(0.55, 0.95, 0.06), toon('#6b3f22'), [0.5, 0.47, 0.86], null, false);
-    add(house, new THREE.BoxGeometry(0.55, 0.48, 0.06), winMat, [-0.5, 0.9, 0.86], null, false);
-    add(house, new THREE.CylinderGeometry(0.04, 0.05, 1.5, 8), toon('#3d3a40'), [1.6, 0.75, 0.9], null, false);
-    add(house, SPH, bulbMat, [1.6, 1.58, 0.9], [0.12, 0.14, 0.12], false);
-  }
-  const lamp = new THREE.PointLight('#ffc978', 0, 9, 1.5); lamp.position.set(1.6, 1.6, 1.2); house.add(lamp);
-
-  // Rain, snow, fireflies.
-  const N = 700, rainPos = new Float32Array(N * 6), rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
-  const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: '#dceaff', transparent: true, opacity: 0 })); rain.frustumCulled = false; scene.add(rain);
-  const dots = (n, color, size, additive) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
-    const m = new THREE.Points(g, new THREE.PointsMaterial({ color, size, transparent: true, opacity: 0, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending })); m.frustumCulled = false; scene.add(m); return m; };
-  const snow = dots(500, '#ffffff', 0.09, false), flies = dots(90, '#ffe27a', 0.13, true);
-  snow.material.map = flies.material.map = dotTex;
-
-  // Story keys along the scroll: [section, sky top, sky bottom, light, ground tint].
-  const KEYS = [
-    [0, '#3f8fe0', '#d9f0f4', 1.0, '#ffffff'], [3.3, '#3f8fe0', '#d9f0f4', 1.0, '#ffffff'], [4.0, '#5d6f8f', '#aeb9c8', 0.6, '#a9b6c4'],
-    [4.7, '#8fa3c0', '#dfe6ee', 0.8, '#eef3f8'], [5.3, '#4a8fdc', '#f6e2c0', 1.0, '#fff3dc'], [6.2, '#5a5fb0', '#ffb38a', 0.8, '#ffc9a0'], [7.0, '#070b24', '#1c2c66', 0.3, '#5a6aa8'],
-  ].map(k => [k[0], new THREE.Color(k[1]), new THREE.Color(k[2]), k[3], new THREE.Color(k[4])]);
-  const SIDE = [0, 1, -1, 1, -1, 1, 0, 0];
-  const tint = new THREE.Color();
-
-  const sections = [...document.querySelectorAll('main section')];
-  function progress() {
-    const mid = scrollY + innerHeight / 2; let s = 0;
-    sections.forEach((el, i) => { const top = el.offsetTop, h = el.offsetHeight; if (mid >= top + h / 2) s = Math.min(sections.length - 1, i + clamp((mid - top - h / 2) / h)); });
-    return s;
-  }
-
-  // Pointer.
-  const ptr = { x: 0, y: 0.2, seen: false };
-  addEventListener('pointermove', e => { ptr.x = e.clientX / innerWidth * 2 - 1; ptr.y = -(e.clientY / innerHeight * 2 - 1); ptr.seen = true; });
-  const fx = document.getElementById('fx'), v3 = new THREE.Vector3();
-  const toScreen = (x, y, z) => { v3.set(x, y, z).project(camera); return [(v3.x * 0.5 + 0.5) * innerWidth, (-v3.y * 0.5 + 0.5) * innerHeight]; };
-  let now = 0;
-  addEventListener('pointerdown', e => {
-    if (e.target.closest('a, button, video, .card')) return;
-    let best = null, bd = 1e9;
-    for (const p of pets) { if (p.root.scale.x < 0.5) continue; const [sx, sy] = toScreen(p.x, 0.7, p.root.position.z); const d = Math.hypot(sx - e.clientX, sy - e.clientY); if (d < bd) { bd = d; best = p; } }
-    if (!best) return;
-    best.hop = now; best.wagBoost = 1;
-    const h = document.createElement('div'); h.className = 'heart'; h.textContent = '💛'; const [sx, sy] = toScreen(best.x, 1.5, best.root.position.z);
-    h.style.left = sx + 'px'; h.style.top = sy + 'px'; fx.appendChild(h); setTimeout(() => h.remove(), 1200);
+// ------------------------------------------------------------------------------------------ the desktop demo
+// Pets walk on the wallpaper, behind the app windows. The dog wanders; the cat follows the pointer. Windows can be
+// dragged aside to find whoever is behind them.
+const desk = document.getElementById('desk');
+const SAY = { dog: [['멍!', 'Woof!'], ['산책 가자멍!', 'Walk? Walk!'], ['간식 주세요멍', 'Treat, please'], ['여기 좋다멍', 'I like it here']], cat: [['냥.', 'Mew.'], ['흥.', 'Hmph.'], ['쓰다듬어라냥', 'You may pet me'], ['졸리다냥…', 'Sleepy…']] };
+const actors = ['dog', 'cat'].map((name, i) => {
+  const el = document.createElement('div'); el.className = 'actor';
+  el.innerHTML = `<div class="bubble"></div><div class="hopper"><div class="flip">${petSVG(name)}</div></div>`;
+  desk.appendChild(el);
+  const a = { name, el, svg: el.querySelector('.pet'), flip: el.querySelector('.flip'), hopper: el.querySelector('.hopper'), bubble: el.querySelector('.bubble'), x: i ? 0.62 : 0.3, y: i ? 0.9 : 0.8, tx: i ? 0.62 : 0.3, ty: i ? 0.9 : 0.8, wait: 1 + i, dir: 1 };
+  el.style.cursor = 'pointer';
+  el.addEventListener('click', () => {
+    a.hopper.classList.remove('hop'); void a.hopper.offsetWidth; a.hopper.classList.add('hop');
+    const line = SAY[name][Math.floor(Math.random() * 4)]; a.bubble.textContent = T(...line); a.bubble.classList.add('on');
+    clearTimeout(a.say); a.say = setTimeout(() => a.bubble.classList.remove('on'), 1600);
   });
-
-  // Speech bubbles for the AI section.
-  const LINES = [
-    [['여기 풀밭 정말 좋다멍!', '흥, 나쁘지 않다냥.'], ['I love this meadow!', 'Hmph. Not bad.']],
-    [['저 연못에 뛰어들까멍?', '젖는 건 질색이다냥.'], ['Shall we jump in the pond?', 'I do not do wet.']],
-    [['집사 오늘 일 많다멍.', '그러게, 간식이나 달라냥.'], ['Our human is busy today.', 'Then where are my treats?']],
-  ];
-  const bubbles = [dog, cat].map(() => { const d = document.createElement('div'); d.className = 'bubble'; fx.appendChild(d); return d; });
-
-  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
-  addEventListener('resize', resize); resize();
-
-  let last = performance.now(), camX = 0;
-  function frame(ms) {
-    const dt = Math.min(0.05, (ms - last) / 1000); last = ms; now = ms / 1000;
-    const t = now, s = progress(), wide = camera.aspect > 1.05;
-
-    // Sky, light and colour for this point of the story.
-    let a = KEYS[0], b = KEYS[0];
-    for (let i = 1; i < KEYS.length; i++) { if (s <= KEYS[i][0]) { a = KEYS[i - 1]; b = KEYS[i]; break; } a = b = KEYS[i]; }
-    const k = a === b ? 0 : smooth(range(s, a[0], b[0])), light = lerp(a[3], b[3], k);
-    sky.material.uniforms.top.value.lerpColors(a[1], b[1], k); sky.material.uniforms.bot.value.lerpColors(a[2], b[2], k);
-    tint.lerpColors(a[4], b[4], k);
-    hemi.intensity = 1.25 * light + 0.15; sun.intensity = 1.6 * light; hemi.color.copy(tint); sun.color.copy(tint);
-    const night = smooth(range(s, 6.3, 7)), rainy = smooth(range(s, 3.5, 3.9)) * (1 - smooth(range(s, 4.25, 4.55))), snowy = smooth(range(s, 4.3, 4.6)) * (1 - smooth(range(s, 5.0, 5.3)));
-    stars.material.opacity = night; flies.material.opacity = night * 0.9; rain.material.opacity = rainy * 0.6; snow.material.opacity = snowy;
-    cloudMat.color.setRGB(lerp(1, 0.6, rainy) * lerp(1, 0.35, night), lerp(1, 0.64, rainy) * lerp(1, 0.4, night), lerp(1, 0.74, rainy) * lerp(1, 0.6, night));
-    const sink = smooth(range(s, 5.2, 6.6));
-    sunDisc.position.set(camera.position.x + 22, lerp(21, -4, sink), -90); sunDisc.material.opacity = (1 - rainy) * (1 - snowy * 0.7); sunDisc.material.color.set(sink > 0.5 ? '#ffc48a' : '#fff6d8');
-    moon.position.set(camera.position.x - 20, lerp(-6, 20, night), -90); moon.material.opacity = night;
-    sky.position.copy(camera.position);
-
-    // Camera: slide so the pets sit beside the card of the current section.
-    const i0 = Math.floor(s), side = lerp(SIDE[i0], SIDE[Math.min(SIDE.length - 1, i0 + 1)], smooth(s - i0));
-    camX = lerp(camX, wide ? -side * 2.1 : 0, 1 - Math.exp(-dt * 4));
-    const sway = reduced ? 0 : Math.sin(t * 0.4) * 0.08;
-    camera.position.set(camX + sway + (ptr.seen && !reduced ? ptr.x * 0.25 : 0), wide ? 2.0 : 2.05, wide ? 9 : 12.5);
-    camera.lookAt(camX, wide ? 2.05 : 2.6, 0); camera.updateMatrixWorld();
-
-    clouds.forEach(c => { c.position.x = ((c.userData.x + t * 0.35 + 45) % 90) - 45 + camX; });
-
-    // House, built as you reach its section; the lantern comes on at night.
-    const built = backOut(range(s, 2.45, 2.95)); house.scale.setScalar(Math.max(0.001, built)); house.visible = built > 0.01;
-    roofMat.color.set('#c8553e').lerp(tint.set('#f3f7ff'), 0.85 * smooth(range(s, 4.45, 4.9)) * (1 - smooth(range(s, 5.1, 5.5))));
-    const lit = Math.max(night, rainy * 0.8, smooth(range(s, 5.6, 6.3)));
-    lamp.intensity = lit * 14; bulbMat.color.set(lit > 0.3 ? '#ffe9a8' : '#9a958a'); winMat.color.set(lit > 0.3 ? '#ffe39a' : '#8a7a5a');
-
-    // Pets: the cat follows the pointer, everyone looks at it, extras join for the breeds section.
-    v3.set(ptr.x, ptr.y, 0.5).unproject(camera).sub(camera.position); const wx = camera.position.x + v3.x * (-camera.position.z / v3.z);
-    const target = ptr.seen && s < 5 ? clamp(wx, 0.3, 1.7) : 0.9;
-    pets.forEach((p, i) => {
-      const isCat = p === cat, isExtra = i >= 2;
-      let walking = 0;
-      if (isCat) { const d = target - p.x; if (Math.abs(d) > 0.08) { p.x += Math.sign(d) * Math.min(Math.abs(d), 1.5 * dt); walking = Math.sign(d); } }
-      p.sit = lerp(p.sit, walking ? 0 : 1, 1 - Math.exp(-dt * 8)); p.face = lerp(p.face, walking * 1.15, 1 - Math.exp(-dt * 8));
-      const pop = isExtra ? backOut(range(s, 4.75 + (i - 2) * 0.07, 5.1 + (i - 2) * 0.07)) : 1;
-      const hk = (t - p.hop) / 0.5, hop = hk > 0 && hk < 1 ? 4 * 0.45 * hk * (1 - hk) : 0;
-      const gy = -80 + Math.sqrt(6400 - p.x * p.x);
-      p.root.position.set(p.x, gy + hop, p.o.z ?? 0.3); p.root.scale.setScalar(Math.max(0.001, pop) * (isExtra ? 0.92 : 1)); p.root.visible = pop > 0.01; p.root.rotation.y = p.face;
-      const [sx, sy] = toScreen(p.x, 0.9, 0.3), lx = ptr.seen ? (ptr.x - (sx / innerWidth * 2 - 1)) : 0, ly = ptr.seen ? (ptr.y + (sy / innerHeight * 2 - 1)) : 0;
-      const sit = p.sit, wk = Math.sin(t * 11) * 0.7 * (1 - sit);
-      p.hips[0].rotation.x = wk + 0.5 * sit; p.hips[1].rotation.x = -wk + 0.5 * sit; p.hips[2].rotation.x = -wk - 1.1 * sit; p.hips[3].rotation.x = wk - 1.1 * sit;
-      p.hips[0].scale.y = p.hips[1].scale.y = 1 + 0.3 * sit; p.body.rotation.x = -0.5 * sit;
-      p.head.rotation.set(0.45 * sit + clamp(-ly * 0.5, -0.4, 0.3), clamp(lx * 1.3, -0.9, 0.9) * sit, Math.sin(t * 0.8 + p.seed) * 0.05);
-      p.wagBoost = Math.max(0, p.wagBoost - dt * 0.6);
-      const near = ptr.seen ? clamp(1 - Math.abs(lx) * 1.5) : 0;
-      p.tail.rotation.y = Math.sin(t * (p.o.kind === 'cat' ? 2.2 : 9 + 6 * Math.max(near, p.wagBoost)) + p.seed) * (p.o.kind === 'cat' ? 0.3 : 0.5 + 0.3 * near);
-      const blink = ((t * 0.27 + p.seed * 0.37) % 1) < 0.035 || (hk > 0 && hk < 1.6);
-      for (const e of p.eyes) e.scale.y = blink ? 0.009 : 0.054;
-    });
-
-    // Weather and fireflies around the camera.
-    if (rainy > 0.01) { const r = rng(41); for (let i = 0; i < N; i++) { const x = camX + (r() - 0.5) * 22, z = 4 - r() * 14, sp = 13 + r() * 6, y = 9 - ((t * sp + r() * 12) % 12); rainPos.set([x, y, z, x - 0.06, y - 0.42, z], i * 6); } rainGeo.attributes.position.needsUpdate = true; }
-    if (snowy > 0.01) { const r = rng(77), p = snow.geometry.attributes.position; for (let i = 0; i < 500; i++) { const sp = 0.7 + r() * 0.8, ph = r() * 6; p.setXYZ(i, camX + (r() - 0.5) * 22 + Math.sin(t * 1.2 + ph) * 0.25, 9 - ((t * sp + r() * 11) % 11), 4 - r() * 14); } p.needsUpdate = true; }
-    if (night > 0.01) { const r = rng(61), p = flies.geometry.attributes.position; for (let i = 0; i < 90; i++) { const ph = r() * 6.3, sp = 0.5 + r(); p.setXYZ(i, camX + (r() - 0.5) * 16 + Math.sin(t * 0.5 * sp + ph) * 0.8, 0.4 + r() * 3 + Math.sin(t * 0.8 * sp + ph) * 0.4, 2 - r() * 8); } p.needsUpdate = true; }
-
-    // Bubbles while the AI section is in view.
-    const talk = clamp(1 - Math.abs(s - 2) * 2.4), turn = Math.floor(t / 2.6), pair = LINES[Math.floor(turn / 2) % LINES.length][root.lang === 'ko' ? 0 : 1];
-    [dog, cat].forEach((p, i) => {
-      const on = talk > 0.3 && turn % 2 === i, el = bubbles[i];
-      if (el.textContent !== pair[i]) el.textContent = pair[i];
-      p.head.getWorldPosition(v3); const [sx, sy] = toScreen(v3.x, v3.y + 0.5, v3.z);
-      el.style.left = sx + 'px'; el.style.top = sy + 'px'; el.style.opacity = on ? 1 : 0;
-    });
-
-    renderer.render(scene, camera);
-    requestAnimationFrame(frame);
+  return a;
+});
+const pointer = { x: 0.5, y: 0.9, inside: false };
+desk.addEventListener('pointermove', e => { const r = desk.getBoundingClientRect(); pointer.x = (e.clientX - r.left) / r.width; pointer.y = (e.clientY - r.top) / r.height; pointer.inside = e.pointerType === 'mouse'; });
+desk.addEventListener('pointerleave', () => { pointer.inside = false; });
+desk.querySelectorAll('.win').forEach(w => {
+  let start = null;
+  w.addEventListener('pointerdown', e => { start = [e.clientX, e.clientY, w.offsetLeft, w.offsetTop]; w.setPointerCapture(e.pointerId); w.style.right = 'auto'; w.style.left = start[2] + 'px'; w.style.top = start[3] + 'px'; });
+  w.addEventListener('pointermove', e => { if (!start) return; w.style.left = start[2] + e.clientX - start[0] + 'px'; w.style.top = start[3] + e.clientY - start[1] + 'px'; });
+  w.addEventListener('pointerup', () => { start = null; });
+  w.addEventListener('pointercancel', () => { start = null; });
+});
+let last = performance.now();
+function step(ms) {
+  const dt = Math.min(0.05, (ms - last) / 1000); last = ms;
+  const W = desk.clientWidth, H = desk.clientHeight;
+  for (const a of actors) {
+    if (a.name === 'cat' && pointer.inside) { a.tx = Math.min(0.92, Math.max(0.08, pointer.x)); a.ty = Math.min(0.97, Math.max(0.72, pointer.y + 0.12)); a.wait = 0; }
+    else if ((a.wait -= dt) < 0 && Math.hypot((a.tx - a.x) * W, (a.ty - a.y) * H) < 8) { a.tx = 0.08 + Math.random() * 0.84; a.ty = 0.72 + Math.random() * 0.25; a.wait = 1.5 + Math.random() * 3.5; }
+    const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx * W, dy * H), speed = (a.name === 'cat' ? 0.19 : 0.13) * W;
+    const moving = d > 6 && !reduced;
+    if (moving) { const k = Math.min(1, speed * dt / d); a.x += dx * k; a.y += dy * k; if (Math.abs(dx) * W > 3) a.dir = Math.sign(dx); }
+    a.svg.classList.toggle('walk', moving);
+    const s = 0.62 + (a.y - 0.7) * 1.5;
+    a.el.style.transform = `translate(${a.x * W - a.el.offsetWidth / 2}px, ${-(1 - a.y) * H}px) scale(${s.toFixed(3)})`;
+    a.el.style.zIndex = a.y > 0.86 ? 3 : 2;
+    a.flip.style.transform = `scaleX(${a.dir})`;
   }
-  requestAnimationFrame(frame);
+  requestAnimationFrame(step);
 }
+requestAnimationFrame(step);
+
+// ------------------------------------------------------------------------------------------ hero glow (three.js)
+// A slow, soft gradient behind the headline, drawn by one fragment shader. Without WebGL the CSS gradient stays.
+try {
+  const THREE = await import('three');
+  const canvas = document.getElementById('glow'), hero = canvas.parentElement;
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+  const scene = new THREE.Scene(), cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const uniforms = { time: { value: 0 }, aspect: { value: 1 }, mouse: { value: new THREE.Vector2(0.5, 0.5) } };
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: `uniform float time, aspect; uniform vec2 mouse; varying vec2 vUv;
+      vec3 blob(vec3 acc, vec2 p, vec2 c, float r, vec3 col){ float d = length((p - c) * vec2(aspect, 1.0)); return mix(acc, col, smoothstep(r, 0.0, d) * 0.9); }
+      void main(){
+        vec2 p = vUv; float t = time * 0.12; vec3 c = vec3(1.0, 0.973, 0.933);
+        c = blob(c, p, vec2(0.18 + sin(t * 1.3) * 0.1, 0.75 + cos(t) * 0.1), 0.55, vec3(1.0, 0.82, 0.68));
+        c = blob(c, p, vec2(0.82 + cos(t * 1.1) * 0.1, 0.8 + sin(t * 0.9) * 0.1), 0.5, vec3(0.74, 0.87, 1.0));
+        c = blob(c, p, vec2(0.55 + sin(t * 0.7) * 0.18, 0.3 + cos(t * 1.2) * 0.1), 0.55, vec3(0.86, 0.8, 1.0));
+        c = blob(c, p, vec2(0.3 + cos(t * 0.8) * 0.12, 0.25), 0.4, vec3(1.0, 0.9, 0.6));
+        c = blob(c, p, mouse, 0.28, vec3(0.72, 0.93, 0.83));
+        gl_FragColor = vec4(c, 1.0);
+      }`,
+  })));
+  const size = () => { const w = hero.clientWidth, h = hero.clientHeight; renderer.setPixelRatio(1); renderer.setSize(w / 3, h / 3, false); uniforms.aspect.value = w / h; };
+  addEventListener('resize', size); size();
+  hero.addEventListener('pointermove', e => { const r = hero.getBoundingClientRect(); uniforms.mouse.value.set((e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height); });
+  const draw = ms => { uniforms.time.value = reduced ? 0 : ms / 1000; if (hero.getBoundingClientRect().bottom > 0) renderer.render(scene, cam); requestAnimationFrame(draw); };
+  requestAnimationFrame(draw);
+} catch { /* the CSS gradient is the fallback */ }
 </script>
 </body>
 </html>
