@@ -307,6 +307,13 @@ node render.mjs --film             # -> promo/out/petfam-film-ko.mp4
 node render.mjs --film --lang en   # 영어 제목과 엔딩
 ```
 
+### 홈페이지
+`site/index.html`은 PetFam 홈페이지예요. 살아 있는 three.js 풀밭 위에 얹은 정적 페이지 한 장이고(한국어·영어),
+펫들이 마우스를 바라보고, 고양이는 따라오고, 누르면 가까운 펫이 폴짝 뛰어요. 스크롤하면 이야기가 흘러가요
+(집이 지어지고, 비가 눈으로 바뀌고, 다른 품종이 모이고, 노을이 지고, 별밤이 돼요). 빌드 과정이 필요 없어서
+파일을 그냥 열거나 `site/` 폴더를 아무 곳에나 올리면 돼요(three.js는 CDN에서 받고, WebGL이 없어도 내용은 읽을 수 있어요).
+`node promo/shot-site.mjs`는 구역별 스크린샷을 `promo/out/site`에 저장해요.
+
 ## 앞으로의 계획
 - 실제 Mac에서 macOS 버전을 시험하고 다듬기(서로 다른 해상도 배율의 디스플레이, 디스플레이별 Space)
 - 서명·공증된 배포 파일(Windows와 macOS에서 첫 실행 경고 없애기)
